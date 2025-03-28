@@ -1,0 +1,40 @@
+/* src/components/Layout.module.css */
+
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem; /* p-4 */
+  background-color: var(--win98-gray);
+}
+
+.window {
+  background-color: var(--win98-gray);
+  border-width: 2px;
+  border-style: solid;
+  border-top-color: var(--win98-light-gray);
+  border-left-color: var(--win98-light-gray);
+  border-right-color: var(--win98-dark-gray);
+  border-bottom-color: var(--win98-dark-gray);
+  width: 100%;
+  max-width: 42rem; /* max-w-2xl */
+  box-shadow: 1px 1px 0 1px var(--win98-black); /* Simple shadow */
+  /* Add more robust shadow/bevel later if needed */
+}
+
+.titleBar {
+  background-color: var(--win98-blue);
+  color: var(--win98-white);
+  padding: 0.125rem 0.5rem; /* py-0.5 px-2 */
+  font-size: 0.875rem; /* text-sm */
+  line-height: 1.25rem; /* text-sm */
+  font-weight: 700; /* font-bold */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.content {
+  padding: 1rem; /* p-4 */
+} 

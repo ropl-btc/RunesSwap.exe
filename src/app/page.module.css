@@ -1,0 +1,11 @@
+/* src/app/page.module.css */
+
+.mainContainer {
+  /* No specific container styles needed beyond what Layout provides */
+}
+
+.connectButtonContainer {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 1rem; /* pb-4 */
+} 

@@ -1,0 +1,423 @@
+/* src/components/SwapInterface.module.css */
+
+.container {
+  padding: 1rem; /* p-4 */
+  display: flex;
+  flex-direction: column;
+  gap: 1rem; /* space-y-4 */
+}
+
+.title {
+  font-size: 1.125rem; /* text-lg */
+  line-height: 1.75rem; /* text-lg */
+  font-weight: 700; /* font-bold */
+}
+
+.inputArea {
+  padding: 0.5rem; /* p-2 */
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem; /* space-y-1 */
+  border-width: 2px;
+  border-style: solid;
+  border-right-color: var(--win98-light-gray);
+  border-bottom-color: var(--win98-light-gray);
+  border-left-color: var(--win98-dark-gray);
+  border-top-color: var(--win98-dark-gray);
+  background-color: var(--win98-white);
+}
+
+.inputLabel {
+  font-size: 0.75rem; /* text-xs */
+  line-height: 1rem; /* text-xs */
+}
+
+.inputRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.amountInput {
+  background-color: transparent;
+  font-size: 1.25rem; /* text-xl */
+  line-height: 1.75rem; /* text-xl */
+  width: 100%;
+  outline: none;
+  padding: 0.25rem; /* p-1 */
+}
+
+.amountInput::placeholder {
+  color: var(--win98-dark-gray);
+}
+
+/* Style for the input USD value display */
+.usdValueText {
+  font-size: 0.75rem; /* text-xs */
+  color: var(--win98-dark-gray);
+  text-align: left; /* Align with the input field */
+  padding-left: 0.25rem; /* Align roughly with input text */
+  margin-top: 0.1rem; /* Small space below input */
+}
+
+.amountInputReadOnly {
+  composes: amountInput; /* Inherit base input styles */
+  color: var(--win98-dark-gray); /* text-gray-500 approximation */
+}
+
+.assetButton {
+  font-weight: 700; /* font-bold */
+  padding: 0.25rem; /* p-1 */
+  background-color: var(--win98-gray);
+  border-width: 2px;
+  border-style: solid;
+  border-top-color: var(--win98-light-gray);
+  border-left-color: var(--win98-light-gray);
+  border-right-color: var(--win98-dark-gray);
+  border-bottom-color: var(--win98-dark-gray);
+  font-size: 0.875rem; /* text-sm */
+  flex-shrink: 0;
+  width: 5rem; /* w-20 approximation */
+}
+
+/* Wrapper for asset button image + text */
+.assetButtonContent {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Center content within the button */
+}
+
+/* Style for the image inside the asset button */
+.assetButtonImage {
+  width: 20px; /* Increased size to match runeImage */
+  height: 20px; /* Increased size to match runeImage */
+  margin-right: 4px; /* Space between image and text */
+}
+
+.assetButton:active {
+  border-top-color: var(--win98-dark-gray);
+  border-left-color: var(--win98-dark-gray);
+  border-right-color: var(--win98-light-gray);
+  border-bottom-color: var(--win98-light-gray);
+}
+
+.swapButton {
+  width: 100%;
+  padding: 0.25rem 1rem; /* px-4 py-1 */
+  background-color: var(--win98-gray);
+  border-width: 2px;
+  border-style: solid;
+  border-top-color: var(--win98-light-gray);
+  border-left-color: var(--win98-light-gray);
+  border-right-color: var(--win98-dark-gray);
+  border-bottom-color: var(--win98-dark-gray);
+  color: var(--win98-black);
+  font-weight: 700; /* font-bold */
+}
+
+.swapButton:active {
+  border-top-color: var(--win98-dark-gray);
+  border-left-color: var(--win98-dark-gray);
+  border-right-color: var(--win98-light-gray);
+  border-bottom-color: var(--win98-light-gray);
+}
+
+.swapButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: var(--win98-dark-gray);
+}
+
+.errorText {
+  font-size: 0.75rem; /* text-xs */
+  padding-top: 0.5rem; /* pt-2 */
+  color: #dc2626; /* text-red-600 */
+}
+
+/* Style for quote-specific errors */
+.quoteErrorText {
+  composes: errorText; /* Inherit base error styles */
+  padding-top: 0.25rem; /* pt-1, smaller top padding */
+  width: 100%; /* Ensure it takes full width */
+  color: var(--win98-red);
+}
+
+/* Style for swap success message */
+.successText {
+  font-size: 0.75rem; /* text-xs */
+  padding-top: 0.5rem; /* pt-2 */
+  color: #16a34a; /* text-green-600 approximation */
+}
+
+/* Style for transaction link */
+.txLink {
+  color: var(--win98-blue);
+  text-decoration: underline;
+  margin-left: 0.25rem; /* ml-1 */
+}
+
+.txLink:hover {
+  color: #1e40af; /* darker blue on hover */
+}
+
+/* New Info Area Styles */
+.infoArea {
+  margin-top: 1rem; /* mt-4 */
+  padding-top: 1rem; /* pt-4 */
+  border-top: 2px solid var(--win98-dark-gray);
+  font-size: 0.875rem; /* text-sm */
+  color: var(--win98-black);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem; /* space-y-2 */
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Headless UI Listbox Styles */
+.listboxContainer {
+  width: 18rem; /* Increased from 12rem */
+  flex-shrink: 0;
+}
+
+.listboxRelative {
+  position: relative;
+}
+
+.listboxButton {
+  position: relative;
+  width: 100%;
+  cursor: default;
+  background-color: var(--win98-gray);
+  padding: 0.25rem 2.5rem 0.25rem 0.75rem; /* py-1 pl-3 pr-10 */
+  text-align: left;
+  border-width: 2px;
+  border-style: solid;
+  border-top-color: var(--win98-light-gray);
+  border-left-color: var(--win98-light-gray);
+  border-right-color: var(--win98-dark-gray);
+  border-bottom-color: var(--win98-dark-gray);
+  font-size: 0.875rem; /* text-sm */
+}
+
+.listboxButton:focus {
+  outline: none;
+  /* Add focus ring styles if desired */
+}
+
+.listboxButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.listboxButtonText {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  font-weight: 700; /* font-bold */
+}
+
+.listboxButtonIconContainer {
+  pointer-events: none;
+  position: absolute;
+  inset: 0 0 0 auto; /* Equivalent to inset-y-0 right-0 */
+  display: flex;
+  align-items: center;
+  padding-right: 0.5rem; /* pr-2 */
+}
+
+.listboxButtonIcon {
+  height: 1.25rem; /* h-5 */
+  width: 1.25rem; /* w-5 */
+  color: #4b5563; /* text-gray-700 approximation */
+}
+
+.listboxOptions {
+  position: absolute;
+  margin-top: 0.25rem; /* mt-1 */
+  max-height: 15rem; /* max-h-60 */
+  width: 100%;
+  overflow: auto;
+  background-color: var(--win98-white);
+  padding: 0.25rem 0; /* py-1 */
+  font-size: 0.875rem; /* sm:text-sm */
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-lg */
+  /* ring-1 ring-black/5 approximation */
+  border-width: 2px;
+  border-style: solid;
+  border-top-color: var(--win98-dark-gray);
+  border-left-color: var(--win98-dark-gray);
+  border-right-color: var(--win98-light-gray);
+  border-bottom-color: var(--win98-light-gray);
+  z-index: 20; /* Added z-index */
+}
+
+.listboxOptions:focus {
+  outline: none;
+}
+
+.listboxOption {
+  position: relative;
+  cursor: default;
+  user-select: none;
+  padding: 0.5rem 1rem 0.5rem 2.5rem; /* py-2 pl-10 pr-4 */
+}
+
+.listboxOptionActive {
+  background-color: var(--win98-blue);
+  color: var(--win98-white);
+}
+
+.listboxOptionInactive {
+  color: var(--win98-black);
+}
+
+.listboxOptionText {
+  display: block;
+  white-space: normal; /* Changed from nowrap to normal to allow text wrapping */
+  padding: 0.25rem 0; /* Add some padding */
+}
+
+.listboxOptionTextSelected {
+  font-weight: 500; /* font-medium */
+}
+
+.listboxOptionTextUnselected {
+  font-weight: 400; /* font-normal */
+}
+
+.listboxOptionCheckContainer {
+  position: absolute;
+  inset: 0 0 0 0; /* Equivalent to inset-y-0 left-0 */
+  display: flex;
+  align-items: center;
+  padding-left: 0.75rem; /* pl-3 */
+  color: var(--win98-blue);
+}
+
+.listboxOptionCheckIcon {
+  height: 1rem; /* h-4 */
+  width: 1rem; /* w-4 */
+}
+
+.listboxLoadingOrEmpty {
+  position: relative;
+  cursor: default;
+  user-select: none;
+  padding: 0.5rem 1rem; /* py-2 px-4 */
+  color: #4b5563; /* text-gray-700 approximation */
+}
+
+.listboxError {
+  composes: listboxLoadingOrEmpty;
+  color: #dc2626; /* text-red-600 */
+}
+
+/* Add styles for the search container */
+.searchContainer {
+  padding: 0.5rem; /* p-2 */
+  border-bottom: 1px solid var(--win98-dark-gray);
+}
+
+.searchWrapper { /* New wrapper for input + icon */
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.375rem 0.5rem; /* py-1.5 px-2 */
+  padding-left: 2rem; /* Make space for the icon */
+  background-color: var(--win98-white);
+  border: 1px solid var(--win98-dark-gray);
+  color: var(--win98-black);
+  font-size: 0.875rem; /* text-sm */
+}
+
+.searchInput:focus {
+  outline: 1px solid var(--win98-blue);
+}
+
+.searchIconEmbedded { /* Style for icon inside input */
+  position: absolute;
+  left: 0.5rem; /* Adjust as needed */
+  width: 1rem; /* w-4 */
+  height: 1rem; /* h-4 */
+  color: var(--win98-dark-gray);
+  pointer-events: none; /* Make icon non-interactive */
+}
+
+/* Remove old search form/button styles if they exist */
+.searchForm {
+  /* Remove or comment out */
+}
+
+.searchButton {
+   /* Remove or comment out */
+}
+
+/* Style for the rune image in the dropdown */
+.runeImage {
+  width: 20px; /* Adjust size as needed */
+  height: 20px;
+  margin-right: 8px; /* Space between image and text */
+  vertical-align: middle; /* Align image nicely with text */
+  /* Windows 98 "pixelated" look - not perfect but indicative */
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  /* Optional: Add a subtle border like old icons */
+  border: 1px solid var(--win98-dark-gray);
+  background-color: var(--win98-light-gray); /* Background for transparent images */
+}
+
+/* Wrapper for rune image + text in dropdown option */
+.runeOptionContent {
+  display: flex;
+  align-items: center; 
+}
+
+/* Add styles for the swap direction button */
+.swapIconContainer {
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem 0; /* Add some vertical spacing */
+}
+
+.swapIconButton {
+  background-color: var(--win98-gray);
+  border-width: 2px;
+  border-style: solid;
+  border-top-color: var(--win98-light-gray);
+  border-left-color: var(--win98-light-gray);
+  border-right-color: var(--win98-dark-gray);
+  border-bottom-color: var(--win98-dark-gray);
+  padding: 0.25rem; /* p-1 */
+  line-height: 1; /* Ensure icon aligns well */
+}
+
+.swapIconButton:active {
+  border-top-color: var(--win98-dark-gray);
+  border-left-color: var(--win98-dark-gray);
+  border-right-color: var(--win98-light-gray);
+  border-bottom-color: var(--win98-light-gray);
+}
+
+.swapIconButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.swapIcon {
+  width: 1.25rem; /* w-5 */
+  height: 1.25rem; /* h-5 */
+  color: var(--win98-black);
+}
+
+/* ... rest of the styles ... */ 

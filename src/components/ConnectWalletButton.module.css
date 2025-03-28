@@ -1,0 +1,87 @@
+/* src/components/ConnectWalletButton.module.css */
+
+.connectButton {
+  padding: 0.25rem 0.75rem; /* px-3 py-1 */
+  background-color: var(--win98-gray);
+  border-width: 2px;
+  border-style: solid;
+  border-top-color: var(--win98-light-gray);
+  border-left-color: var(--win98-light-gray);
+  border-right-color: var(--win98-dark-gray);
+  border-bottom-color: var(--win98-dark-gray);
+  font-size: 0.875rem; /* text-sm */
+  line-height: 1.25rem; /* text-sm */
+  color: var(--win98-black);
+}
+
+.connectButton:active {
+  border-top-color: var(--win98-dark-gray);
+  border-left-color: var(--win98-dark-gray);
+  border-right-color: var(--win98-light-gray);
+  border-bottom-color: var(--win98-light-gray);
+  /* Optional: slightly inset look */
+  /* padding-top: 0.3rem; */
+  /* padding-left: 0.8rem; */
+}
+
+.buttonContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem; /* gap-2 */
+}
+
+.connectedInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem; /* space-x-2 */
+}
+
+.connectedText {
+  font-size: 0.875rem; /* text-sm */
+}
+
+/* New styles for dropdown */
+.connectContainer {
+  position: relative; /* Needed for absolute positioning of the dropdown */
+  display: inline-block; /* Or block, depending on layout needs */
+}
+
+.dropdown {
+  position: absolute;
+  top: 100%; /* Position below the button */
+  left: 0;
+  background-color: var(--win98-gray);
+  border-width: 2px;
+  border-style: solid;
+  border-top-color: var(--win98-dark-gray); /* Inset border look */
+  border-left-color: var(--win98-dark-gray);
+  border-right-color: var(--win98-light-gray);
+  border-bottom-color: var(--win98-light-gray);
+  z-index: 50; /* Ensure dropdown is above other content - Increased z-index */
+  min-width: 160px; /* Adjust as needed */
+  padding: 2px; /* Inner padding for the border effect */
+  box-shadow: 2px 2px 0px 0px var(--win98-dark-gray); /* Optional: subtle shadow */
+}
+
+.dropdownItem {
+  display: block;
+  width: 100%;
+  padding: 0.25rem 0.75rem; /* px-3 py-1 */
+  text-align: left;
+  background-color: var(--win98-gray);
+  border: 1px solid transparent; /* Consistent height, no default border */
+  color: var(--win98-black);
+  font-size: 0.875rem; /* text-sm */
+  cursor: pointer;
+}
+
+.dropdownItem:hover {
+  background-color: var(--win98-blue); /* Highlight color */
+  color: var(--win98-white);
+}
+
+.dropdownItem:disabled {
+  color: var(--win98-dark-gray);
+  cursor: not-allowed;
+  background-color: var(--win98-gray);
+} 
