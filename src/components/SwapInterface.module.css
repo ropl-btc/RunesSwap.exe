@@ -511,7 +511,6 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  /* margin-top: 1rem; */ /* Remove compensating margin */
 }
 
 .searchContainerRunesInfo {
@@ -520,42 +519,55 @@
 }
 
 .runesListContainer {
-  max-height: 200px; /* Limit height */
-  overflow-y: auto; /* Add scrollbar */
-  border: 1px inset var(--win98-dark-gray);
-  background-color: var(--win98-white);
-  padding: 0.25rem;
+  max-height: 200px; 
+  overflow-y: auto; 
+  /* Match .listboxOptions border */
+  border-width: 2px;
+  border-style: solid;
+  border-top-color: var(--win98-light-gray);
+  border-left-color: var(--win98-light-gray);
+  border-right-color: var(--win98-dark-gray);
+  border-bottom-color: var(--win98-dark-gray);
+  background-color: var(--win98-gray);
+  /* Match .listboxOptions padding */
+  /* padding: 2px; */ 
+  padding: 0.25rem 0; 
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0; 
 }
 
 .runeListItem {
-  padding: 0.25rem 0.5rem;
-  border: 1px solid transparent; /* For hover/selected state */
-  background: none;
+  /* Adjust padding to be similar to .listboxOption (without check space) */
+  /* padding: 0.25rem 0.5rem; */
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent; 
+  background-color: transparent;
   text-align: left;
   width: 100%;
   font-family: inherit;
   font-size: 0.875rem;
+  cursor: default; 
+  color: var(--win98-black);
 }
 
+/* Ensure hover state applies correctly */
 .runeListItem:hover {
-  background-color: var(--win98-highlight);
-  color: var(--win98-highlight-text);
+  background-color: var(--win98-highlight); 
+  color: var(--win98-highlight-text); 
 }
 
+/* Ensure selected state applies correctly */
 .runeListItemSelected {
-  background-color: var(--win98-highlight);
+  background-color: var(--win98-highlight); 
   color: var(--win98-highlight-text);
-  border: 1px dotted var(--win98-highlight-text); /* Indicate selection */
 }
 
 .runeDetailsContainer {
-  border: 1px inset var(--win98-dark-gray);
+  border: 2px inset var(--win98-dark-gray); /* Match container border style */
   padding: 0.5rem;
   background-color: var(--win98-white);
-  min-height: 100px; /* Give it some initial height */
+  min-height: 100px; 
 }
 
 .runeDetailsContainer h3 {
