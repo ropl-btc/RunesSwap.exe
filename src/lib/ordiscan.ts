@@ -1,7 +1,7 @@
-import { Ordiscan } from 'ordiscan';
-import type { Utxo as OrdiscanUtxo, RuneBalance as OrdiscanRuneBalance } from 'ordiscan'; // Import types from the package
+import type { RuneBalance as OrdiscanRuneBalance } from 'ordiscan'; // Remove unused import
 
-const ORDISCAN_API_BASE = 'https://api.ordiscan.com';
+// Commented out to avoid linter errors
+// const ORDISCAN_API_BASE = 'https://api.ordiscan.com';
 const API_KEY = process.env.NEXT_PUBLIC_ORDISCAN_API_KEY;
 
 if (!API_KEY) {
@@ -10,7 +10,8 @@ if (!API_KEY) {
 
 // Initialize Ordiscan client
 // We handle the missing API key check within each function to allow initialization
-const ordiscan = new Ordiscan(API_KEY || '');
+// Commented out to avoid linter errors - client initialization moved to API routes
+// const ordiscan = new Ordiscan(API_KEY || '');
 
 // Re-export the RuneBalance type from the SDK for consistency if needed elsewhere
 export type RuneBalance = OrdiscanRuneBalance;

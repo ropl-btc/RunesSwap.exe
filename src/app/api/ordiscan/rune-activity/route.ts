@@ -1,32 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Define local types matching the ones in the lib (or import from shared location)
-interface RunestoneMessage {
-  rune: string;
-  type: 'ETCH' | 'MINT' | 'TRANSFER';
-}
+// Commented out to avoid linter errors - might use later
+// interface RunestoneMessage {
+//   rune: string;
+//   type: 'ETCH' | 'MINT' | 'TRANSFER';
+// }
 
-interface RunicInput {
-  address: string;
-  rune: string | null;
-  rune_amount: string;
-}
+// Commented out to avoid linter errors - might use later
+// interface RunicInput {
+//   address: string;
+//   rune: string | null;
+//   rune_amount: string;
+// }
 
-interface RunicOutput {
-  address: string;
-  rune: string | null;
-  rune_amount: string;
-}
+// Commented out to avoid linter errors - might use later
+// interface RunicOutput {
+//   address: string;
+//   rune: string | null;
+//   rune_amount: string;
+// }
 
-interface RuneActivityEvent {
-  txid: string;
-  runestone_messages: RunestoneMessage[];
-  inputs: RunicInput[];
-  outputs: RunicOutput[];
-  timestamp: string; // ISO datetime string
-}
-
-const ORDISCAN_API_BASE = 'https://api.ordiscan.com';
+// Commented out to avoid linter errors
+// const ORDISCAN_API_BASE = 'https://api.ordiscan.com';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;

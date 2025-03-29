@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Fragment, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 // Import ONLY types from the library now
-import { type Rune as LibRune } from '@/lib/sats-terminal'; // Rename to avoid conflict if needed
+// import { type Rune as LibRune } from '@/lib/sats-terminal'; // Rename to avoid conflict if needed
 import {
   type RuneBalance as OrdiscanRuneBalance,
   type RuneInfo as OrdiscanRuneInfo,
@@ -60,7 +60,7 @@ const fetchRunesFromApi = async (query: string): Promise<Rune[]> => {
 };
 
 // Fetch Popular Collections from API
-const fetchPopularFromApi = async (): Promise<any[]> => { // Use 'any[]' or define a strict type based on API route
+const fetchPopularFromApi = async (): Promise<Record<string, unknown>[]> => { 
   const response = await fetch(`/api/sats-terminal/popular`);
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
@@ -70,7 +70,7 @@ const fetchPopularFromApi = async (): Promise<any[]> => { // Use 'any[]' or defi
 };
 
 // Fetch Quote from API
-const fetchQuoteFromApi = async (params: any): Promise<QuoteResponse> => {
+const fetchQuoteFromApi = async (params: Record<string, unknown>): Promise<QuoteResponse> => {
   const response = await fetch('/api/sats-terminal/quote', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -84,7 +84,7 @@ const fetchQuoteFromApi = async (params: any): Promise<QuoteResponse> => {
 };
 
 // Get PSBT from API
-const getPsbtFromApi = async (params: GetPSBTParams): Promise<any> => { // Define specific return type based on API route if possible
+const getPsbtFromApi = async (params: GetPSBTParams): Promise<Record<string, unknown>> => {
   const response = await fetch('/api/sats-terminal/psbt/create', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -98,7 +98,7 @@ const getPsbtFromApi = async (params: GetPSBTParams): Promise<any> => { // Defin
 };
 
 // Confirm PSBT via API
-const confirmPsbtViaApi = async (params: ConfirmPSBTParams): Promise<any> => { // Define specific return type based on API route if possible
+const confirmPsbtViaApi = async (params: ConfirmPSBTParams): Promise<Record<string, unknown>> => {
   const response = await fetch('/api/sats-terminal/psbt/confirm', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -109,7 +109,7 @@ const confirmPsbtViaApi = async (params: ConfirmPSBTParams): Promise<any> => { /
     // Handle specific status code for expired quote if needed
     if (response.status === 410) { 
        const error = new Error(data.details || data.error || 'Quote expired.');
-       (error as any).code = 'QUOTE_EXPIRED'; // Add custom code
+       ((error as unknown) as { code: string }).code = 'QUOTE_EXPIRED'; // Add custom code with proper type casting
        throw error;
     }
     throw new Error(data.details || data.error || `Network response was not ok: ${response.statusText}`);
@@ -209,16 +209,6 @@ interface Asset {
 
 // Define BTC as a selectable asset
 const BTC_ASSET: Asset = { id: 'BTC', name: 'BTC', imageURI: '/Bitcoin.svg', isBTC: true };
-
-// Define a type for the items returned by popularCollections API
-interface PopularCollectionItem {
-  rune?: string;
-  etching?: {
-    runeName?: string;
-  };
-  icon_content_url_data?: string;
-  imageURI?: string;
-}
 
 // Mock address for fetching quotes when disconnected
 const MOCK_ADDRESS = '34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo';
@@ -395,7 +385,8 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
     },
     enabled: activeTab === 'runesInfo' && !!debouncedSearchQuery, 
     staleTime: 1 * 60 * 1000, 
-    retry: (failureCount, error: unknown) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    retry: (failureCount, _error: unknown) => {
         // API client handles 404 by returning null, so no specific retry logic needed here for 404
         return failureCount < 3;
     },
@@ -460,10 +451,10 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
           console.warn("Popular collections response is not an array:", response);
           setPopularRunes([]);
         } else {
-          const mappedRunes: Asset[] = response.map((collection: any) => ({
-            id: collection?.rune || `unknown_${Math.random()}`,
-            name: collection?.etching?.runeName || collection?.rune || 'Unknown',
-            imageURI: collection?.icon_content_url_data || collection?.imageURI,
+          const mappedRunes: Asset[] = response.map((collection: Record<string, unknown>) => ({
+            id: collection?.rune as string || `unknown_${Math.random()}`,
+            name: ((collection?.etching as Record<string, unknown>)?.runeName as string) || collection?.rune as string || 'Unknown',
+            imageURI: collection?.icon_content_url_data as string || collection?.imageURI as string,
             isBTC: false,
           }));
           setPopularRunes(mappedRunes);
@@ -504,9 +495,9 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
         isBTC: false,
       }));
       setSearchResults(mappedResults); // Store as Asset[]
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`Error searching for ${type} assets via API:`, error);
-      setSearchError(error.message || 'Failed to search');
+      setSearchError(error instanceof Error ? error.message : 'Failed to search');
       setSearchResults([]); // Clear results on error
     } finally {
       setIsSearching(false);
@@ -627,7 +618,6 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
   // --- Quote & Price Calculation ---
 
   // Memoized quote fetching using API
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleFetchQuote = useCallback(() => {
     setQuoteExpired(false);
     const fetchQuoteAsync = async () => {
@@ -886,21 +876,31 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
       // *** Use API client function ***
       const confirmResult = await confirmPsbtViaApi(confirmParams); 
 
-      // TODO: Define a stricter type for confirmResult based on API response variations
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const finalTxId = (confirmResult as any)?.txid || (confirmResult as any)?.rbfProtection?.fundsPreparationTxId;
+      // Define a basic interface for expected response structure
+      interface SwapConfirmationResult {
+        txid?: string;
+        rbfProtection?: {
+          fundsPreparationTxId?: string;
+        };
+      }
+
+      // Use proper typing instead of 'any'
+      const finalTxId = (confirmResult as SwapConfirmationResult)?.txid || 
+                        (confirmResult as SwapConfirmationResult)?.rbfProtection?.fundsPreparationTxId;
       if (!finalTxId) {
           throw new Error(`Confirmation failed or transaction ID missing. Response: ${JSON.stringify(confirmResult)}`);
       }
       setTxId(finalTxId);
       setSwapStep('success');
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Swap failed via API:", error);
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred during the swap.";
 
       // Check for specific errors
-      if (errorMessage.includes("Quote expired. Please, fetch again.") || (error && typeof error === 'object' && (error as { code?: string }).code === 'ERR677K3')) {
+      if (errorMessage.includes("Quote expired. Please, fetch again.") || 
+          (error && typeof error === 'object' && 'code' in error && 
+           (error as { code?: string }).code === 'QUOTE_EXPIRED')) {
         // Quote expired error
         setQuoteExpired(true);
         setSwapError("Quote expired. Please fetch a new one."); // Set error message

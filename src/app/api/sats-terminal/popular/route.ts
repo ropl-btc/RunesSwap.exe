@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { SatsTerminal } from 'satsterminal-sdk';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
 
   // --- Server-side Initialization ---
   const apiKey = process.env.SATS_TERMINAL_API_KEY;

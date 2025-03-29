@@ -2,20 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SatsTerminal, type ConfirmPSBTParams, type RuneOrder } from 'satsterminal-sdk';
 
 // Basic validation helper
-function validateConfirmPsbtParams(params: any): params is ConfirmPSBTParams {
+function validateConfirmPsbtParams(params: unknown): params is ConfirmPSBTParams {
+  if (!params || typeof params !== 'object') return false;
+  const p = params as Record<string, unknown>;
+  
   return (
-    Array.isArray(params.orders) &&
-    typeof params.address === 'string' &&
-    typeof params.publicKey === 'string' &&
-    typeof params.paymentAddress === 'string' &&
-    typeof params.paymentPublicKey === 'string' &&
-    typeof params.signedPsbtBase64 === 'string' && // Main signed PSBT is required
-    typeof params.swapId === 'string' &&
-    typeof params.runeName === 'string' &&
-    (params.sell === undefined || typeof params.sell === 'boolean') &&
-    (params.rbfProtection === undefined || typeof params.rbfProtection === 'boolean') &&
+    Array.isArray(p.orders) &&
+    typeof p.address === 'string' &&
+    typeof p.publicKey === 'string' &&
+    typeof p.paymentAddress === 'string' &&
+    typeof p.paymentPublicKey === 'string' &&
+    typeof p.signedPsbtBase64 === 'string' && // Main signed PSBT is required
+    typeof p.swapId === 'string' &&
+    typeof p.runeName === 'string' &&
+    (p.sell === undefined || typeof p.sell === 'boolean') &&
+    (p.rbfProtection === undefined || typeof p.rbfProtection === 'boolean') &&
     // signedRbfPsbtBase64 is optional, only required if rbfProtection is true
-    (params.rbfProtection !== true || typeof params.signedRbfPsbtBase64 === 'string')
+    (p.rbfProtection !== true || typeof p.signedRbfPsbtBase64 === 'string')
   );
 }
 
@@ -23,7 +26,7 @@ export async function POST(request: NextRequest) {
   let params;
   try {
     params = await request.json();
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 

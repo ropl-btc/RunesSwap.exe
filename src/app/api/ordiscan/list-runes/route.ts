@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { Ordiscan } from 'ordiscan';
 
 // Define local RuneInfo type matching the one used elsewhere
@@ -21,7 +21,7 @@ interface RuneInfo {
   current_mint_count?: number;
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   // --- Server-side Initialization ---
   const apiKey = process.env.ORDISCAN_API_KEY;
   if (!apiKey) {

@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SatsTerminal, type QuoteParams } from 'satsterminal-sdk';
 
 // Helper function to validate parameters (basic example)
-function validateQuoteParams(params: any): params is Omit<QuoteParams, 'btcAmount'> & { btcAmount: string | number } {
+function validateQuoteParams(params: unknown): params is Omit<QuoteParams, 'btcAmount'> & { btcAmount: string | number } {
+  if (!params || typeof params !== 'object') return false;
+  const p = params as Record<string, unknown>;
+  
   return (
-    (typeof params.btcAmount === 'string' || typeof params.btcAmount === 'number') && // btcAmount is required and should be string/number
-    typeof params.runeName === 'string' &&
-    typeof params.address === 'string' &&
-    (params.sell === undefined || typeof params.sell === 'boolean')
+    (typeof p.btcAmount === 'string' || typeof p.btcAmount === 'number') && // btcAmount is required and should be string/number
+    typeof p.runeName === 'string' &&
+    typeof p.address === 'string' &&
+    (p.sell === undefined || typeof p.sell === 'boolean')
     // Add more checks as needed for marketplaces, rbfProtection etc.
   );
 }
@@ -16,7 +19,7 @@ export async function POST(request: NextRequest) {
   let params;
   try {
     params = await request.json();
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 

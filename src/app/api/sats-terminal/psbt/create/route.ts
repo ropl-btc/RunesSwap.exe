@@ -2,15 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SatsTerminal, type GetPSBTParams, type RuneOrder } from 'satsterminal-sdk';
 
 // Basic validation helper
-function validateGetPsbtParams(params: any): params is GetPSBTParams {
+function validateGetPsbtParams(params: unknown): params is GetPSBTParams {
+  if (!params || typeof params !== 'object') return false;
+  const p = params as Record<string, unknown>;
+  
   return (
-    Array.isArray(params.orders) &&
-    typeof params.address === 'string' &&
-    typeof params.publicKey === 'string' &&
-    typeof params.paymentAddress === 'string' &&
-    typeof params.paymentPublicKey === 'string' &&
-    typeof params.runeName === 'string' &&
-    (params.sell === undefined || typeof params.sell === 'boolean')
+    Array.isArray(p.orders) &&
+    typeof p.address === 'string' &&
+    typeof p.publicKey === 'string' &&
+    typeof p.paymentAddress === 'string' &&
+    typeof p.paymentPublicKey === 'string' &&
+    typeof p.runeName === 'string' &&
+    (p.sell === undefined || typeof p.sell === 'boolean')
     // Add more checks for optional fields if needed
   );
 }
@@ -19,7 +22,7 @@ export async function POST(request: NextRequest) {
   let params;
   try {
     params = await request.json();
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
