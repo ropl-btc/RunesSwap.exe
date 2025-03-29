@@ -16,8 +16,8 @@ A Bitcoin Runes swap platform built with Next.js, TypeScript, and SatsTerminal S
 - **Framework:** [Next.js](https://nextjs.org/)
 - **Language:** [TypeScript](https://www.typescriptlang.org/)
 - **Styling:** Regular CSS
-- **Swap Logic:** [SatsTerminal SDK](https://github.com/SatsTerminal/satsterminal-sdk)
-- **Wallet Connection:** [Laser Eyes](https://github.com/omnisat/lasereyes-js)
+- **Swap Logic:** [SatsTerminal SDK](https://www.npmjs.com/package/satsterminal-sdk?activeTab=readme)
+- **Wallet Connection:** [Laser Eyes](https://lasereyes.build/)
 - **Data Fetching & State:** [React Query (TanStack Query)](https://tanstack.com/query/latest) & [Zustand](https://github.com/pmndrs/zustand)
 - **Balance/UTXO Info:** [Ordiscan](https://ordiscan.com/docs)
 
@@ -80,4 +80,4 @@ Contributions are welcome! Please feel free to submit a pull request or open an 
 
 ## License
 
-[Specify your license here, e.g., MIT]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details (if one exists) or visit [https://opensource.org/licenses/MIT](https://opensource.org/licenses/MIT).
