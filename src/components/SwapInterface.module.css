@@ -13,6 +13,7 @@
   flex-direction: column;
   gap: 1rem; /* space-y-4 */
   min-height: 450px; /* Add minimum height */
+  width: 100%; /* Ensure container takes available width */
 }
 
 .title {
@@ -35,6 +36,7 @@
   border-top-color: var(--win98-dark-gray);
   background-color: var(--win98-white);
   /* margin-top: 1rem; */ /* Remove compensating margin */
+  min-width: 450px; /* Add minimum width on desktop */
 }
 
 .inputLabel {
@@ -535,10 +537,20 @@
   .container {
     padding: 0.5rem; /* Reduce padding on smaller screens */
     max-width: 100%; /* Allow container to take full width on mobile */
+    width: 100%;
+    margin-left: 0; /* Remove auto margins on mobile */
+    margin-right: 0;
   }
 
   .title {
     font-size: 1rem; /* text-base */
+  }
+  
+  .inputArea {
+    min-width: 100%; /* Override desktop min-width for mobile */
+    width: 100%; /* Ensure the input area takes full width on mobile */
+    margin-left: 0;
+    margin-right: 0;
   }
 }
 

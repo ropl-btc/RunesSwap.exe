@@ -3,7 +3,7 @@ description:
 globs: 
 alwaysApply: true
 ---
-We are building a Next.js application called 'RunesSwap.exe'. The goal is a Bitcoin Runes swap platform similar to Uniswap, but on Bitcoin and using a strict minimal Windows 98 UI theme. We will use TypeScript, regular CSS for styling, the SatsTerminal SDK for swap logic, and Laser Eyes for wallet connection. We'll also use Zustand for state management and React Query (TanStack Query) for server state/data fetching.
+We are building a Next.js application called 'RunesSwap.app'. The goal is a Bitcoin Runes swap platform similar to Uniswap, but on Bitcoin and using a strict minimal Windows 98 UI theme. We will use TypeScript, regular CSS for styling, the SatsTerminal SDK for swap logic, and Laser Eyes for wallet connection. We'll also use Zustand for state management and React Query (TanStack Query) for server state/data fetching.
 
 The app should be responsive for mobile and as lightweight as possible.
 

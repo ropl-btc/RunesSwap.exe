@@ -6,7 +6,7 @@ import Layout from "@/components/Layout";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "RunesSwap.exe",
+  title: "RunesSwap.app",
   description: "Bitcoin Runes Swap Platform",
 };
 

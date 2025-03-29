@@ -1,6 +1,6 @@
-# RunesSwap.exe
+# RunesSwap.app
 
-A Bitcoin Runes swap platform built with Next.js, TypeScript, and SatsTerminal SDK. RunesSwap.exe provides a Uniswap-like experience for the Bitcoin ecosystem, featuring a strict minimal Windows 98 UI theme.
+A Bitcoin Runes swap platform built with Next.js, TypeScript, and SatsTerminal SDK. RunesSwap.app provides a Uniswap-like experience for the Bitcoin ecosystem, featuring a strict minimal Windows 98 UI theme.
 
 ## Features
 
@@ -32,8 +32,8 @@ A Bitcoin Runes swap platform built with Next.js, TypeScript, and SatsTerminal S
 
 1.  Clone the repository:
     ```bash
-    git clone https://github.com/your-username/runesswap.exe.git
-    cd runesswap.exe
+    git clone https://github.com/your-username/runesswap.app.git
+    cd runesswap.app
     ```
 2.  Install dependencies:
     ```bash

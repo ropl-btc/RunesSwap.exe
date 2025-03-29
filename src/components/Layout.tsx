@@ -32,7 +32,7 @@ export function Layout({ children }: LayoutProps) {
       <div className={styles.window}>
         {/* Optional Title Bar */}
         <div className={styles.titleBar}>
-          <span>RunesSwap.exe</span>
+          <span>RunesSwap.app</span>
           {/* Placeholder for window controls maybe? */}
         </div>
         {/* Window Content Area */}
