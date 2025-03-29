@@ -1,11 +1,12 @@
 import localFont from 'next/font/local';
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import Layout from "@/components/Layout";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "RuneSwap98",
+  title: "RunesSwap.exe",
   description: "Bitcoin Runes Swap Platform",
 };
 
@@ -26,6 +27,7 @@ export default function RootLayout({
       <body>
         <Providers>
           <Layout>{children}</Layout>
+          <Analytics />
         </Providers>
       </body>
     </html>
