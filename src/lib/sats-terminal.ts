@@ -19,28 +19,37 @@ export interface Rune {
   price?: number;
 }
 
-export const searchRunes = async (query: string) => {
-  console.log(`Searching for runes with query: "${query}"`);
+// Simple internal type for expected order structure from search
+interface SearchOrder {
+  id?: string;
+  rune?: string;
+  etching?: { runeName?: string };
+  icon_content_url_data?: string;
+  imageURI?: string;
+  formattedAmount?: string;
+  formattedUnitPrice?: string;
+  price?: number;
+}
+
+export const searchRunes = async (query: string): Promise<Rune[]> => {
   try {
     const searchResults = await terminal.search({ 
       rune_name: query,
       sell: false // Set to true if you want to search for sell orders
     });
     
-    console.log("Search results raw:", JSON.stringify(searchResults, null, 2)); // Log raw search results
-    
     // Map the response to our Rune interface
-    // Adjusted mapping for name and image based on likely structure
-    // The structure of searchResults depends on the SatsTerminal API response
-    const orders: any[] = Array.isArray(searchResults) ? searchResults : 
-                  searchResults && typeof searchResults === 'object' && 'orders' in searchResults ? 
-                  (searchResults.orders as any[]) : 
+    // Determine if the result is an array or an object with an 'orders' property
+    const orders: SearchOrder[] = Array.isArray(searchResults) ? searchResults : 
+                  (searchResults && typeof searchResults === 'object' && 'orders' in searchResults && Array.isArray(searchResults.orders)) ? 
+                  (searchResults.orders as SearchOrder[]) : 
                   [];
     
-    return orders.map((order: any) => ({
-      id: order.id || order.rune, // Use rune ticker/id as unique key
-      name: order.etching?.runeName || order.rune, // Use formatted name, fallback to ticker
-      imageURI: order.icon_content_url_data || order.imageURI, // Use icon URL, fallback to imageURI
+    // Map safely, providing fallbacks
+    return orders.map((order: SearchOrder) => ({
+      id: order.id || order.rune || `unknown_rune_${Math.random()}`, // Ensure an ID exists
+      name: order.etching?.runeName || order.rune || 'Unknown Rune', // Prefer etching name, fallback to rune ticker
+      imageURI: order.icon_content_url_data || order.imageURI, // Prefer icon URL
       formattedAmount: order.formattedAmount,
       formattedUnitPrice: order.formattedUnitPrice,
       price: order.price
@@ -52,14 +61,12 @@ export const searchRunes = async (query: string) => {
 };
 
 export const fetchQuote = async (params: Omit<QuoteParams, 'btcAmount'> & { btcAmount: number | string }) => {
-  console.log("Fetching quote...", params);
   try {
     // Ensure btcAmount is passed as a string to the SDK
     const quote = await terminal.fetchQuote({
       ...params,
       btcAmount: String(params.btcAmount), // Convert to string
     });
-    console.log("Quote received:", quote);
     return quote;
   } catch (error) {
     console.error("Error fetching quote:", error);
@@ -68,10 +75,8 @@ export const fetchQuote = async (params: Omit<QuoteParams, 'btcAmount'> & { btcA
 };
 
 export const getPSBT = async (params: GetPSBTParams) => {
-  console.log("Getting PSBT...", params);
   try {
     const psbtData = await terminal.getPSBT(params);
-    console.log("PSBT data:", psbtData);
     return psbtData;
   } catch (error) {
     console.error("Error getting PSBT:", error);
@@ -80,10 +85,8 @@ export const getPSBT = async (params: GetPSBTParams) => {
 }
 
 export const confirmPSBT = async (params: ConfirmPSBTParams) => {
-  console.log("Confirming PSBT...", params);
   try {
     const confirmation = await terminal.confirmPSBT(params);
-    console.log("Confirmation result:", confirmation);
     return confirmation;
   } catch (error) {
     console.error("Error confirming PSBT:", error);
@@ -93,10 +96,8 @@ export const confirmPSBT = async (params: ConfirmPSBTParams) => {
 
 // Export popularCollections
 export const popularCollections = async (params: PopularCollectionsParams) => {
-  console.log("Fetching popular collections...");
   try {
     const collections = await terminal.popularCollections(params);
-    console.log("Popular collections received:", collections);
     return collections;
   } catch (error) {
     console.error("Error fetching popular collections:", error);

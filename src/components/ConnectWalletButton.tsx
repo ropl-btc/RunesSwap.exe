@@ -1,10 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useWalletStore } from '@/store/walletStore';
-// Import all wallet provider constants from LaserEyes
+// Import ONLY the types/constants needed
 import {
-  useLaserEyes,
   UNISAT,
   XVERSE,
   LEATHER,
@@ -14,8 +12,9 @@ import {
   ORANGE,
   PHANTOM,
   WIZZ,
-  type ProviderType, // Import the type for provider constants
+  type ProviderType, 
 } from '@omnisat/lasereyes';
+import { useSharedLaserEyes } from '@/context/LaserEyesContext'; // Import the shared hook
 import styles from './ConnectWalletButton.module.css'; // Import CSS module
 
 // Helper function to truncate address
@@ -41,6 +40,7 @@ export function ConnectWalletButton() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Use the shared hook
   const {
     connect,
     disconnect,
@@ -48,47 +48,22 @@ export function ConnectWalletButton() {
     isConnecting,
     address,
     provider,
-  } = useLaserEyes();
-
-  const { disconnectWallet: zustandDisconnect } = useWalletStore();
-
-  // Log state changes for debugging
-  useEffect(() => {
-    console.log('[ConnectWalletButton] State Update:', {
-      connected,
-      isConnecting,
-      address,
-      provider,
-    });
-  }, [connected, isConnecting, address, provider]);
-
-  console.log('[ConnectWalletButton] Rendering with state:', {
-    connected,
-    isConnecting,
-    address,
-    isDropdownOpen,
-  });
+  } = useSharedLaserEyes();
 
   const handleConnect = async (providerToConnect: ProviderType) => {
-    console.log(`[ConnectWalletButton] handleConnect called for: ${providerToConnect}`);
     setIsDropdownOpen(false);
     if (isConnecting) {
-      console.log('[ConnectWalletButton] Connection attempt blocked: already connecting.');
       return;
     }
     try {
-      console.log(`[ConnectWalletButton] Attempting to connect: ${providerToConnect}`);
       await connect(providerToConnect);
-      console.log(`[ConnectWalletButton] Connection successful for: ${providerToConnect}`);
     } catch (error) {
       console.error(`[ConnectWalletButton] Failed to connect ${providerToConnect} wallet:`, error);
     }
   };
 
   const handleDisconnect = () => {
-    console.log('[ConnectWalletButton] handleDisconnect called');
     disconnect();
-    zustandDisconnect();
   };
 
   const toggleDropdown = () => {
@@ -112,7 +87,6 @@ export function ConnectWalletButton() {
 
   // 1. Show connected info if connected.
   if (connected && address) {
-    console.log('[ConnectWalletButton] Rendering: Connected Info');
     const connectedWalletName = AVAILABLE_WALLETS.find(w => w.provider === provider)?.name || provider || 'Wallet';
     return (
       <div className={styles.connectedInfo}>
@@ -129,7 +103,6 @@ export function ConnectWalletButton() {
 
   // 2. Show loading button ONLY if actively connecting.
   if (isConnecting) {
-    console.log('[ConnectWalletButton] Rendering: Connecting Button');
     return (
       <button className={styles.connectButton} disabled>
         Connecting...
@@ -138,7 +111,6 @@ export function ConnectWalletButton() {
   }
 
   // 3. Show connect button and dropdown if not connected AND not connecting.
-  console.log('[ConnectWalletButton] Rendering: Connect Button with Dropdown');
   return (
     <div className={styles.connectContainer} ref={dropdownRef}>
       <button

@@ -19,7 +19,7 @@ import { ChevronUpDownIcon, CheckIcon, ArrowPathIcon } from '@heroicons/react/24
 import debounce from 'lodash.debounce';
 import styles from './SwapInterface.module.css';
 import { SatsTerminal, type QuoteResponse, type PSBTResponse, type RuneOrder } from 'satsterminal-sdk'; // Added RuneOrder
-import { useLaserEyes } from '@omnisat/lasereyes';
+import { useSharedLaserEyes } from '@/context/LaserEyesContext'; // Import the shared hook
 import { useDebounce } from 'use-debounce'; // Import useDebounce
 
 // CoinGecko API endpoint
@@ -95,6 +95,7 @@ interface SwapInterfaceProps {
 // --- Component --- 
 export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructure the prop
   // LaserEyes hook for wallet info and signing
+  // Use the shared hook
   const { 
     connected, 
     address, 
@@ -103,7 +104,18 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
     paymentPublicKey, 
     signPsbt, // Import signPsbt function
     address: connectedAddress
-  } = useLaserEyes();
+  } = useSharedLaserEyes();
+  
+  // TEMP: Provide dummy values to avoid breaking the component structure during test - REMOVED
+  /*
+  const connected = false;
+  const address = null;
+  const publicKey = null;
+  const paymentAddress = null;
+  const paymentPublicKey = null;
+  const signPsbt = async (psbt: string) => { console.warn('signPsbt called while useLaserEyes is commented out'); return { signedPsbtBase64: '' }; };
+  const connectedAddress = null;
+  */
 
   // State for input/output amounts
   const [inputAmount, setInputAmount] = useState('');
@@ -232,8 +244,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
         return result; 
       } catch (error: any) {
         if (error.message && error.message.includes('404')) {
-           console.log(`Rune not found via search: ${queryToSearch}`);
-           return null; 
+          return null; 
         } 
         console.error("Error searching rune info:", error);
         throw error; 
@@ -303,10 +314,8 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
       setPopularError(null);
       setPopularRunes([]); // Reset popular runes initially
       try {
-        console.log("Fetching popular runes...");
         // Use the imported lib function
         const response = await popularCollections({}); 
-        console.log("Raw popular collections response:", JSON.stringify(response, null, 2));
 
         // Check if response is an array
         if (!Array.isArray(response)) {
@@ -320,7 +329,6 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
             imageURI: collection.icon_content_url_data || collection.imageURI, // Extract image URL
             isBTC: false, // Mark as not BTC
           }));
-          console.log("Mapped popular runes:", mappedRunes);
           setPopularRunes(mappedRunes);
 
           // Set initial output asset if input is BTC and output is not set yet
@@ -486,7 +494,6 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
     setExchangeRate(null); // Clear previous rate
 
     const effectiveAddress = connectedAddress || MOCK_ADDRESS;
-    console.log(`Fetching quote: ${assetIn.name} -> ${assetOut.name} using address: ${effectiveAddress} (Connected: ${!!connectedAddress})`);
 
     try {
       // Determine parameters based on direction
@@ -500,11 +507,9 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
         // rbfProtection: false, // Optional: Add UI later
         // marketplaces: [], // Optional: Add UI later
       };
-      console.log("Quote params:", params);
 
       const quoteResponse = await fetchQuote(params);
       setQuote(quoteResponse);
-      console.log("Quote response:", quoteResponse);
 
       // --- Output Amount & Exchange Rate Update Logic ---
       let calculatedOutputAmount = '';
@@ -687,7 +692,6 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
     try {
       // 1. Get PSBT
       setSwapStep('getting_psbt');
-      console.log("Requesting PSBT...");
       // Ensure orders is typed correctly
       const orders: RuneOrder[] = quote.selectedOrders || [];
       const psbtResult = await getPSBT({
@@ -703,7 +707,6 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
         // rbfProtection: false, // Start without RBF
       });
       setPsbtData(psbtResult);
-      console.log("PSBT Received (Full Response):", JSON.stringify(psbtResult, null, 2));
 
       // Extract PSBT base64 and swap ID safely
       const psbtBase64 = (psbtResult as any)?.psbtBase64 || (psbtResult as any)?.psbt; // Check both common names
@@ -720,9 +723,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
 
       // 2. Sign PSBT(s)
       setSwapStep('signing');
-      console.log("Requesting signature for main PSBT...");
       const mainSigningResult = await signPsbt(psbtBase64);
-      console.log("Main Signing Result:", mainSigningResult);
       const signedMainPsbt = mainSigningResult?.signedPsbtBase64;
       if (!signedMainPsbt) {
           throw new Error("Main PSBT signing cancelled or failed.");
@@ -732,23 +733,15 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
       let signedRbfPsbt: string | null = null;
       // Check if RBF protection PSBT exists and needs signing
       if (rbfPsbtBase64) {
-          console.log("Requesting signature for RBF Protection PSBT...");
           const rbfSigningResult = await signPsbt(rbfPsbtBase64);
-          console.log("RBF Signing Result:", rbfSigningResult);
-          // Fix: Ensure signedRbfPsbt remains null if signing fails or returns undefined
           signedRbfPsbt = rbfSigningResult?.signedPsbtBase64 ?? null; 
           if (!signedRbfPsbt) {
-              // Decide if RBF signing failure should halt the process or just proceed without RBF confirmation
               console.warn("RBF PSBT signing cancelled or failed. Proceeding without RBF confirmation might be possible depending on API.");
-              // For now, let's throw an error to be safe, assuming RBF is intended if provided
-              // Commenting out the throw to allow proceeding without RBF confirm if signing fails
-              // throw new Error("RBF PSBT signing cancelled or failed.");
           }
       }
 
       // 3. Confirm PSBT
       setSwapStep('confirming');
-      console.log("Confirming signed PSBT...");
       const confirmParams = {
         orders: orders,
         address: address,
@@ -763,9 +756,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
         signedRbfPsbtBase64: signedRbfPsbt ?? undefined, // Pass undefined if null (matches SDK type)
         rbfProtection: !!signedRbfPsbt, // Indicate RBF is active if RBF PSBT was signed
       };
-      console.log("Confirm Params:", confirmParams);
       const confirmResult = await confirmPSBT(confirmParams);
-      console.log("Confirmation Result:", confirmResult);
 
       if (!confirmResult || !confirmResult.txid) {
         // Handle potential RBF-related txid structure
@@ -774,11 +765,8 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
             throw new Error(`Confirmation failed or transaction ID missing. Response: ${JSON.stringify(confirmResult)}`);
         }
         setTxId(finalTxId);
-        console.log(`Swap possibly successful (RBF? ${!!confirmResult.isRbfTxid})! Transaction ID: ${finalTxId}`);
-
       } else {
           setTxId(confirmResult.txid);
-          console.log(`Swap successful! Transaction ID: ${confirmResult.txid}`);
       }
 
       setSwapStep('success');

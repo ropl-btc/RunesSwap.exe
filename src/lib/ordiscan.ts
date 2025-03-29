@@ -28,10 +28,8 @@ export const getBtcBalance = async (address: string): Promise<number> => {
     throw new Error("Ordiscan API key is missing."); // Throw to indicate failure
   }
 
-  console.log(`[Ordiscan SDK] Fetching UTXOs for BTC balance: ${address}`);
   try {
     const utxos: OrdiscanUtxo[] = await ordiscan.address.getUtxos({ address });
-    console.log(`[Ordiscan SDK] Received UTXOs response:`, utxos);
 
     // Check if the response is an array
     if (!Array.isArray(utxos)) {
@@ -41,7 +39,6 @@ export const getBtcBalance = async (address: string): Promise<number> => {
 
     // Sum the value of all UTXOs, adding explicit types for reduce
     const totalBalance = utxos.reduce((sum: number, utxo: OrdiscanUtxo) => sum + (utxo.value || 0), 0);
-    console.log(`[Ordiscan SDK] Calculated total BTC balance (sats): ${totalBalance} for address ${address}`);
     return totalBalance;
   } catch (error) {
     console.error(`[Ordiscan SDK] Error fetching UTXOs for ${address}:`, error);
@@ -70,15 +67,12 @@ export const getRuneBalances = async (address: string): Promise<RuneBalance[]> =
     throw new Error("Ordiscan API key is missing."); // Throw to indicate failure
   }
 
-  console.log(`[Ordiscan SDK] Fetching Rune balances for: ${address}`);
   try {
     // Use ordiscan.address.getRunes based on API structure
     const balances: RuneBalance[] = await ordiscan.address.getRunes({ address });
-    console.log(`[Ordiscan SDK] Received Rune balances response:`, balances);
 
     // Check if the response is an array, otherwise return empty array
     const validBalances = Array.isArray(balances) ? balances : [];
-    console.log(`[Ordiscan SDK] Returning Rune balances:`, validBalances);
     return validBalances;
   } catch (error) {
     console.error(`[Ordiscan SDK] Error fetching Rune balances for ${address}:`, error);
@@ -126,11 +120,9 @@ export const getRuneInfo = async (name: string): Promise<RuneInfo | null> => {
   // Ensure name doesn't have spacers for the API call
   const formattedName = name.replace(/•/g, '');
 
-  console.log(`[Ordiscan SDK] Fetching info for rune: ${formattedName}`);
   try {
     // Assuming the method is getInfo and it returns an object matching our RuneInfo interface
     const info: RuneInfo = await ordiscan.rune.getInfo({ name: formattedName });
-    console.log(`[Ordiscan SDK] Received info for rune ${formattedName}:`, info);
     return info;
   } catch (error: any) {
     // Ordiscan might throw 404 as an error, check for that
@@ -162,13 +154,11 @@ export const getListRunes = async (): Promise<RuneInfo[]> => {
     throw new Error("Ordiscan API key is missing.");
   }
 
-  console.log(`[Ordiscan SDK] Fetching latest runes list...`);
   try {
     // Assuming the method is listRunes or similar based on GET /v1/runes
     // The Ordiscan SDK might return the RuneInfo structure directly here.
     // Need to confirm SDK method name. Let's try `list` under `rune`.
     const runes: RuneInfo[] = await ordiscan.rune.list({ sort: 'newest' }); // Fetch newest first
-    console.log(`[Ordiscan SDK] Received latest runes list:`, runes);
     return Array.isArray(runes) ? runes : [];
   } catch (error) {
     console.error(`[Ordiscan SDK] Error fetching latest runes list:`, error);
@@ -234,8 +224,6 @@ export const getAddressRuneActivity = async (
     url.searchParams.append('page', page.toString());
   }
 
-  console.log(`[Ordiscan API] Fetching rune activity for: ${address} (Page: ${page ?? 1}, Sort: ${sort})`);
-
   try {
     const response = await fetch(url.toString(), {
       headers: {
@@ -259,7 +247,6 @@ export const getAddressRuneActivity = async (
       return []; // Return empty array if data format is wrong
     }
 
-    console.log(`[Ordiscan API] Received rune activity:`, activityData);
     return activityData;
 
   } catch (error) {
