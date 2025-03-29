@@ -20,6 +20,8 @@ interface ILaserEyesContext {
     signedPsbtBase64?: string;
     txId?: string;
    } | undefined>;
+  // Wallet availability properties
+  hasUnisat?: boolean;
   // Add other properties/methods from LaserEyesData if needed later
 }
 
