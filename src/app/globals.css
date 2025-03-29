@@ -29,7 +29,7 @@ body {
 body {
   background-color: var(--win98-gray);
   color: var(--win98-black);
-  font-family: var(--font-primary);
+  font-family: var(--font-windows), Tahoma, Verdana, sans-serif;
   font-size: 12px; /* Typical Win98 font size */
 
   /* Optional: Disable anti-aliasing for sharper pixel look (can be inconsistent) */

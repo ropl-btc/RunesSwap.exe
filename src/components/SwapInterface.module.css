@@ -12,8 +12,6 @@
   display: flex;
   flex-direction: column;
   gap: 1rem; /* space-y-4 */
-  /* Apply Win98-style font */
-  font-family: Tahoma, Verdana, Arial, sans-serif;
   min-height: 450px; /* Add minimum height */
 }
 
@@ -677,7 +675,6 @@
   border-right-color: var(--win98-dark-gray);
   border-bottom-color: var(--win98-dark-gray);
   z-index: 10; /* Ensure it's above other content if needed */
-  font-family: Tahoma, Verdana, Arial, sans-serif; /* Ensure Win98 font */
   font-size: 0.875rem; /* text-sm */
   color: var(--win98-black);
   display: flex; /* Use flex to space content */

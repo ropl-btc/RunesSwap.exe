@@ -20,6 +20,7 @@ import styles from './SwapInterface.module.css';
 import { type QuoteResponse, type RuneOrder } from 'satsterminal-sdk'; // Keep only types
 import { useSharedLaserEyes } from '@/context/LaserEyesContext'; // Import the shared hook
 import { useDebounce } from 'use-debounce'; // Import useDebounce
+import { FormattedRuneAmount } from './FormattedRuneAmount';
 
 // CoinGecko API endpoint
 const COINGECKO_BTC_PRICE_URL = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd';
@@ -1195,7 +1196,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
             )}
             {!swapError && swapStep === 'success' && txId && (
               <div className={`${styles.successText} ${styles.messageWithIcon}`}>
-                   <img src="/icons/info-0.png" alt="Success" className={styles.messageIcon} />
+                   <img src="/icons/check-0.png" alt="Success" className={styles.messageIcon} />
                    <span>
                       Swap successful!
                       <a
@@ -1412,8 +1413,10 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
                                 <span className={styles.runeNameHighlight}>{runeName}</span>
                             </div>
                              <div className={styles.txDetailRow}> 
-                                <span>Amount (Raw):</span>
-                                <span>{runeAmountRaw}</span>
+                                <span>Amount:</span>
+                                <span>
+                                  <FormattedRuneAmount runeName={runeName} rawAmount={runeAmountRaw} />
+                                </span>
                             </div>
                           </>
                         );
