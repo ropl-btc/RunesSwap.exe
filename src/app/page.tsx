@@ -6,7 +6,7 @@ import { SwapInterface } from '@/components/SwapInterface';
 import styles from './page.module.css';
 
 // Define the tab type
-type ActiveTab = 'swap' | 'runesInfo';
+type ActiveTab = 'swap' | 'runesInfo' | 'yourTxs';
 
 export default function Home() {
   // State for the active tab
@@ -29,6 +29,12 @@ export default function Home() {
             onClick={() => setActiveTab('runesInfo')}
           >
             Runes Info
+          </button>
+          <button 
+            className={`${styles.pageTabButton} ${activeTab === 'yourTxs' ? styles.pageTabActive : ''}`}
+            onClick={() => setActiveTab('yourTxs')}
+          >
+            Your TXs
           </button>
         </div>
 

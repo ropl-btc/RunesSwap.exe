@@ -174,4 +174,96 @@ export const getListRunes = async (): Promise<RuneInfo[]> => {
     console.error(`[Ordiscan SDK] Error fetching latest runes list:`, error);
     throw error; // Re-throw for useQuery handling
   }
+};
+
+// --- New Types for Address Rune Activity ---
+export interface RunestoneMessage {
+  rune: string;
+  type: 'ETCH' | 'MINT' | 'TRANSFER';
+}
+
+interface RunicInput {
+  address: string;
+  output: string; // txid:vout
+  rune: string;
+  rune_amount: string;
+}
+
+interface RunicOutput {
+  address: string;
+  vout: number;
+  rune: string;
+  rune_amount: string;
+}
+
+export interface RuneActivityEvent {
+  txid: string;
+  runestone_messages: RunestoneMessage[];
+  inputs: RunicInput[];
+  outputs: RunicOutput[];
+  timestamp: string; // ISO datetime string
+}
+
+// --- New Function: Get Address Rune Activity ---
+
+/**
+ * Fetches all runic transaction activity for a specific Bitcoin address.
+ * Uses the Ordiscan API directly as the SDK might not support this yet.
+ * @param address - The Bitcoin address (usually Ordinals/Taproot address).
+ * @param page - Optional page number for pagination.
+ * @param sort - Optional sort order ('newest' or 'oldest').
+ * @returns An array of Rune activity events.
+ */
+export const getAddressRuneActivity = async (
+  address: string,
+  page?: number,
+  sort: 'newest' | 'oldest' = 'newest'
+): Promise<RuneActivityEvent[]> => {
+  if (!address) {
+    console.warn("[Ordiscan API] Address is required to fetch rune activity.");
+    return [];
+  }
+  if (!API_KEY) {
+    console.error("[Ordiscan API] API key is missing. Cannot fetch rune activity.");
+    throw new Error("Ordiscan API key is missing.");
+  }
+
+  const url = new URL(`${ORDISCAN_API_BASE}/v1/address/${address}/activity/runes`);
+  url.searchParams.append('sort', sort);
+  if (page) {
+    url.searchParams.append('page', page.toString());
+  }
+
+  console.log(`[Ordiscan API] Fetching rune activity for: ${address} (Page: ${page ?? 1}, Sort: ${sort})`);
+
+  try {
+    const response = await fetch(url.toString(), {
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error(`[Ordiscan API] Error fetching rune activity (${response.status}): ${errorBody}`);
+      throw new Error(`Failed to fetch rune activity: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    
+    // The data is nested under a 'data' key in the response example
+    const activityData: RuneActivityEvent[] = result?.data ?? [];
+
+    if (!Array.isArray(activityData)) {
+      console.warn(`[Ordiscan API] Unexpected response format for rune activity. Expected data array.`, result);
+      return []; // Return empty array if data format is wrong
+    }
+
+    console.log(`[Ordiscan API] Received rune activity:`, activityData);
+    return activityData;
+
+  } catch (error) {
+    console.error(`[Ordiscan API] Error fetching rune activity for ${address}:`, error);
+    throw error; // Re-throw for useQuery handling
+  }
 }; 

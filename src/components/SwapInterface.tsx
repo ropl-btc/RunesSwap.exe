@@ -3,7 +3,17 @@
 import React, { useState, useEffect, Fragment, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query'; // Import useQuery
 import { searchRunes, type Rune, fetchQuote, getPSBT, confirmPSBT, popularCollections } from '@/lib/sats-terminal'; // Added popularCollections
-import { getBtcBalance, getRuneBalances, getRuneInfo, getListRunes, type RuneBalance as OrdiscanRuneBalance, type RuneInfo as OrdiscanRuneInfo } from '@/lib/ordiscan'; // <-- Import Ordiscan functions
+import {
+  getBtcBalance,
+  getRuneBalances,
+  getRuneInfo,
+  getListRunes,
+  getAddressRuneActivity, // <-- Import new function
+  type RuneBalance as OrdiscanRuneBalance,
+  type RuneInfo as OrdiscanRuneInfo,
+  type RuneActivityEvent, // <-- Import new type
+  type RunestoneMessage, // <-- Import RunestoneMessage
+} from '@/lib/ordiscan'; // <-- Import Ordiscan functions
 import { Listbox, Transition } from '@headlessui/react';
 import { ChevronUpDownIcon, CheckIcon, ArrowPathIcon } from '@heroicons/react/24/solid'; // Added ArrowPathIcon
 import debounce from 'lodash.debounce';
@@ -78,7 +88,7 @@ function useDebounce<T>(value: T, delay: number): T {
 
 // --- Props Interface ---
 interface SwapInterfaceProps {
-  activeTab: 'swap' | 'runesInfo'; // Define the prop
+  activeTab: 'swap' | 'runesInfo' | 'yourTxs'; // Define the prop, add 'yourTxs'
 }
 // --- End Props --- 
 
@@ -252,6 +262,19 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
     staleTime: Infinity, 
   });
 
+  // --- NEW: Query for User's Rune Transaction Activity ---
+  const {
+      data: runeActivity,
+      isLoading: isRuneActivityLoading,
+      error: runeActivityError,
+      // Add pagination state/controls later if needed
+  } = useQuery<RuneActivityEvent[], Error>({
+      queryKey: ['runeActivity', address], // Use Ordinals address
+      queryFn: () => getAddressRuneActivity(address!), // Fetch page 1 by default
+      enabled: activeTab === 'yourTxs' && !!connected && !!address, // Only fetch when tab is active and connected
+      staleTime: 60 * 1000, // Stale after 1 minute
+      refetchInterval: 2 * 60 * 1000, // Refetch every 2 minutes
+  });
   // --- End Ordiscan Queries ---
 
   // Effect for loading dots animation
@@ -1021,7 +1044,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
                 onChange={(e) => setInputAmount(e.target.value)}
                 className={styles.amountInput}
                 min="0" // Prevent negative numbers
-                step="any" // Allow decimals
+                step="0.001" // Allow decimals, set increment step
               />
               {/* Asset Selector for Input - Pass assetOut as otherAsset */}
               {renderAssetSelector(
@@ -1102,25 +1125,8 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
           </div>
 
 
-          {/* Info Area */}
+          {/* Info Area - REMOVE BTC Price from here */}
           <div className={styles.infoArea}>
-            {/* BTC Price (CoinGecko) */}
-            <div className={styles.infoRow}>
-              <span>BTC Price:</span>
-              <span>
-                {isBtcPriceLoading
-                  ? loadingDots
-                  : btcPriceError
-                  ? 'Error'
-                  : btcPriceUsd
-                  ? btcPriceUsd.toLocaleString(undefined, {
-                      style: 'currency',
-                      currency: 'USD',
-                    })
-                  : 'N/A'}
-              </span>
-            </div>
-
             {/* Exchange Rate */}
             {assetIn && assetOut && ( // Show row if both assets are selected
               <div className={styles.infoRow}>
@@ -1172,12 +1178,12 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
                  <span>
                     Swap successful!
                     <a
-                        href={`https://mempool.space/tx/${txId}`}
+                        href={`https://ordiscan.com/tx/${txId}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className={styles.txLink}
                     >
-                        View on Mempool
+                        View on Ordiscan
                     </a>
                  </span>
             </div>
@@ -1256,7 +1262,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
                     <p><strong>ID:</strong> {detailedRuneInfo.id}</p>
                     <p><strong>Number:</strong> {detailedRuneInfo.number}</p>
                     <p><strong>Decimals:</strong> {detailedRuneInfo.decimals}</p>
-                    <p><strong>Etching Tx:</strong> {detailedRuneInfo.etching_txid ? <a href={`https://mempool.space/tx/${detailedRuneInfo.etching_txid}`} target="_blank" rel="noopener noreferrer" className={styles.txLink}>{detailedRuneInfo.etching_txid.substring(0,8)}...</a> : 'N/A'}</p>
+                    <p><strong>Etching Tx:</strong> {detailedRuneInfo.etching_txid ? <a href={`https://ordiscan.com/tx/${detailedRuneInfo.etching_txid}`} target="_blank" rel="noopener noreferrer" className={styles.txLink}>{detailedRuneInfo.etching_txid.substring(0,8)}...</a> : 'N/A'}</p>
                     {/* Add more details as needed */} 
                     <p><strong>Current Supply:</strong> {detailedRuneInfo.current_supply ? parseFloat(detailedRuneInfo.current_supply) / (10 ** detailedRuneInfo.decimals) : 'N/A'}</p>
                 </div>
@@ -1267,6 +1273,141 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
             )}
           </div>
         </div>
+      )}
+
+      {/* --- NEW: Your TXs Tab --- */} 
+      {activeTab === 'yourTxs' && (
+        <div className={styles.yourTxsTabContainer}>
+          <h2 className={styles.title}>Your Rune Transactions</h2>
+          {!connected || !address ? (
+            <p className={styles.hintText}>Connect your wallet to view your transactions.</p>
+          ) : isRuneActivityLoading ? (
+            <p className={styles.listboxLoadingOrEmpty}>Loading your transactions...</p>
+          ) : runeActivityError ? (
+            <p className={styles.listboxError}>Error loading transactions: {runeActivityError.message}</p>
+          ) : !runeActivity || runeActivity.length === 0 ? (
+            <p className={styles.hintText}>No recent rune transactions found for this address.</p>
+          ) : (
+            <div className={styles.txListContainer}> 
+              {runeActivity.map((tx) => (
+                <div key={tx.txid} className={styles.txListItem}>
+                  <div className={styles.txHeader}>
+                    <a 
+                      href={`https://ordiscan.com/tx/${tx.txid}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className={styles.txLinkBold}
+                    >
+                      TXID: {tx.txid.substring(0, 8)}...{tx.txid.substring(tx.txid.length - 8)}
+                    </a>
+                    <span className={styles.txTimestamp}>
+                      {new Date(tx.timestamp).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className={styles.txDetails}> 
+                    {/* --- Updated TX Details Logic --- */}
+                    {(() => {
+                       // Determine Action, Rune, and Amount
+                       let action = 'Unknown';
+                       let runeName = 'N/A';
+                       let runeAmountRaw = 'N/A';
+                       const userAddress = address; // Use the connected ordinals address
+
+                       // Prioritize MINT/ETCH from messages
+                       const mintEtchMessage = tx.runestone_messages.find(m => m.type === 'MINT' || m.type === 'ETCH');
+                       if (mintEtchMessage) {
+                          action = mintEtchMessage.type === 'MINT' ? 'Minted' : 'Etched';
+                          runeName = mintEtchMessage.rune;
+                          // Find amount received by user in outputs for mint/etch
+                          const userOutput = tx.outputs.find(o => o.address === userAddress && o.rune === runeName);
+                          runeAmountRaw = userOutput ? userOutput.rune_amount : 'N/A';
+                       } else {
+                          // Handle Transfers
+                          const userSent = tx.inputs.some(i => i.address === userAddress);
+                          const userReceived = tx.outputs.some(o => o.address === userAddress);
+
+                          if (userSent && !userReceived) {
+                              action = 'Sent';
+                              // Find rune/amount from input involving user
+                              const sentInput = tx.inputs.find(i => i.address === userAddress);
+                              if (sentInput) {
+                                  runeName = sentInput.rune;
+                                  runeAmountRaw = sentInput.rune_amount;
+                              }
+                          } else if (userReceived && !userSent) {
+                              action = 'Received';
+                              // Find rune/amount from output involving user
+                              const receivedOutput = tx.outputs.find(o => o.address === userAddress);
+                              if (receivedOutput) {
+                                  runeName = receivedOutput.rune;
+                                  runeAmountRaw = receivedOutput.rune_amount;
+                              }
+                          } else if (userSent && userReceived) {
+                              action = 'Transferred (Internal?)'; // E.g., sending to self
+                              // Try to find relevant rune/amount (might need refinement)
+                              const relevantRune = tx.runestone_messages[0]?.rune;
+                              const relevantOutput = tx.outputs.find(o => o.address === userAddress && o.rune === relevantRune);
+                              if (relevantOutput) {
+                                runeName = relevantOutput.rune;
+                                runeAmountRaw = relevantOutput.rune_amount;
+                              } else {
+                                const relevantInput = tx.inputs.find(i => i.address === userAddress && i.rune === relevantRune);
+                                if (relevantInput) {
+                                    runeName = relevantInput.rune;
+                                    runeAmountRaw = relevantInput.rune_amount;
+                                }
+                              }
+                          } else {
+                              action = 'Transfer (External)'; // Involved but not sender/receiver?
+                              runeName = tx.runestone_messages[0]?.rune || tx.inputs[0]?.rune || 'N/A';
+                              runeAmountRaw = 'N/A'; // Hard to determine amount if not direct in/out
+                          }
+                       }
+
+                      return (
+                        <>
+                          <div className={styles.txDetailRow}> 
+                              <span>Action:</span>
+                              <span style={{ fontWeight: 'bold' }}>{action}</span>
+                          </div>
+                           <div className={styles.txDetailRow}> 
+                              <span>Rune:</span>
+                              <span className={styles.runeNameHighlight}>{runeName}</span>
+                          </div>
+                           <div className={styles.txDetailRow}> 
+                              <span>Amount (Raw):</span>
+                              <span>{runeAmountRaw}</span>
+                          </div>
+                        </>
+                      );
+                    })()}
+                    {/* --- End Updated TX Details Logic --- */}
+                  </div>
+                </div>
+              ))}
+              {/* Add pagination controls here later */} 
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* BTC Price Footer */} 
+      {activeTab === 'swap' && (
+          <div className={styles.btcPriceFooter}>
+              <span>BTC Price:</span>
+              <span>
+                {isBtcPriceLoading
+                  ? loadingDots
+                  : btcPriceError
+                  ? 'Error'
+                  : btcPriceUsd
+                  ? btcPriceUsd.toLocaleString(undefined, {
+                      style: 'currency',
+                      currency: 'USD',
+                    })
+                  : 'N/A'}
+              </span>
+          </div>
       )}
     </div>
   );

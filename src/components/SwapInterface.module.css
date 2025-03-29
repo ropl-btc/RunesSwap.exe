@@ -469,9 +469,8 @@
 }
 
 .swapIcon {
-  width: 1.25rem; /* w-5 */
-  height: 1.25rem; /* h-5 */
-  color: var(--win98-black);
+  width: 1.5rem; /* h-6 */
+  height: 1.5rem; /* w-6 */
 }
 
 /* Mobile Responsiveness */
@@ -511,7 +510,73 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  white-space: nowrap;
 }
+
+/* --- Styles for Your TXs Tab --- */
+.yourTxsTabContainer {
+  /* Similar padding/spacing as other tabs */
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.txListContainer {
+  max-height: 350px; /* Or adjust as needed */
+  overflow-y: auto;
+  border: 1px solid var(--win98-dark-gray);
+  padding: 0.5rem;
+  background-color: var(--win98-white);
+  /* Win98 scrollbar styling (optional, complex) */
+}
+
+.txListItem {
+  border-bottom: 1px solid var(--win98-light-gray);
+  padding: 0.75rem 0.5rem;
+  font-size: 0.8rem; /* Smaller font for tx list */
+}
+
+.txListItem:last-child {
+  border-bottom: none;
+}
+
+.txHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.5rem;
+}
+
+.txLinkBold {
+  composes: txLink; /* Inherit base link styles */
+  font-weight: bold;
+  font-size: 0.85rem;
+}
+
+.txTimestamp {
+  color: var(--win98-dark-gray);
+  font-size: 0.75rem;
+}
+
+.txDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-left: 0.5rem; /* Indent details slightly */
+}
+
+.txDetailRow {
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Highlight rune names in tx details */
+.runeNameHighlight {
+  font-weight: bold;
+  color: var(--win98-blue); /* Or another distinct color */
+}
+
+/* --- End Your TXs Tab Styles --- */
 
 .searchContainerRunesInfo {
   /* Add specific styles if needed, otherwise it reuses general search styles */
@@ -597,5 +662,35 @@
   align-items: center;
   gap: 0.5rem;
 }
+
+/* --- New BTC Price Footer Styles --- */
+.btcPriceFooter {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.25rem 0.75rem; /* Smaller padding */
+  background-color: var(--win98-gray);
+  border: 2px solid;
+  border-top-color: var(--win98-light-gray);
+  border-left-color: var(--win98-light-gray);
+  border-right-color: var(--win98-dark-gray);
+  border-bottom-color: var(--win98-dark-gray);
+  z-index: 10; /* Ensure it's above other content if needed */
+  font-family: Tahoma, Verdana, Arial, sans-serif; /* Ensure Win98 font */
+  font-size: 0.875rem; /* text-sm */
+  color: var(--win98-black);
+  display: flex; /* Use flex to space content */
+  gap: 0.5rem; /* Space between "BTC Price:" and the value */
+  align-items: center;
+  /* Optional: Add a subtle shadow like buttons */
+  /* box-shadow: 2px 2px 0px 0px var(--win98-black); */
+}
+
+/* Ensure text within the footer looks okay - adjust if needed */
+.btcPriceFooter span {
+  /* No specific overrides needed for now */
+}
+/* --- End BTC Price Footer Styles --- */
 
 /* ... Rest of CSS ... */ 
