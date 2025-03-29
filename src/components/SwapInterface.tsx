@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   type RuneBalance as OrdiscanRuneBalance,
   type RuneInfo as OrdiscanRuneInfo,
+  type RuneMarketInfo as OrdiscanRuneMarketInfo,
   type RuneActivityEvent,
 } from '@/lib/ordiscan';
 import { Listbox, Transition } from '@headlessui/react';
@@ -155,6 +156,20 @@ const fetchRuneInfoFromApi = async (name: string): Promise<OrdiscanRuneInfo | nu
   return data; // Assuming the API returns OrdiscanRuneInfo or null
 };
 
+// Fetch Rune Market Info from API
+const fetchRuneMarketFromApi = async (name: string): Promise<OrdiscanRuneMarketInfo | null> => {
+  const formattedName = name.replace(/•/g, '');
+  const response = await fetch(`/api/ordiscan/rune-market?name=${encodeURIComponent(formattedName)}`);
+  if (response.status === 404) {
+    return null; // API returns null for 404
+  }
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.details || data.error || `Failed to fetch Rune market info: ${response.statusText}`);
+  }
+  return data;
+};
+
 // Fetch List Runes from API
 const fetchListRunesFromApi = async (): Promise<OrdiscanRuneInfo[]> => {
   const response = await fetch(`/api/ordiscan/list-runes`);
@@ -282,6 +297,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
   // State for calculated prices
   const [exchangeRate, setExchangeRate] = useState<string | null>(null);
   const [inputUsdValue, setInputUsdValue] = useState<string | null>(null);
+  const [outputUsdValue, setOutputUsdValue] = useState<string | null>(null);
 
   // State for swap process
   const [isSwapping, setIsSwapping] = useState(false);
@@ -402,6 +418,40 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
     queryFn: () => selectedRuneForInfo ? fetchRuneInfoFromApi(selectedRuneForInfo.name) : Promise.resolve(null), // Use API function
     enabled: activeTab === 'runesInfo' && !!selectedRuneForInfo, 
     staleTime: Infinity, 
+  });
+
+  // Query for Selected Rune Market Info
+  const {
+    data: runeMarketInfo,
+    isLoading: isRuneMarketInfoLoading,
+    error: runeMarketInfoError,
+  } = useQuery<OrdiscanRuneMarketInfo | null, Error>({
+    queryKey: ['runeMarketApi', selectedRuneForInfo?.name],
+    queryFn: () => selectedRuneForInfo ? fetchRuneMarketFromApi(selectedRuneForInfo.name) : Promise.resolve(null),
+    enabled: activeTab === 'runesInfo' && !!selectedRuneForInfo,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Query for Input Rune Market Info (for swap tab)
+  const {
+    data: inputRuneMarketInfo,
+    // Remove unused loading state
+  } = useQuery<OrdiscanRuneMarketInfo | null, Error>({
+    queryKey: ['runeMarketApi', assetIn?.name],
+    queryFn: () => assetIn && !assetIn.isBTC ? fetchRuneMarketFromApi(assetIn.name) : Promise.resolve(null),
+    enabled: activeTab === 'swap' && !!assetIn && !assetIn.isBTC,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+  
+  // Query for Output Rune Market Info (for swap tab)
+  const {
+    data: outputRuneMarketInfo,
+    // Remove unused loading state
+  } = useQuery<OrdiscanRuneMarketInfo | null, Error>({
+    queryKey: ['runeMarketApi', assetOut?.name],
+    queryFn: () => assetOut && !assetOut.isBTC ? fetchRuneMarketFromApi(assetOut.name) : Promise.resolve(null),
+    enabled: activeTab === 'swap' && !!assetOut && !assetOut.isBTC,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // --- NEW: Query for User's Rune Transaction Activity ---
@@ -547,6 +597,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
     setQuoteError(null);
     setExchangeRate(null);
     setInputUsdValue(null);
+    setOutputUsdValue(null);
     setQuoteExpired(false); // Reset quote expired state
   };
 
@@ -587,6 +638,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
     setQuoteError(null);
     setExchangeRate(null);
     setInputUsdValue(null);
+    setOutputUsdValue(null);
     setQuoteExpired(false); // Reset quote expired state
   };
 
@@ -607,6 +659,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
     setQuoteError(null);
     setExchangeRate(null);
     setInputUsdValue(null);
+    setOutputUsdValue(null);
     // Reset swap process state
     setIsSwapping(false);
     setSwapStep('idle');
@@ -715,6 +768,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
     fetchQuoteAsync();
   }, [assetIn, assetOut, inputAmount, connectedAddress, btcPriceUsd,
       setIsQuoteLoading, setQuote, setQuoteError, setExchangeRate, setOutputAmount
+      // Remove unnecessary dependencies: setInputUsdValue, setOutputUsdValue
   ]);
 
   // Effect to call the memoized fetchQuote when debounced amount or assets change
@@ -730,7 +784,8 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
       setQuoteError(null);
       setOutputAmount('');
       setExchangeRate(null);
-      setInputUsdValue(null); // Also reset USD value
+      setInputUsdValue(null);
+      setOutputUsdValue(null);
       setQuoteExpired(false); // Reset quote expired state here too
     }
   }, [debouncedInputAmount, assetIn, assetOut, handleFetchQuote]);
@@ -739,6 +794,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
   useEffect(() => {
     if (!inputAmount || !assetIn || isBtcPriceLoading || btcPriceError) {
         setInputUsdValue(null);
+        setOutputUsdValue(null);
         return;
     }
 
@@ -746,33 +802,59 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
       const amountNum = parseFloat(inputAmount);
       if (isNaN(amountNum) || amountNum <= 0) {
           setInputUsdValue(null);
+          setOutputUsdValue(null);
           return;
       }
 
-      let usdValue: number | null = null;
+      let inputUsdVal: number | null = null;
 
       if (assetIn.isBTC && btcPriceUsd) {
           // Input is BTC
-          usdValue = amountNum * btcPriceUsd;
+          inputUsdVal = amountNum * btcPriceUsd;
+      } else if (!assetIn.isBTC && inputRuneMarketInfo) {
+          // Input is Rune, use market info
+          inputUsdVal = amountNum * inputRuneMarketInfo.price_in_usd;
       } else if (!assetIn.isBTC && quote && quote.totalPrice && btcPriceUsd && !isQuoteLoading) {
-          // Input is Rune, use quote's BTC value
-          // This assumes quote.totalPrice is the BTC received for totalFormattedAmount runes
-          // when selling Rune -> BTC. This needs verification.
-           // Calculate BTC per rune from the quote
-           // If selling (input=rune): totalPrice is BTC received for totalFormattedAmount runes
-           // If buying (input=btc): totalPrice is BTC paid for totalFormattedAmount runes
-           const btcPerRune = (quote.totalPrice && quote.totalFormattedAmount && parseFloat(quote.totalFormattedAmount) > 0)
-               ? parseFloat(quote.totalPrice) / parseFloat(quote.totalFormattedAmount)
-               : 0;
+          // Fallback to quote calculation if market info not available
+          const btcPerRune = (quote.totalPrice && quote.totalFormattedAmount && parseFloat(quote.totalFormattedAmount) > 0)
+              ? parseFloat(quote.totalPrice) / parseFloat(quote.totalFormattedAmount)
+              : 0;
 
-           if (btcPerRune > 0) {
-                // Calculate USD value based on input rune amount and derived BTC price per rune
-                usdValue = amountNum * btcPerRune * btcPriceUsd;
-           }
+          if (btcPerRune > 0) {
+              inputUsdVal = amountNum * btcPerRune * btcPriceUsd;
+          }
       }
 
-      if (usdValue !== null && usdValue > 0) {
-        setInputUsdValue(usdValue.toLocaleString(undefined, {
+      // Calculate output USD value
+      let outputUsdVal: number | null = null;
+      if (outputAmount && assetOut) {
+        // Remove commas from outputAmount before parsing
+        const sanitizedOutputAmount = outputAmount.replace(/,/g, '');
+        const outputAmountNum = parseFloat(sanitizedOutputAmount);
+        
+        if (!isNaN(outputAmountNum) && outputAmountNum > 0) {
+          if (assetOut.isBTC && btcPriceUsd) {
+            // Output is BTC
+            outputUsdVal = outputAmountNum * btcPriceUsd;
+          } else if (!assetOut.isBTC && outputRuneMarketInfo) {
+            // Output is Rune, use market info
+            outputUsdVal = outputAmountNum * outputRuneMarketInfo.price_in_usd;
+          } else if (!assetOut.isBTC && quote && quote.totalPrice && btcPriceUsd && !isQuoteLoading) {
+            // Fallback to quote calculation if market info not available
+            const btcPerRune = (quote.totalPrice && quote.totalFormattedAmount && parseFloat(quote.totalFormattedAmount) > 0)
+                ? parseFloat(quote.totalPrice) / parseFloat(quote.totalFormattedAmount)
+                : 0;
+
+            if (btcPerRune > 0) {
+                outputUsdVal = outputAmountNum * btcPerRune * btcPriceUsd;
+            }
+          }
+        }
+      }
+
+      // Format and set input USD value
+      if (inputUsdVal !== null && inputUsdVal > 0) {
+        setInputUsdValue(inputUsdVal.toLocaleString(undefined, {
           style: 'currency',
           currency: 'USD',
           minimumFractionDigits: 2,
@@ -781,12 +863,25 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
       } else {
         setInputUsdValue(null);
       }
+
+      // Format and set output USD value
+      if (outputUsdVal !== null && outputUsdVal > 0) {
+        setOutputUsdValue(outputUsdVal.toLocaleString(undefined, {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }));
+      } else {
+        setOutputUsdValue(null);
+      }
     } catch (e) {
-      console.error("Failed to calculate input USD value:", e);
+      console.error("Failed to calculate USD values:", e);
       setInputUsdValue(null);
+      setOutputUsdValue(null);
     }
-  // Add quote, isQuoteLoading as dependencies
-  }, [inputAmount, assetIn, btcPriceUsd, isBtcPriceLoading, btcPriceError, quote, isQuoteLoading]);
+  }, [inputAmount, outputAmount, assetIn, assetOut, btcPriceUsd, isBtcPriceLoading, btcPriceError, 
+      quote, isQuoteLoading, inputRuneMarketInfo, outputRuneMarketInfo]);
 
 
   // Reset swap state when inputs/wallet change significantly
@@ -1242,8 +1337,8 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
                    handleSearchChange
                 )}
               </div>
-              {inputUsdValue && !isQuoteLoading && (
-                <div className={styles.usdValueText}>≈ {inputUsdValue}</div>
+              {outputUsdValue && !isQuoteLoading && (
+                <div className={styles.usdValueText}>≈ {outputUsdValue}</div>
               )}
               {quoteError && !isQuoteLoading && (
                  <div className={`${styles.quoteErrorText} ${styles.messageWithIcon}`}>
@@ -1416,6 +1511,19 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
                           : 'N/A'
                         }
                       </p>
+                      {/* Price Information */}
+                      {runeMarketInfo && (
+                        <>
+                          <p><strong>Price:</strong> <span className={styles.priceHighlight}>{runeMarketInfo.price_in_usd.toFixed(6)} USD</span> ({runeMarketInfo.price_in_sats.toFixed(2)} sats)</p>
+                          <p><strong>Market Cap:</strong> {runeMarketInfo.market_cap_in_usd.toLocaleString()} USD</p>
+                        </>
+                      )}
+                      {isRuneMarketInfoLoading && (
+                        <p><strong>Price:</strong> Loading...</p>
+                      )}
+                      {runeMarketInfoError && (
+                        <p><strong>Price:</strong> Not available</p>
+                      )}
                       <p><strong>Premined Supply:</strong> 
                          <FormattedRuneAmount 
                             runeName={detailedRuneInfo.name} 

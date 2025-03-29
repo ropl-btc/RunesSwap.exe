@@ -37,6 +37,14 @@ export interface RuneInfo {
   // Add other fields from docs if needed
 }
 
+// Define market info type based on Ordiscan docs for GET /v1/rune/{name}/market
+export interface RuneMarketInfo {
+  price_in_sats: number;
+  price_in_usd: number;
+  market_cap_in_btc: number;
+  market_cap_in_usd: number;
+}
+
 // --- New Types for Address Rune Activity ---
 export interface RunestoneMessage {
   rune: string;

@@ -13,3 +13,9 @@ Always reference the docs if you are working on something that is touching it.
 Sats Terminal: All the swapping logic
 Laser Eyes: Wallet Connection logic
 Ordiscan: Balance, UTXOs, etc.
+
+If we run into an error and we need multiple attempts to fix it, add logs to the console, and let me know what i should search for in the console, so i can give you the error logs and you can fix it. once we have fixed the bug successfully, remove the logs again.
+
+after big changes, run pnpm build to see if you caused anything to break.
+
+if you run npm run dev or pnpm dev, check if there is already a localhost running. if yes, shut it down first so we are always on localhost:3000.
