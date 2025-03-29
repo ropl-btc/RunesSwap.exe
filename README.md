@@ -1,8 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RunesSwap.exe
+
+A Bitcoin Runes swap platform built with Next.js, TypeScript, and SatsTerminal SDK. RunesSwap.exe provides a Uniswap-like experience for the Bitcoin ecosystem, featuring a strict minimal Windows 98 UI theme.
+
+## Features
+
+- Swap Bitcoin Runes seamlessly.
+- Connect your wallet using Laser Eyes.
+- View balances and UTXOs via Ordiscan integration.
+- Responsive design for mobile devices.
+- Lightweight and performant.
+- Minimalist Windows 98 UI theme.
+
+## Tech Stack
+
+- **Framework:** [Next.js](https://nextjs.org/)
+- **Language:** [TypeScript](https://www.typescriptlang.org/)
+- **Styling:** Regular CSS
+- **Swap Logic:** [SatsTerminal SDK](https://github.com/SatsTerminal/satsterminal-sdk)
+- **Wallet Connection:** [Laser Eyes](https://github.com/omnisat/lasereyes-js)
+- **Data Fetching & State:** [React Query (TanStack Query)](https://tanstack.com/query/latest) & [Zustand](https://github.com/pmndrs/zustand)
+- **Balance/UTXO Info:** [Ordiscan](https://ordiscan.com/docs)
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js (v18 or later recommended)
+- npm, yarn, pnpm, or bun
+
+### Installation
+
+1.  Clone the repository:
+    ```bash
+    git clone https://github.com/your-username/runesswap.exe.git
+    cd runesswap.exe
+    ```
+2.  Install dependencies:
+    ```bash
+    npm install
+    # or
+    yarn install
+    # or
+    pnpm install
+    # or
+    bun install
+    ```
+
+### Running the Development Server
 
 ```bash
 npm run dev
@@ -14,23 +58,26 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Building for Production
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+```
 
-## Learn More
+This command builds the application for production usage.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
+## Deployment
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Check out the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details on other deployment options.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a pull request or open an issue.
+
+## License
+
+[Specify your license here, e.g., MIT]
