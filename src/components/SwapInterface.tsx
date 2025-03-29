@@ -1,25 +1,22 @@
 'use client';
 
 import React, { useState, useEffect, Fragment, useCallback, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query'; // Import useQuery
-import { searchRunes, type Rune, fetchQuote, getPSBT, confirmPSBT, popularCollections } from '@/lib/sats-terminal'; // Added popularCollections
+import { useQuery } from '@tanstack/react-query';
+// Import ONLY types from the library now
+import { type Rune as LibRune } from '@/lib/sats-terminal'; // Rename to avoid conflict if needed
 import {
-  getBtcBalance,
-  getRuneBalances,
-  getRuneInfo,
-  getListRunes,
-  getAddressRuneActivity, // <-- Import new function
   type RuneBalance as OrdiscanRuneBalance,
   type RuneInfo as OrdiscanRuneInfo,
-  type RuneActivityEvent, // <-- Import new type
-} from '@/lib/ordiscan'; // <-- Import Ordiscan functions
+  type RuneActivityEvent,
+} from '@/lib/ordiscan';
 import { Listbox, Transition } from '@headlessui/react';
-import { ChevronUpDownIcon, CheckIcon, ArrowPathIcon } from '@heroicons/react/24/solid'; // Added ArrowPathIcon
+import { ChevronUpDownIcon, CheckIcon, ArrowPathIcon } from '@heroicons/react/24/solid';
 import debounce from 'lodash.debounce';
 import styles from './SwapInterface.module.css';
-import { type QuoteResponse, type RuneOrder } from 'satsterminal-sdk'; // Keep only types
-import { useSharedLaserEyes } from '@/context/LaserEyesContext'; // Import the shared hook
-import { useDebounce } from 'use-debounce'; // Import useDebounce
+// Import ONLY types from the SDK
+import { type QuoteResponse, type RuneOrder, type GetPSBTParams, type ConfirmPSBTParams } from 'satsterminal-sdk'; 
+import { useSharedLaserEyes } from '@/context/LaserEyesContext';
+import { useDebounce } from 'use-debounce';
 import { FormattedRuneAmount } from './FormattedRuneAmount';
 
 // CoinGecko API endpoint
@@ -38,94 +35,240 @@ const getBtcPrice = async (): Promise<number> => {
   return data.bitcoin.usd;
 };
 
-// Initialize terminal - No longer needed here if using lib functions
-// const apiKey = process.env.NEXT_PUBLIC_SATS_TERMINAL_API_KEY;
-// if (!apiKey) {
-//   console.warn("SatsTerminal API key not found. Please set NEXT_PUBLIC_SATS_TERMINAL_API_KEY environment variable.");
-// }
-// const terminal = new SatsTerminal({ apiKey: apiKey || '' });
+// Define local Rune type matching the API response structure
+// This aligns with the type defined in the search API route
+interface Rune {
+  id: string;
+  name: string;
+  imageURI?: string;
+  formattedAmount?: string;
+  formattedUnitPrice?: string;
+  price?: number;
+}
+
+// --- API Client Functions --- 
+
+// Fetch Runes search results from API
+const fetchRunesFromApi = async (query: string): Promise<Rune[]> => {
+  if (!query) return [];
+  const response = await fetch(`/api/sats-terminal/search?query=${encodeURIComponent(query)}`);
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `Network response was not ok: ${response.statusText}`);
+  }
+  return response.json();
+};
+
+// Fetch Popular Collections from API
+const fetchPopularFromApi = async (): Promise<any[]> => { // Use 'any[]' or define a strict type based on API route
+  const response = await fetch(`/api/sats-terminal/popular`);
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `Network response was not ok: ${response.statusText}`);
+  }
+  return response.json();
+};
+
+// Fetch Quote from API
+const fetchQuoteFromApi = async (params: any): Promise<QuoteResponse> => {
+  const response = await fetch('/api/sats-terminal/quote', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.details || data.error || `Network response was not ok: ${response.statusText}`);
+  }
+  return data;
+};
+
+// Get PSBT from API
+const getPsbtFromApi = async (params: GetPSBTParams): Promise<any> => { // Define specific return type based on API route if possible
+  const response = await fetch('/api/sats-terminal/psbt/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.details || data.error || `Network response was not ok: ${response.statusText}`);
+  }
+  return data;
+};
+
+// Confirm PSBT via API
+const confirmPsbtViaApi = async (params: ConfirmPSBTParams): Promise<any> => { // Define specific return type based on API route if possible
+  const response = await fetch('/api/sats-terminal/psbt/confirm', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    // Handle specific status code for expired quote if needed
+    if (response.status === 410) { 
+       const error = new Error(data.details || data.error || 'Quote expired.');
+       (error as any).code = 'QUOTE_EXPIRED'; // Add custom code
+       throw error;
+    }
+    throw new Error(data.details || data.error || `Network response was not ok: ${response.statusText}`);
+  }
+  return data;
+};
+
+// --- End API Client Functions ---
+
+// --- NEW Ordiscan API Client Functions ---
+
+// Fetch BTC Balance from API
+const fetchBtcBalanceFromApi = async (address: string): Promise<number> => {
+  const response = await fetch(`/api/ordiscan/btc-balance?address=${encodeURIComponent(address)}`);
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.details || data.error || `Failed to fetch BTC balance: ${response.statusText}`);
+  }
+  return data.balance; // Assuming the API returns { balance: number }
+};
+
+// Fetch Rune Balances from API
+const fetchRuneBalancesFromApi = async (address: string): Promise<OrdiscanRuneBalance[]> => {
+  const response = await fetch(`/api/ordiscan/rune-balances?address=${encodeURIComponent(address)}`);
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.details || data.error || `Failed to fetch Rune balances: ${response.statusText}`);
+  }
+  return data; // Assuming the API returns OrdiscanRuneBalance[]
+};
+
+// Fetch Rune Info from API
+const fetchRuneInfoFromApi = async (name: string): Promise<OrdiscanRuneInfo | null> => {
+  const formattedName = name.replace(/•/g, '');
+  const response = await fetch(`/api/ordiscan/rune-info?name=${encodeURIComponent(formattedName)}`);
+  if (response.status === 404) {
+    return null; // API returns null for 404
+  }
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.details || data.error || `Failed to fetch Rune info: ${response.statusText}`);
+  }
+  return data; // Assuming the API returns OrdiscanRuneInfo or null
+};
+
+// Fetch List Runes from API
+const fetchListRunesFromApi = async (): Promise<OrdiscanRuneInfo[]> => {
+  const response = await fetch(`/api/ordiscan/list-runes`);
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.details || data.error || `Failed to fetch runes list: ${response.statusText}`);
+  }
+  return data; // Assuming the API returns OrdiscanRuneInfo[]
+};
+
+// Fetch Rune Activity from API
+const fetchRuneActivityFromApi = async (address: string): Promise<RuneActivityEvent[]> => {
+  // console.log(`[Client] Fetching rune activity for: ${address}`); // Removed log
+  const response = await fetch(`/api/ordiscan/rune-activity?address=${encodeURIComponent(address)}`);
+  // console.log(`[Client] API Response Status: ${response.status}`); // Removed log
+
+  let data;
+  try {
+    data = await response.json();
+    // console.log("[Client] Parsed API Response Body:", data); // Removed log
+  } catch (e) {
+    console.error("[Client] Failed to parse API response as JSON:", e); // Keep client error log
+    if (!response.ok) {
+       throw new Error(`Failed to fetch rune activity: Server responded with status ${response.status}`);
+    }
+    throw new Error("Failed to parse successful API response.");
+  }
+
+  if (!response.ok) {
+    console.error("[Client] API returned error:", data); // Keep client error log
+    throw new Error(data?.details || data?.error || `Failed to fetch rune activity: ${response.statusText}`);
+  }
+
+  if (!Array.isArray(data)) {
+    console.error("[Client] API response was OK, but data is not an array:", data); // Keep client error log
+    throw new Error("Received unexpected data format from API.");
+  }
+
+  // console.log(`[Client] Successfully fetched rune activity: ${data.length} items`); // Removed log
+  return data; 
+};
+
+// --- End API Client Functions ---
 
 // Define Asset type including BTC
 interface Asset {
-  id: string; // Use ticker/name for runes, 'BTC' for Bitcoin
+  id: string;
   name: string;
   imageURI?: string;
-  isBTC?: boolean; // Flag to identify BTC
+  isBTC?: boolean;
 }
 
 // Define BTC as a selectable asset
 const BTC_ASSET: Asset = { id: 'BTC', name: 'BTC', imageURI: '/Bitcoin.svg', isBTC: true };
 
 // Define a type for the items returned by popularCollections API
-// Note: Adjust this based on the actual API response structure
 interface PopularCollectionItem {
   rune?: string;
   etching?: {
     runeName?: string;
   };
-  icon_content_url_data?: string; // Or imageURI, adjust as needed
-  imageURI?: string; // Add this if it can also be imageURI
-  // Add other potential fields if known
+  icon_content_url_data?: string;
+  imageURI?: string;
 }
 
 // Mock address for fetching quotes when disconnected
 const MOCK_ADDRESS = '34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo';
 
-// --- Remove Local Helper Hook --- 
-/*
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-  return debouncedValue;
-}
-*/
-// --- End Removed Helper Hook ---
-
-// --- Types ---
-// ... Asset type ...
-// type ActiveTab = 'swap' | 'runesInfo'; // REMOVE this type definition
-
 // --- Props Interface ---
 interface SwapInterfaceProps {
-  activeTab: 'swap' | 'runesInfo' | 'yourTxs'; // Define the prop, add 'yourTxs'
+  activeTab: 'swap' | 'runesInfo' | 'yourTxs';
 }
 // --- End Props --- 
 
-// --- Component --- 
-export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructure the prop
+// --- Helper Functions ---
+
+// Function to truncate TXIDs for display
+const truncateTxid = (txid: string, length: number = 8): string => {
+  if (!txid) return '';
+  if (txid.length <= length * 2 + 3) return txid;
+  return `${txid.substring(0, length)}...${txid.substring(txid.length - length)}`;
+};
+
+// Function to format large number strings with commas
+const formatNumberString = (numStr: string | null | undefined): string => {
+  if (numStr === null || numStr === undefined || numStr === '') return 'N/A';
+  try {
+    // Use BigInt for potentially very large supply/cap numbers
+    const num = BigInt(numStr);
+    return num.toLocaleString();
+  } catch (error) {
+    console.error("Error formatting number string:", numStr, error);
+    return numStr; // Return original string if formatting fails
+  }
+};
+
+// --- End Helper Functions ---
+
+// --- Component ---
+export function SwapInterface({ activeTab }: SwapInterfaceProps) {
   // LaserEyes hook for wallet info and signing
-  // Use the shared hook
   const { 
     connected, 
     address, 
     publicKey, 
     paymentAddress, 
     paymentPublicKey, 
-    signPsbt, // Import signPsbt function
+    signPsbt,
     address: connectedAddress
   } = useSharedLaserEyes();
-  
-  // TEMP: Provide dummy values to avoid breaking the component structure during test - REMOVED
-  /*
-  const connected = false;
-  const address = null;
-  const publicKey = null;
-  const paymentAddress = null;
-  const paymentPublicKey = null;
-  const signPsbt = async (psbt: string) => { console.warn('signPsbt called while useLaserEyes is commented out'); return { signedPsbtBase64: '' }; };
-  const connectedAddress = null;
-  */
 
   // State for input/output amounts
   const [inputAmount, setInputAmount] = useState('');
-  const [outputAmount, setOutputAmount] = useState(''); // Output is now calculated/read-only
+  const [outputAmount, setOutputAmount] = useState('');
 
   // State for selected assets
   const [assetIn, setAssetIn] = useState<Asset>(BTC_ASSET);
@@ -135,8 +278,8 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [isPopularLoading, setIsPopularLoading] = useState(true);
-  const [popularRunes, setPopularRunes] = useState<Asset[]>([]); // Use Asset type
-  const [searchResults, setSearchResults] = useState<Asset[]>([]); // Use Asset type
+  const [popularRunes, setPopularRunes] = useState<Asset[]>([]);
+  const [searchResults, setSearchResults] = useState<Asset[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [popularError, setPopularError] = useState<string | null>(null);
 
@@ -144,11 +287,11 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
   const [isQuoteLoading, setIsQuoteLoading] = useState(false);
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
-  const [quoteExpired, setQuoteExpired] = useState(false); // <-- Add state for expired quote
+  const [quoteExpired, setQuoteExpired] = useState(false);
 
   // State for calculated prices
-  const [exchangeRate, setExchangeRate] = useState<string | null>(null); // e.g., "1 BTC = 1,000,000 DOG" or "1 DOG = 0.000001 BTC"
-  const [inputUsdValue, setInputUsdValue] = useState<string | null>(null); // USD value of the input amount
+  const [exchangeRate, setExchangeRate] = useState<string | null>(null);
+  const [inputUsdValue, setInputUsdValue] = useState<string | null>(null);
 
   // State for swap process
   const [isSwapping, setIsSwapping] = useState(false);
@@ -186,7 +329,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
     error: btcBalanceError,
   } = useQuery<number, Error>({
     queryKey: ['btcBalance', paymentAddress], // Include address in key
-    queryFn: () => getBtcBalance(paymentAddress!), // Use non-null assertion, handled by enabled
+    queryFn: () => fetchBtcBalanceFromApi(paymentAddress!), // Use API function
     enabled: !!connected && !!paymentAddress, // Only run query if connected and address exists
     staleTime: 30000, // Consider balance stale after 30 seconds
     refetchInterval: 60000, // Refetch every 60 seconds
@@ -197,8 +340,8 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
     isLoading: isRuneBalancesLoading,
     error: runeBalancesError,
   } = useQuery<OrdiscanRuneBalance[], Error>({
-    queryKey: ['runeBalances', address], // Include address in key
-    queryFn: () => getRuneBalances(address!), // Use non-null assertion, handled by enabled
+    queryKey: ['runeBalancesApi', address],
+    queryFn: () => fetchRuneBalancesFromApi(address!), // Use API function
     enabled: !!connected && !!address, // Only run query if connected and address exists
     staleTime: 30000, // Consider balances stale after 30 seconds
     refetchInterval: 60000, // Refetch every 60 seconds
@@ -210,8 +353,8 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
     isLoading: isSwapRuneInfoLoading,
     error: swapRuneInfoError,
   } = useQuery<OrdiscanRuneInfo | null, Error>({
-    queryKey: ['runeInfo', assetIn?.name?.replace(/•/g, '')],
-    queryFn: () => assetIn && !assetIn.isBTC && assetIn.name ? getRuneInfo(assetIn.name) : Promise.resolve(null),
+    queryKey: ['runeInfoApi', assetIn?.name?.replace(/•/g, '')],
+    queryFn: () => assetIn && !assetIn.isBTC && assetIn.name ? fetchRuneInfoFromApi(assetIn.name) : Promise.resolve(null), // Use API function
     enabled: activeTab === 'swap' && !!assetIn && !assetIn.isBTC && !!assetIn.name, // Use prop here
     staleTime: Infinity,
   });
@@ -222,8 +365,8 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
     isLoading: isRunesListLoading,
     error: runesListError,
   } = useQuery<OrdiscanRuneInfo[], Error>({
-    queryKey: ['runesList'],
-    queryFn: getListRunes,
+    queryKey: ['runesListApi'],
+    queryFn: fetchListRunesFromApi, // Use API function
     enabled: activeTab === 'runesInfo', // Still enable when tab is active
     staleTime: 5 * 60 * 1000, 
     refetchOnWindowFocus: false, 
@@ -235,40 +378,25 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
     error: searchRuneInfoError, 
     isFetching: isFetchingSearchedRuneInfo, 
   } = useQuery<OrdiscanRuneInfo | null, Error>({
-    queryKey: ['runeInfo', (debouncedSearchQuery || '').toUpperCase()], 
+    queryKey: ['runeInfoApi', (debouncedSearchQuery || '').toUpperCase()], 
     queryFn: async () => {
       const queryToSearch = debouncedSearchQuery || '';
       if (!queryToSearch) return null; 
       try {
-        const result = await getRuneInfo(queryToSearch);
+        // *** Use API function ***
+        const result = await fetchRuneInfoFromApi(queryToSearch);
         return result; 
       } catch (error: unknown) {
-        let is404 = false;
-        if (error instanceof Error && error.message && error.message.includes('404')) {
-          is404 = true;
-        } else if (error && typeof error === 'object' && 'status' in error && (error as { status: number }).status === 404) {
-          is404 = true;
-        }
-
-        if (is404) {
-           return null; 
-        } 
-        console.error("Error searching rune info:", error);
+        // Handle 404 from API client (returns null)
+        if (error === null) return null;
+        console.error("Error searching rune info via API:", error);
         throw error; 
       }
     },
     enabled: activeTab === 'runesInfo' && !!debouncedSearchQuery, 
     staleTime: 1 * 60 * 1000, 
     retry: (failureCount, error: unknown) => {
-        let is404 = false;
-        if (error instanceof Error && error.message && error.message.includes('404')) {
-          is404 = true;
-        } else if (error && typeof error === 'object' && 'status' in error && (error as { status: number }).status === 404) {
-          is404 = true;
-        }
-        if (is404) {
-          return false;
-        }
+        // API client handles 404 by returning null, so no specific retry logic needed here for 404
         return failureCount < 3;
     },
   });
@@ -279,8 +407,8 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
     isLoading: isDetailedRuneInfoLoading,
     error: detailedRuneInfoError,
   } = useQuery<OrdiscanRuneInfo | null, Error>({
-    queryKey: ['runeInfo', selectedRuneForInfo?.name], 
-    queryFn: () => selectedRuneForInfo ? getRuneInfo(selectedRuneForInfo.name) : Promise.resolve(null),
+    queryKey: ['runeInfoApi', selectedRuneForInfo?.name], 
+    queryFn: () => selectedRuneForInfo ? fetchRuneInfoFromApi(selectedRuneForInfo.name) : Promise.resolve(null), // Use API function
     enabled: activeTab === 'runesInfo' && !!selectedRuneForInfo, 
     staleTime: Infinity, 
   });
@@ -292,8 +420,8 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
       error: runeActivityError,
       // Add pagination state/controls later if needed
   } = useQuery<RuneActivityEvent[], Error>({
-      queryKey: ['runeActivity', address], // Use Ordinals address
-      queryFn: () => getAddressRuneActivity(address!), // Fetch page 1 by default
+      queryKey: ['runeActivityApi', address],
+      queryFn: () => fetchRuneActivityFromApi(address!), // Use API function
       enabled: activeTab === 'yourTxs' && !!connected && !!address, // Only fetch when tab is active and connected
       staleTime: 60 * 1000, // Stale after 1 minute
       refetchInterval: 2 * 60 * 1000, // Refetch every 2 minutes
@@ -319,85 +447,78 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
     };
   }, [isQuoteLoading, isBtcPriceLoading, isSwapping]); // Added isSwapping
 
-  // Fetch popular runes on mount
+  // Fetch popular runes on mount using API
   useEffect(() => {
     const fetchPopular = async () => {
       setIsPopularLoading(true);
       setPopularError(null);
-      setPopularRunes([]); // Reset popular runes initially
+      setPopularRunes([]);
       try {
-        // Assuming popularCollections returns PopularCollectionItem[] or similar
-        const response = await popularCollections({});
-        // Perform a runtime check to ensure it's an array before mapping
+        // *** Use the new API fetch function ***
+        const response = await fetchPopularFromApi(); 
         if (!Array.isArray(response)) {
           console.warn("Popular collections response is not an array:", response);
           setPopularRunes([]);
         } else {
-          const mappedRunes: Asset[] = response.map((collection: PopularCollectionItem) => ({
-            // Use optional chaining and nullish coalescing for safer access
+          const mappedRunes: Asset[] = response.map((collection: any) => ({
             id: collection?.rune || `unknown_${Math.random()}`,
             name: collection?.etching?.runeName || collection?.rune || 'Unknown',
-            imageURI: collection?.icon_content_url_data || collection?.imageURI, // Check both potential fields
+            imageURI: collection?.icon_content_url_data || collection?.imageURI,
             isBTC: false,
           }));
           setPopularRunes(mappedRunes);
-
-          // If input is BTC, output is not set, and we have popular runes, set the first one as output
           if (assetIn.isBTC && !assetOut && mappedRunes.length > 0) {
             setAssetOut(mappedRunes[0]);
           }
         }
       } catch (error) {
-        console.error("Error fetching popular runes:", error);
+        console.error("Error fetching popular runes via API:", error);
         setPopularError(error instanceof Error ? error.message : 'Failed to fetch popular runes');
-        setPopularRunes([]); // Ensure empty on error
+        setPopularRunes([]);
       } finally {
         setIsPopularLoading(false);
       }
     };
     fetchPopular();
-  }, [assetIn.isBTC, assetOut]); // Re-run if assetIn changes (e.g., after swap direction)
+  // Ensure assetOut is included as a dependency to reset correctly
+  }, [assetIn.isBTC, assetOut, setAssetOut, setIsPopularLoading, setPopularError, setPopularRunes]); 
 
-
-  // Debounced search function (updated for Asset type)
-  const debouncedSearch = useCallback(
-    debounce(async (query: string) => {
-      if (!query.trim()) {
-        setSearchResults([]);
-        setIsSearching(false);
-        setSearchError(null);
-        return;
-      }
-
-      setIsSearching(true);
+  // Debounced search function using API
+  const searchAssets = useCallback(debounce(async (query: string, type: 'input' | 'output') => {
+    if (!query) {
+      setSearchResults([]);
+      setIsSearching(false);
       setSearchError(null);
-      try {
-        const results: Rune[] = await searchRunes(query); // searchRunes returns Rune[]
-        // Map Rune[] to Asset[]
-        const mappedResults: Asset[] = results.map(rune => ({
-          id: rune.id, // Assuming Rune has an id property (like ticker)
-          name: rune.name,
-          imageURI: rune.imageURI,
-          isBTC: false,
-        }));
-        setSearchResults(mappedResults);
-      } catch (error) {
-        console.error("Error searching runes:", error);
-        setSearchError(error instanceof Error ? error.message : 'Search failed');
-        setSearchResults([]); // Clear results on error
-      } finally {
-        setIsSearching(false);
-      }
-    }, 500),
-    [setSearchResults, setIsSearching, setSearchError] // Add stable dependencies
-  );
+      return;
+    }
+    setIsSearching(true);
+    setSearchError(null);
+    try {
+      // *** Ensure this uses the API fetch function ***
+      const results: Rune[] = await fetchRunesFromApi(query); 
+      // Map results to Asset type for consistency in the component
+      const mappedResults: Asset[] = results.map(rune => ({
+        id: rune.id, 
+        name: rune.name,
+        imageURI: rune.imageURI,
+        isBTC: false,
+      }));
+      setSearchResults(mappedResults); // Store as Asset[]
+    } catch (error: any) {
+      console.error(`Error searching for ${type} assets via API:`, error);
+      setSearchError(error.message || 'Failed to search');
+      setSearchResults([]); // Clear results on error
+    } finally {
+      setIsSearching(false);
+    }
+  }, 300), [setSearchResults, setIsSearching, setSearchError]); // Added dependencies
 
   // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
     setIsSearching(true); // Indicate searching immediately
-    debouncedSearch(query);
+    searchAssets(query, 'input');
   };
 
   // Determine which runes to display (use Asset type)
@@ -505,111 +626,106 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
 
   // --- Quote & Price Calculation ---
 
-  // Memoized function to fetch quote, adapting to swap direction
-  // Refactor to define the async function inside useCallback
+  // Memoized quote fetching using API
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleFetchQuote = useCallback(() => {
-    setQuoteExpired(false); // Reset expired state when fetching starts
+    setQuoteExpired(false);
     const fetchQuoteAsync = async () => {
-        const isBtcToRune = assetIn?.isBTC;
-        const runeAsset = isBtcToRune ? assetOut : assetIn;
-        const currentInputAmount = parseFloat(inputAmount); // Read latest input from ref
+      const isBtcToRune = assetIn?.isBTC;
+      const runeAsset = isBtcToRune ? assetOut : assetIn;
+      const currentInputAmount = parseFloat(inputAmount); // Read latest input from ref
 
-        // Use the correctly typed debouncedInputAmount (should now be a number)
-        if (!assetIn || !assetOut || !runeAsset || runeAsset.isBTC || currentInputAmount <= 0) {
-            return;
-        }
+      if (!assetIn || !assetOut || !runeAsset || runeAsset.isBTC || currentInputAmount <= 0) return;
+      
+      setIsQuoteLoading(true);
+      setQuote(null); // Clear previous quote
+      setQuoteError(null);
+      setExchangeRate(null); // Clear previous rate
 
-        setIsQuoteLoading(true);
-        setQuote(null); // Clear previous quote
-        setQuoteError(null);
-        setExchangeRate(null); // Clear previous rate
+      // Use MOCK_ADDRESS if no wallet is connected to allow quote fetching
+      const effectiveAddress = connectedAddress || MOCK_ADDRESS;
+      if (!effectiveAddress) { // Should theoretically never happen with MOCK_ADDRESS fallback
+           console.error("No address available for quote fetching, even mock.");
+           setQuoteError("Internal error: Missing address for quote.");
+           setIsQuoteLoading(false);
+           return;
+      }
+      // console.log(`Fetching quote with address: ${effectiveAddress}, amount: ${currentInputAmount}`); // Debug log
 
-        // Use MOCK_ADDRESS if no wallet is connected to allow quote fetching
-        const effectiveAddress = connectedAddress || MOCK_ADDRESS;
-        if (!effectiveAddress) { // Should theoretically never happen with MOCK_ADDRESS fallback
-             console.error("No address available for quote fetching, even mock.");
-             setQuoteError("Internal error: Missing address for quote.");
-             setIsQuoteLoading(false);
-             return;
-        }
-        // console.log(`Fetching quote with address: ${effectiveAddress}, amount: ${currentInputAmount}`); // Debug log
+      try {
+        const params = {
+          btcAmount: currentInputAmount, 
+          runeName: runeAsset.name,
+          address: effectiveAddress,
+          sell: !isBtcToRune,
+          // TODO: Add other params like marketplace, rbfProtection if needed
+        };
 
-        try {
-          const params = {
-            btcAmount: currentInputAmount, // Use the latest amount from the ref
-            runeName: runeAsset.name,
-            address: effectiveAddress,
-            sell: !isBtcToRune,
-          };
+        // *** Use API client function ***
+        const quoteResponse = await fetchQuoteFromApi(params); 
+        setQuote(quoteResponse);
+        
+        let calculatedOutputAmount = '';
+        let calculatedRate = null;
 
-          const quoteResponse = await fetchQuote(params);
-          setQuote(quoteResponse);
+        if (quoteResponse) {
+          const inputVal = currentInputAmount;
+          let outputVal = 0;
+          let btcValue = 0;
+          let runeValue = 0;
 
-          let calculatedOutputAmount = '';
-          let calculatedRate = null;
-
-          if (quoteResponse) {
-            const inputVal = currentInputAmount;
-            let outputVal = 0;
-            let btcValue = 0;
-            let runeValue = 0;
-
-            try {
-              if (isBtcToRune) {
-                outputVal = parseFloat(quoteResponse.totalFormattedAmount || '0');
-                btcValue = inputVal;
-                runeValue = outputVal;
-                calculatedOutputAmount = outputVal.toLocaleString(undefined, {});
-              } else {
-                outputVal = parseFloat(quoteResponse.totalPrice || '0');
-                runeValue = inputVal;
-                btcValue = outputVal;
-                calculatedOutputAmount = outputVal.toLocaleString(undefined, { maximumFractionDigits: 8 });
-              }
-
-              if (btcValue > 0 && runeValue > 0 && btcPriceUsd) {
-                 const btcUsdAmount = (isBtcToRune ? btcValue : btcValue) * btcPriceUsd;
-                 const pricePerRune = btcUsdAmount / runeValue;
-                 calculatedRate = `${pricePerRune.toLocaleString(undefined, { 
-                    style: 'currency', 
-                    currency: 'USD',
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 6
-                  })} per ${runeAsset.name}`;
-              }
-              setExchangeRate(calculatedRate);
-
-            } catch (e) {
-              console.error("Error parsing quote amounts:", e);
-              calculatedOutputAmount = 'Error';
-              setExchangeRate('Error calculating rate');
+          try {
+            if (isBtcToRune) {
+              outputVal = parseFloat(quoteResponse.totalFormattedAmount || '0');
+              btcValue = inputVal;
+              runeValue = outputVal;
+              calculatedOutputAmount = outputVal.toLocaleString(undefined, {});
+            } else {
+              outputVal = parseFloat(quoteResponse.totalPrice || '0');
+              runeValue = inputVal;
+              btcValue = outputVal;
+              calculatedOutputAmount = outputVal.toLocaleString(undefined, { maximumFractionDigits: 8 });
             }
-          }
-          setOutputAmount(calculatedOutputAmount);
 
-        } catch (err) {
-          console.error("Quote fetch error:", err);
-          const errorMessage = err instanceof Error ? err.message : 'Failed to fetch quote';
-          if (errorMessage.includes('Insufficient liquidity') || errorMessage.includes('not found')) {
-             setQuoteError(`Could not find a quote for this pair/amount.`);
-          } else {
-             setQuoteError(`Quote Error: ${errorMessage}`);
+            if (btcValue > 0 && runeValue > 0 && btcPriceUsd) {
+               const btcUsdAmount = (isBtcToRune ? btcValue : btcValue) * btcPriceUsd;
+               const pricePerRune = btcUsdAmount / runeValue;
+               calculatedRate = `${pricePerRune.toLocaleString(undefined, { 
+                  style: 'currency', 
+                  currency: 'USD',
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 6
+                })} per ${runeAsset.name}`;
+            }
+            setExchangeRate(calculatedRate);
+
+          } catch (e) {
+            console.error("Error parsing quote amounts:", e);
+            calculatedOutputAmount = 'Error';
+            setExchangeRate('Error calculating rate');
           }
-          setQuote(null);
-          setOutputAmount('');
-          setExchangeRate(null);
-        } finally {
-          setIsQuoteLoading(false);
         }
+        setOutputAmount(calculatedOutputAmount);
+
+      } catch (err) {
+        console.error("Quote fetch error via API:", err);
+        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch quote';
+        if (errorMessage.includes('Insufficient liquidity') || errorMessage.includes('not found')) {
+           setQuoteError(`Could not find a quote for this pair/amount.`);
+        } else {
+           setQuoteError(`Quote Error: ${errorMessage}`);
+        }
+        setQuote(null);
+        setOutputAmount('');
+        setExchangeRate(null);
+      } finally {
+        setIsQuoteLoading(false);
+      }
     };
-
-    fetchQuoteAsync(); // Call the async function defined inside
-
-  }, [assetIn, assetOut, debouncedInputAmount, connectedAddress, btcPriceUsd,
+    fetchQuoteAsync();
+  }, [assetIn, assetOut, inputAmount, connectedAddress, btcPriceUsd,
       setIsQuoteLoading, setQuote, setQuoteError, setExchangeRate, setOutputAmount
   ]);
-
 
   // Effect to call the memoized fetchQuote when debounced amount or assets change
   useEffect(() => {
@@ -650,7 +766,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
           usdValue = amountNum * btcPriceUsd;
       } else if (!assetIn.isBTC && quote && quote.totalPrice && btcPriceUsd && !isQuoteLoading) {
           // Input is Rune, use quote's BTC value
-          // This assumes quote.totalPrice is the BTC value for the *input* rune amount
+          // This assumes quote.totalPrice is the BTC received for totalFormattedAmount runes
           // when selling Rune -> BTC. This needs verification.
            // Calculate BTC per rune from the quote
            // If selling (input=rune): totalPrice is BTC received for totalFormattedAmount runes
@@ -692,7 +808,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
     // Don't reset amounts/assets here, handled by selection logic
   }, [inputAmount, assetIn, assetOut, address, connected]);
 
-  // Function to handle the entire swap process
+  // Function to handle the entire swap process using API
   const handleSwap = async () => {
     const isBtcToRune = assetIn?.isBTC;
     const runeAsset = isBtcToRune ? assetOut : assetIn;
@@ -710,35 +826,34 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
     setQuoteExpired(false); // Ensure reset before attempting swap
 
     try {
-      // 1. Get PSBT
+      // 1. Get PSBT via API
       setSwapStep('getting_psbt');
-      // Ensure orders is typed correctly
       const orders: RuneOrder[] = quote.selectedOrders || [];
-      const psbtResult = await getPSBT({
-        orders: orders, // Use orders from quote
-        address: address, // User's Ordinals address
-        publicKey: publicKey, // User's Ordinals public key
-        paymentAddress: paymentAddress, // User's Payment address (BTC)
-        paymentPublicKey: paymentPublicKey, // User's Payment public key (BTC)
-        runeName: runeAsset.name, // The name of the rune involved
-        sell: !isBtcToRune, // sell: true if selling Rune -> BTC
-        // feeRate: 5, // Optional: Add UI for this later
-        // slippage: 9, // Optional: Add UI for this later
-        // rbfProtection: false, // Start without RBF
-      });
+      const psbtParams: GetPSBTParams = {
+        orders: orders, 
+        address: address, 
+        publicKey: publicKey, 
+        paymentAddress: paymentAddress, 
+        paymentPublicKey: paymentPublicKey,
+        runeName: runeAsset.name, 
+        sell: !isBtcToRune,
+        // TODO: Add feeRate, slippage, rbfProtection from UI state later
+      };
+      // *** Use API client function ***
+      const psbtResult = await getPsbtFromApi(psbtParams); 
 
-      const psbtBase64 = (psbtResult as unknown as { psbtBase64?: string, psbt?: string })?.psbtBase64 
-                       || (psbtResult as unknown as { psbtBase64?: string, psbt?: string })?.psbt;
+      const mainPsbtBase64 = (psbtResult as unknown as { psbtBase64?: string, psbt?: string })?.psbtBase64 
+                           || (psbtResult as unknown as { psbtBase64?: string, psbt?: string })?.psbt;
       const swapId = (psbtResult as unknown as { swapId?: string })?.swapId;
       const rbfPsbtBase64 = (psbtResult as unknown as { rbfProtected?: { base64?: string } })?.rbfProtected?.base64;
 
-      if (!psbtBase64 || !swapId) {
-        throw new Error(`Invalid PSBT data received: ${JSON.stringify(psbtResult)}`);
+      if (!mainPsbtBase64 || !swapId) {
+        throw new Error(`Invalid PSBT data received from API: ${JSON.stringify(psbtResult)}`);
       }
 
-      // 2. Sign PSBT(s)
+      // 2. Sign PSBT(s) - Remains client-side via LaserEyes
       setSwapStep('signing');
-      const mainSigningResult = await signPsbt(psbtBase64);
+      const mainSigningResult = await signPsbt(mainPsbtBase64);
       const signedMainPsbt = mainSigningResult?.signedPsbtBase64;
       if (!signedMainPsbt) {
           throw new Error("Main PSBT signing cancelled or failed.");
@@ -753,23 +868,23 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
           }
       }
 
-      // 3. Confirm PSBT
+      // 3. Confirm PSBT via API
       setSwapStep('confirming');
-      const confirmParams = {
+      const confirmParams: ConfirmPSBTParams = {
         orders: orders,
         address: address,
         publicKey: publicKey,
         paymentAddress: paymentAddress,
         paymentPublicKey: paymentPublicKey,
-        signedPsbtBase64: signedMainPsbt, // Main signed PSBT
+        signedPsbtBase64: signedMainPsbt,
         swapId: swapId,
         runeName: runeAsset.name,
         sell: !isBtcToRune,
-        // Pass signed RBF PSBT if it exists and was signed
-        signedRbfPsbtBase64: signedRbfPsbt ?? undefined, // Pass undefined if null (matches SDK type)
-        rbfProtection: !!signedRbfPsbt, // Indicate RBF is active if RBF PSBT was signed
+        signedRbfPsbtBase64: signedRbfPsbt ?? undefined,
+        rbfProtection: !!signedRbfPsbt,
       };
-      const confirmResult = await confirmPSBT(confirmParams);
+      // *** Use API client function ***
+      const confirmResult = await confirmPsbtViaApi(confirmParams); 
 
       // TODO: Define a stricter type for confirmResult based on API response variations
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -778,12 +893,10 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
           throw new Error(`Confirmation failed or transaction ID missing. Response: ${JSON.stringify(confirmResult)}`);
       }
       setTxId(finalTxId);
-
       setSwapStep('success');
 
-
-    } catch (error) {
-      console.error("Swap failed:", error);
+    } catch (error: any) {
+      console.error("Swap failed via API:", error);
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred during the swap.";
 
       // Check for specific errors
@@ -1178,7 +1291,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
                    isQuoteLoading || 
                    !!quoteError || // Still disable if any quote error exists
                    !quote || 
-                   isSwapping || 
+                   isSwapping ||
                    swapStep === 'success' ||
                    (swapStep === 'error' && !quoteExpired) // Disable on error unless it's the specific quote expired case
                  ))
@@ -1290,8 +1403,46 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
                       <p><strong>ID:</strong> {detailedRuneInfo.id}</p>
                       <p><strong>Number:</strong> {detailedRuneInfo.number}</p>
                       <p><strong>Decimals:</strong> {detailedRuneInfo.decimals}</p>
-                      <p><strong>Etching Tx:</strong> {detailedRuneInfo.etching_txid ? <a href={`https://ordiscan.com/tx/${detailedRuneInfo.etching_txid}`} target="_blank" rel="noopener noreferrer" className={styles.txLink}>{detailedRuneInfo.etching_txid.substring(0,8)}...</a> : 'N/A'}</p>
-                      <p><strong>Current Supply:</strong> {detailedRuneInfo.current_supply ? parseFloat(detailedRuneInfo.current_supply) / (10 ** detailedRuneInfo.decimals) : 'N/A'}</p>
+                      <p>
+                        <strong>Etching Tx:</strong> {detailedRuneInfo.etching_txid ? 
+                          <a 
+                            href={`https://ordiscan.com/tx/${detailedRuneInfo.etching_txid}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className={styles.etchingTxLink}
+                          >
+                            {truncateTxid(detailedRuneInfo.etching_txid)}
+                          </a> 
+                          : 'N/A'
+                        }
+                      </p>
+                      <p><strong>Premined Supply:</strong> 
+                         <FormattedRuneAmount 
+                            runeName={detailedRuneInfo.name} 
+                            rawAmount={detailedRuneInfo.premined_supply} 
+                          />
+                      </p>
+                      <p><strong>Total Supply:</strong> {detailedRuneInfo.current_supply !== undefined ? 
+                        <FormattedRuneAmount 
+                          runeName={detailedRuneInfo.name} 
+                          rawAmount={detailedRuneInfo.current_supply} 
+                        /> 
+                        : 'N/A'
+                      }</p>
+                      {/* Use FormattedRuneAmount for Amount/Mint */}
+                      {detailedRuneInfo.amount_per_mint !== null && detailedRuneInfo.amount_per_mint !== undefined && 
+                        <p><strong>Amount/Mint:</strong> 
+                           <FormattedRuneAmount 
+                              runeName={detailedRuneInfo.name} 
+                              rawAmount={detailedRuneInfo.amount_per_mint} // Now guaranteed string by the check above
+                            />
+                        </p>
+                      }
+                      {/* Keep using formatNumberString for mint_count_cap as it doesn't inherently have decimals */}
+                      {detailedRuneInfo.mint_count_cap && <p><strong>Mint Cap:</strong> {formatNumberString(detailedRuneInfo.mint_count_cap)}</p>}
+                      {detailedRuneInfo.mint_start_block !== null && <p><strong>Mint Start Block:</strong> {detailedRuneInfo.mint_start_block}</p>}
+                      {detailedRuneInfo.mint_end_block !== null && <p><strong>Mint End Block:</strong> {detailedRuneInfo.mint_end_block}</p>}
+                      {detailedRuneInfo.current_mint_count !== undefined && <p><strong>Current Mint Count:</strong> {detailedRuneInfo.current_mint_count.toLocaleString()}</p>}
                   </div>
               )}
               {!selectedRuneForInfo && !isRunesListLoading && !isFetchingSearchedRuneInfo && (
@@ -1309,7 +1460,9 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
             ) : isRuneActivityLoading ? (
               <p className={styles.listboxLoadingOrEmpty}>Loading your transactions...</p>
             ) : runeActivityError ? (
-              <p className={styles.listboxError}>Error loading transactions: {runeActivityError.message}</p>
+             <p className={styles.listboxError}>
+               Error loading transactions: {runeActivityError instanceof Error ? runeActivityError.message : String(runeActivityError)}
+             </p>
             ) : !runeActivity || runeActivity.length === 0 ? (
               <p className={styles.hintText}>No recent rune transactions found for this address.</p>
             ) : (

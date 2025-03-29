@@ -2,7 +2,25 @@
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getRuneInfo, type RuneInfo } from '@/lib/ordiscan';
+import { type RuneInfo } from '@/lib/ordiscan';
+
+// --- Add API Client Function --- 
+// (Can be moved to a shared util later)
+const fetchRuneInfoFromApi = async (name: string): Promise<RuneInfo | null> => {
+  if (!name) return null; // Don't fetch if name is empty
+  const formattedName = name.replace(/•/g, '');
+  const response = await fetch(`/api/ordiscan/rune-info?name=${encodeURIComponent(formattedName)}`);
+  if (response.status === 404) {
+    return null; // API returns null for 404
+  }
+  const data = await response.json();
+  if (!response.ok) {
+    // Use error details from API response if available
+    throw new Error(data?.details || data?.error || `Failed to fetch Rune info: ${response.statusText}`);
+  }
+  return data; // Assuming the API returns RuneInfo or null
+};
+// --- End API Client Function ---
 
 interface FormattedRuneAmountProps {
   runeName: string | null | undefined;
@@ -15,21 +33,14 @@ export function FormattedRuneAmount({ runeName, rawAmount }: FormattedRuneAmount
     isLoading,
     error,
   } = useQuery<RuneInfo | null, Error>({
-    // Use uppercase name consistent with other queries, handle potential null/undefined
-    queryKey: ['runeInfo', (runeName || '').toUpperCase()],
-    queryFn: () => (runeName ? getRuneInfo(runeName) : Promise.resolve(null)),
+    // Update queryKey to reflect API usage
+    queryKey: ['runeInfoApi', (runeName || '').toUpperCase()], 
+    // Use the new API client function
+    queryFn: () => (runeName ? fetchRuneInfoFromApi(runeName) : Promise.resolve(null)),
     enabled: !!runeName && rawAmount !== 'N/A' && rawAmount !== null && rawAmount !== undefined, // Only run if we have a rune name and a valid raw amount
     staleTime: Infinity, // Decimals rarely change, cache indefinitely
-    retry: (failureCount, fetchError: unknown) => {
-       // Don't retry if rune is not found (404)
-       let is404 = false;
-       if (fetchError instanceof Error && fetchError.message && fetchError.message.includes('404')) {
-         is404 = true;
-       } else if (fetchError && typeof fetchError === 'object' && 'status' in fetchError && (fetchError as { status: number }).status === 404) {
-         is404 = true;
-       }
-       return !is404 && failureCount < 2; // Retry other errors twice
-    }
+    // Remove specific 404 retry logic, as API client returns null for 404 (treated as success by useQuery)
+    retry: 2 // Retry other network/server errors twice
   });
 
   if (rawAmount === 'N/A' || rawAmount === null || rawAmount === undefined) {
@@ -45,13 +56,9 @@ export function FormattedRuneAmount({ runeName, rawAmount }: FormattedRuneAmount
   }
 
   if (error) {
-      // Optionally check if it was a 404 error vs other errors
-      let is404 = false;
-      if (error instanceof Error && error.message && error.message.includes('404')) {
-          is404 = true;
-      }
-      // Display raw amount if rune info wasn't found, otherwise show generic error
-      return <span>{rawAmount} {is404 ? '(Decimals N/A)' : '(Error fetching decimals)'}</span>;
+      // 404 is handled by runeInfo being null, so this only catches other errors
+      console.error("Error fetching rune info for decimals:", error);
+      return <span>{rawAmount} ('Error fetching decimals')</span>;
   }
 
   if (!runeInfo || typeof runeInfo.decimals !== 'number') {

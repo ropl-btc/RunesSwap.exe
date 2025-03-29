@@ -178,15 +178,54 @@
   color: #16a34a; /* text-green-600 approximation */
 }
 
-/* Style for transaction link */
+/* Style for transaction links in the swap success message or Tx list */
 .txLink {
-  color: var(--win98-blue);
+  color: #0000EE; /* Visited link color - adjust if needed */
   text-decoration: underline;
-  margin-left: 0.25rem; /* ml-1 */
+  margin-left: 0.5em;
 }
 
 .txLink:hover {
-  color: #1e40af; /* darker blue on hover */
+  color: #551A8B; /* Hover color - adjust if needed */
+}
+
+/* NEW: Specific style for the etching tx link */
+.etchingTxLink {
+  color: #0000EE; /* Blue color for unvisited link */
+  text-decoration: underline;
+}
+
+.etchingTxLink:hover {
+  color: #551A8B; /* Darker blue/purple for hover/visited */
+}
+
+.txLinkBold {
+  composes: txLink; /* Inherit base link styles */
+  font-weight: bold;
+  font-size: 0.85rem;
+}
+
+.txTimestamp {
+  color: var(--win98-dark-gray);
+  font-size: 0.75rem;
+}
+
+.txDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-left: 0.5rem; /* Indent details slightly */
+}
+
+.txDetailRow {
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Highlight rune names in tx details */
+.runeNameHighlight {
+  font-weight: bold;
+  color: var(--win98-blue); /* Or another distinct color */
 }
 
 /* Container for messages with icons */
@@ -544,37 +583,6 @@
   align-items: baseline;
   margin-bottom: 0.5rem;
 }
-
-.txLinkBold {
-  composes: txLink; /* Inherit base link styles */
-  font-weight: bold;
-  font-size: 0.85rem;
-}
-
-.txTimestamp {
-  color: var(--win98-dark-gray);
-  font-size: 0.75rem;
-}
-
-.txDetails {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding-left: 0.5rem; /* Indent details slightly */
-}
-
-.txDetailRow {
-  display: flex;
-  justify-content: space-between;
-}
-
-/* Highlight rune names in tx details */
-.runeNameHighlight {
-  font-weight: bold;
-  color: var(--win98-blue); /* Or another distinct color */
-}
-
-/* --- End Your TXs Tab Styles --- */
 
 .searchContainerRunesInfo {
   /* Add specific styles if needed, otherwise it reuses general search styles */
