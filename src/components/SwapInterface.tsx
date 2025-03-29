@@ -1209,6 +1209,19 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
                    </span>
               </div>
             )}
+
+            {/* BTC Price Footer */}
+            <div className={styles.btcPriceFooter}>
+              {isBtcPriceLoading ? (
+                <span>Loading BTC price...</span>
+              ) : btcPriceError ? (
+                <span className={styles.errorText}>Error loading price</span>
+              ) : btcPriceUsd ? (
+                <span>BTC Price: {btcPriceUsd.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
+              ) : (
+                <span>BTC Price: N/A</span> 
+              )}
+            </div>
           </div>
         );
       case 'runesInfo':
@@ -1347,23 +1360,44 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
                                     runeAmountRaw = receivedOutput.rune_amount;
                                 }
                             } else if (userSent && userReceived) {
-                                action = 'Transferred (Internal?)';
-                                const relevantRune = tx.runestone_messages[0]?.rune;
-                                const relevantOutput = tx.outputs.find(o => o.address === userAddress && o.rune === relevantRune);
-                                if (relevantOutput) {
-                                  runeName = relevantOutput.rune;
-                                  runeAmountRaw = relevantOutput.rune_amount;
+                                // User sent runes and received change back OR consolidated UTXOs
+                                const sentOutput = tx.outputs.find(o => o.address !== userAddress && o.rune && parseFloat(o.rune_amount) > 0);
+
+                                if (sentOutput) {
+                                    // Found an output sending runes to another address - this is the primary action
+                                    action = 'Sent';
+                                    runeName = sentOutput.rune;
+                                    runeAmountRaw = sentOutput.rune_amount;
                                 } else {
-                                  const relevantInput = tx.inputs.find(i => i.address === userAddress && i.rune === relevantRune);
-                                  if (relevantInput) {
-                                      runeName = relevantInput.rune;
-                                      runeAmountRaw = relevantInput.rune_amount;
-                                  }
+                                    // No runes sent externally, but user is sender & receiver.
+                                    // Label as 'Internal Transfer' and show amount received back by user.
+                                    action = 'Internal Transfer'; 
+                                    const relevantRune = tx.runestone_messages[0]?.rune; 
+                                    const userOutput = tx.outputs.find(o => o.address === userAddress && o.rune === relevantRune);
+                                    
+                                    if (userOutput) {
+                                        runeName = userOutput.rune;
+                                        runeAmountRaw = userOutput.rune_amount;
+                                    } else {
+                                        // Fallback: Look for *any* rune output back to the user
+                                        const anyUserOutput = tx.outputs.find(o => o.address === userAddress && o.rune && parseFloat(o.rune_amount) > 0);
+                                        if (anyUserOutput) {
+                                            runeName = anyUserOutput.rune;
+                                            runeAmountRaw = anyUserOutput.rune_amount;
+                                        } else {
+                                            // If still nothing, default to N/A or use input info cautiously
+                                            runeName = relevantRune || tx.inputs.find(i => i.address === userAddress && i.rune)?.rune || 'N/A';
+                                            runeAmountRaw = 'N/A'; // Can't reliably determine amount received back
+                                        }
+                                    }
                                 }
                             } else {
-                                action = 'Transfer (External)';
-                                runeName = tx.runestone_messages[0]?.rune || tx.inputs[0]?.rune || 'N/A';
-                                runeAmountRaw = 'N/A';
+                                // User was not involved as sender or receiver of runes in inputs/outputs
+                                // This might be an external event related to a rune they watch, or just BTC tx.
+                                action = 'Transfer (External)'; 
+                                // Try to find *any* rune involved in the transaction
+                                runeName = tx.runestone_messages[0]?.rune || tx.inputs.find(i => i.rune)?.rune || tx.outputs.find(o => o.rune)?.rune || 'N/A';
+                                runeAmountRaw = 'N/A'; // Amount for external transfers is ambiguous
                             }
                          }
 
