@@ -12,13 +12,12 @@ import {
   type RuneBalance as OrdiscanRuneBalance,
   type RuneInfo as OrdiscanRuneInfo,
   type RuneActivityEvent, // <-- Import new type
-  type RunestoneMessage, // <-- Import RunestoneMessage
 } from '@/lib/ordiscan'; // <-- Import Ordiscan functions
 import { Listbox, Transition } from '@headlessui/react';
 import { ChevronUpDownIcon, CheckIcon, ArrowPathIcon } from '@heroicons/react/24/solid'; // Added ArrowPathIcon
 import debounce from 'lodash.debounce';
 import styles from './SwapInterface.module.css';
-import { SatsTerminal, type QuoteResponse, type PSBTResponse, type RuneOrder } from 'satsterminal-sdk'; // Added RuneOrder
+import { type QuoteResponse, type RuneOrder } from 'satsterminal-sdk'; // Keep only types
 import { useSharedLaserEyes } from '@/context/LaserEyesContext'; // Import the shared hook
 import { useDebounce } from 'use-debounce'; // Import useDebounce
 
@@ -56,11 +55,17 @@ interface Asset {
 // Define BTC as a selectable asset
 const BTC_ASSET: Asset = { id: 'BTC', name: 'BTC', imageURI: '/Bitcoin.svg', isBTC: true };
 
-
-// Type adjustment for popular collections response
-// interface PopularRune extends Rune { // No longer needed if using Asset type
-//   // Add other relevant fields from popularCollections response if needed
-// }
+// Define a type for the items returned by popularCollections API
+// Note: Adjust this based on the actual API response structure
+interface PopularCollectionItem {
+  rune?: string;
+  etching?: {
+    runeName?: string;
+  };
+  icon_content_url_data?: string; // Or imageURI, adjust as needed
+  imageURI?: string; // Add this if it can also be imageURI
+  // Add other potential fields if known
+}
 
 // Mock address for fetching quotes when disconnected
 const MOCK_ADDRESS = '34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo';
@@ -138,6 +143,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
   const [isQuoteLoading, setIsQuoteLoading] = useState(false);
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [quoteExpired, setQuoteExpired] = useState(false); // <-- Add state for expired quote
 
   // State for calculated prices
   const [exchangeRate, setExchangeRate] = useState<string | null>(null); // e.g., "1 BTC = 1,000,000 DOG" or "1 DOG = 0.000001 BTC"
@@ -147,8 +153,6 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
   const [isSwapping, setIsSwapping] = useState(false);
   const [swapStep, setSwapStep] = useState<'idle' | 'getting_psbt' | 'signing' | 'confirming' | 'success' | 'error'>('idle');
   const [swapError, setSwapError] = useState<string | null>(null);
-  const [psbtData, setPsbtData] = useState<PSBTResponse | null>(null); // Store PSBT response
-  const [signedPsbtBase64, setSignedPsbtBase64] = useState<string | null>(null); // Store main signed PSBT
   const [txId, setTxId] = useState<string | null>(null); // Store final transaction ID
 
   // State for loading dots animation
@@ -179,7 +183,6 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
     data: btcBalanceSats,
     isLoading: isBtcBalanceLoading,
     error: btcBalanceError,
-    refetch: refetchBtcBalance, // Function to manually refetch
   } = useQuery<number, Error>({
     queryKey: ['btcBalance', paymentAddress], // Include address in key
     queryFn: () => getBtcBalance(paymentAddress!), // Use non-null assertion, handled by enabled
@@ -192,7 +195,6 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
     data: runeBalances,
     isLoading: isRuneBalancesLoading,
     error: runeBalancesError,
-    refetch: refetchRuneBalances, // Function to manually refetch
   } = useQuery<OrdiscanRuneBalance[], Error>({
     queryKey: ['runeBalances', address], // Include address in key
     queryFn: () => getRuneBalances(address!), // Use non-null assertion, handled by enabled
@@ -229,32 +231,41 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
   // NEW: Query for SPECIFIC Rune based on DEBOUNCED search input
   const {
     data: searchedRuneInfo, 
-    isLoading: isSearchingRuneInfo, 
     error: searchRuneInfoError, 
     isFetching: isFetchingSearchedRuneInfo, 
   } = useQuery<OrdiscanRuneInfo | null, Error>({
-    // Safely handle potentially undefined debouncedSearchQuery
     queryKey: ['runeInfo', (debouncedSearchQuery || '').toUpperCase()], 
     queryFn: async () => {
-      // Ensure we use the actual debounced value check here as well
       const queryToSearch = debouncedSearchQuery || '';
       if (!queryToSearch) return null; 
       try {
         const result = await getRuneInfo(queryToSearch);
         return result; 
-      } catch (error: any) {
-        if (error.message && error.message.includes('404')) {
-          return null; 
+      } catch (error: unknown) {
+        let is404 = false;
+        if (error instanceof Error && error.message && error.message.includes('404')) {
+          is404 = true;
+        } else if (error && typeof error === 'object' && 'status' in error && (error as { status: number }).status === 404) {
+          is404 = true;
+        }
+
+        if (is404) {
+           return null; 
         } 
         console.error("Error searching rune info:", error);
         throw error; 
       }
     },
-    // Enable check should also use the potentially undefined value correctly
     enabled: activeTab === 'runesInfo' && !!debouncedSearchQuery, 
     staleTime: 1 * 60 * 1000, 
-    retry: (failureCount, error: any) => {
-        if (error.message && error.message.includes('404')) {
+    retry: (failureCount, error: unknown) => {
+        let is404 = false;
+        if (error instanceof Error && error.message && error.message.includes('404')) {
+          is404 = true;
+        } else if (error && typeof error === 'object' && 'status' in error && (error as { status: number }).status === 404) {
+          is404 = true;
+        }
+        if (is404) {
           return false;
         }
         return failureCount < 3;
@@ -314,24 +325,23 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
       setPopularError(null);
       setPopularRunes([]); // Reset popular runes initially
       try {
-        // Use the imported lib function
-        const response = await popularCollections({}); 
-
-        // Check if response is an array
+        // Assuming popularCollections returns PopularCollectionItem[] or similar
+        const response = await popularCollections({});
+        // Perform a runtime check to ensure it's an array before mapping
         if (!Array.isArray(response)) {
-          console.warn("Popular collections response is not an array.", response);
+          console.warn("Popular collections response is not an array:", response);
           setPopularRunes([]);
         } else {
-          // Map directly over the response array to Asset type
-          const mappedRunes: Asset[] = response.map((collection: any) => ({
-            id: collection.rune, // Use rune ticker as ID
-            name: collection.etching?.runeName || collection.rune, // Fallback to ticker if name missing
-            imageURI: collection.icon_content_url_data || collection.imageURI, // Extract image URL
-            isBTC: false, // Mark as not BTC
+          const mappedRunes: Asset[] = response.map((collection: PopularCollectionItem) => ({
+            // Use optional chaining and nullish coalescing for safer access
+            id: collection?.rune || `unknown_${Math.random()}`,
+            name: collection?.etching?.runeName || collection?.rune || 'Unknown',
+            imageURI: collection?.icon_content_url_data || collection?.imageURI, // Check both potential fields
+            isBTC: false,
           }));
           setPopularRunes(mappedRunes);
 
-          // Set initial output asset if input is BTC and output is not set yet
+          // If input is BTC, output is not set, and we have popular runes, set the first one as output
           if (assetIn.isBTC && !assetOut && mappedRunes.length > 0) {
             setAssetOut(mappedRunes[0]);
           }
@@ -345,7 +355,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
       }
     };
     fetchPopular();
-  }, [assetIn.isBTC]); // Re-run if assetIn changes (e.g., after swap direction)
+  }, [assetIn.isBTC, assetOut]); // Re-run if assetIn changes (e.g., after swap direction)
 
 
   // Debounced search function (updated for Asset type)
@@ -377,8 +387,8 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
       } finally {
         setIsSearching(false);
       }
-    }, 500), // 500ms debounce delay
-    []
+    }, 500),
+    [setSearchResults, setIsSearching, setSearchError] // Add stable dependencies
   );
 
   // Handle search input change
@@ -395,7 +405,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
   const currentRunesError = searchQuery.trim() ? searchError : popularError;
 
   // Combine BTC and Runes for selector options
-  const allSelectableAssets = [BTC_ASSET, ...availableRunes];
+  // REMOVE Unused variable: const allSelectableAssets = [BTC_ASSET, ...availableRunes];
 
   // Define debounced value for input amount
   // Correctly use the imported useDebounce hook - extract the first element
@@ -424,30 +434,47 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
     setQuoteError(null);
     setExchangeRate(null);
     setInputUsdValue(null);
+    setQuoteExpired(false); // Reset quote expired state
   };
 
   const handleSelectAssetOut = (selectedAsset: Asset) => {
     // Prevent selecting the same asset for both input and output
     if (assetIn && selectedAsset.id === assetIn.id) return;
 
+    const previousAssetIn = assetIn; // Store previous input asset
+
     setAssetOut(selectedAsset);
-    // If selected asset is BTC, ensure input is a Rune
+
+    // If the NEW output asset is BTC, ensure input is a Rune
     if (selectedAsset.isBTC) {
-      if (!assetIn || assetIn.isBTC) {
-        // Set to first available rune or null if none
-        setAssetIn(popularRunes.length > 0 ? popularRunes[0] : BTC_ASSET); // Fallback to BTC if no runes
+      if (!previousAssetIn || previousAssetIn.isBTC) {
+        // Input was BTC (or null), now must be Rune
+        setAssetIn(popularRunes.length > 0 ? popularRunes[0] : BTC_ASSET); // Fallback needed if no popular runes
+        // Since input asset type changed, reset amounts
+        setInputAmount('');
+        setOutputAmount('');
       }
+      // else: Input was already a Rune, keep it. Amount reset handled below.
     } else {
-      // If selected asset is a Rune, ensure input is BTC
+      // If the NEW output asset is a Rune, ensure input is BTC
       setAssetIn(BTC_ASSET);
+      // Check if the input asset type *actually* changed
+      if (!previousAssetIn || !previousAssetIn.isBTC) {
+         // Input was Rune (or null), now is BTC. Reset both amounts.
+         setInputAmount('');
+         setOutputAmount('');
+      } else {
+         // Input was already BTC and remains BTC. Keep inputAmount, just reset output.
+         setOutputAmount('');
+      }
     }
-    // Clear amounts and quote when assets change
-    setInputAmount('');
-    setOutputAmount('');
+
+    // Always clear quote and related state when output asset changes
     setQuote(null);
     setQuoteError(null);
     setExchangeRate(null);
     setInputUsdValue(null);
+    setQuoteExpired(false); // Reset quote expired state
   };
 
   // --- Swap Direction Logic ---
@@ -471,124 +498,116 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
     setIsSwapping(false);
     setSwapStep('idle');
     setSwapError(null);
-    setPsbtData(null);
-    setSignedPsbtBase64(null);
     setTxId(null);
+    setQuoteExpired(false); // Reset quote expired state
   };
 
   // --- Quote & Price Calculation ---
 
   // Memoized function to fetch quote, adapting to swap direction
-  const handleFetchQuote = useCallback(async () => {
-    const isBtcToRune = assetIn?.isBTC;
-    const runeAsset = isBtcToRune ? assetOut : assetIn;
+  // Refactor to define the async function inside useCallback
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const handleFetchQuote = useCallback(() => {
+    setQuoteExpired(false); // Reset expired state when fetching starts
+    const fetchQuoteAsync = async () => {
+        const isBtcToRune = assetIn?.isBTC;
+        const runeAsset = isBtcToRune ? assetOut : assetIn;
+        const currentInputAmount = parseFloat(inputAmount); // Read latest input from ref
 
-    // Use the correctly typed debouncedInputAmount (should now be a number)
-    if (!assetIn || !assetOut || !runeAsset || runeAsset.isBTC || debouncedInputAmount <= 0) { 
-        return;
-    }
+        // Use the correctly typed debouncedInputAmount (should now be a number)
+        if (!assetIn || !assetOut || !runeAsset || runeAsset.isBTC || currentInputAmount <= 0) {
+            return;
+        }
 
-    setIsQuoteLoading(true);
-    setQuote(null); // Clear previous quote
-    setQuoteError(null);
-    setExchangeRate(null); // Clear previous rate
+        setIsQuoteLoading(true);
+        setQuote(null); // Clear previous quote
+        setQuoteError(null);
+        setExchangeRate(null); // Clear previous rate
 
-    const effectiveAddress = connectedAddress || MOCK_ADDRESS;
-
-    try {
-      // Determine parameters based on direction
-      // NOTE: Assuming `btcAmount` param is used for RUNE amount when `sell: true`.
-      // This needs verification based on SatsTerminal SDK capabilities for Rune->BTC quotes.
-      const params = {
-        btcAmount: debouncedInputAmount, // Amount of the INPUT asset
-        runeName: runeAsset.name,
-        address: effectiveAddress,
-        sell: !isBtcToRune, // sell: true if assetIn is Rune (Rune -> BTC)
-        // rbfProtection: false, // Optional: Add UI later
-        // marketplaces: [], // Optional: Add UI later
-      };
-
-      const quoteResponse = await fetchQuote(params);
-      setQuote(quoteResponse);
-
-      // --- Output Amount & Exchange Rate Update Logic ---
-      let calculatedOutputAmount = '';
-      let calculatedRate = null;
-
-      if (quoteResponse) {
-        const inputVal = debouncedInputAmount;
-        let outputVal = 0;
-        let btcValue = 0;
-        let runeValue = 0;
+        // Use MOCK_ADDRESS if no wallet is connected to allow quote fetching
+        const effectiveAddress = connectedAddress || MOCK_ADDRESS;
+        if (!effectiveAddress) { // Should theoretically never happen with MOCK_ADDRESS fallback
+             console.error("No address available for quote fetching, even mock.");
+             setQuoteError("Internal error: Missing address for quote.");
+             setIsQuoteLoading(false);
+             return;
+        }
+        // console.log(`Fetching quote with address: ${effectiveAddress}, amount: ${currentInputAmount}`); // Debug log
 
         try {
-          if (isBtcToRune) {
-            // Input: BTC, Output: Rune
-            outputVal = parseFloat(quoteResponse.totalFormattedAmount || '0');
-            btcValue = inputVal;
-            runeValue = outputVal;
-            calculatedOutputAmount = outputVal.toLocaleString(undefined, {});
-          } else {
-            // Input: Rune, Output: BTC
-            outputVal = parseFloat(quoteResponse.totalPrice || '0');
-            runeValue = inputVal;
-            btcValue = outputVal;
-            calculatedOutputAmount = outputVal.toLocaleString(undefined, { maximumFractionDigits: 8 }); // Show more precision for BTC
-          }
+          const params = {
+            btcAmount: currentInputAmount, // Use the latest amount from the ref
+            runeName: runeAsset.name,
+            address: effectiveAddress,
+            sell: !isBtcToRune,
+          };
 
-          // Calculate exchange rate
-          if (btcValue > 0 && runeValue > 0) {
-            if (isBtcToRune) {
-              // Calculate USD price per rune (BTC to Rune direction)
-              // USD per rune = (BTC amount * BTC price in USD) / Rune amount
-              const btcUsdAmount = btcValue * (btcPriceUsd || 0);
-              const pricePerRune = btcUsdAmount / runeValue;
-              calculatedRate = `${pricePerRune.toLocaleString(undefined, { 
-                style: 'currency', 
-                currency: 'USD',
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 6
-              })} per ${runeAsset.name}`;
-            } else {
-              // Calculate USD price per rune (Rune to BTC direction)
-              // USD per rune = BTC amount * BTC price in USD / Rune amount
-              const btcUsdAmount = btcValue * (btcPriceUsd || 0);
-              const pricePerRune = btcUsdAmount / runeValue;
-              calculatedRate = `${pricePerRune.toLocaleString(undefined, { 
-                style: 'currency', 
-                currency: 'USD',
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 6
-              })} per ${runeAsset.name}`;
+          const quoteResponse = await fetchQuote(params);
+          setQuote(quoteResponse);
+
+          let calculatedOutputAmount = '';
+          let calculatedRate = null;
+
+          if (quoteResponse) {
+            const inputVal = currentInputAmount;
+            let outputVal = 0;
+            let btcValue = 0;
+            let runeValue = 0;
+
+            try {
+              if (isBtcToRune) {
+                outputVal = parseFloat(quoteResponse.totalFormattedAmount || '0');
+                btcValue = inputVal;
+                runeValue = outputVal;
+                calculatedOutputAmount = outputVal.toLocaleString(undefined, {});
+              } else {
+                outputVal = parseFloat(quoteResponse.totalPrice || '0');
+                runeValue = inputVal;
+                btcValue = outputVal;
+                calculatedOutputAmount = outputVal.toLocaleString(undefined, { maximumFractionDigits: 8 });
+              }
+
+              if (btcValue > 0 && runeValue > 0 && btcPriceUsd) {
+                 const btcUsdAmount = (isBtcToRune ? btcValue : btcValue) * btcPriceUsd;
+                 const pricePerRune = btcUsdAmount / runeValue;
+                 calculatedRate = `${pricePerRune.toLocaleString(undefined, { 
+                    style: 'currency', 
+                    currency: 'USD',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 6
+                  })} per ${runeAsset.name}`;
+              }
+              setExchangeRate(calculatedRate);
+
+            } catch (e) {
+              console.error("Error parsing quote amounts:", e);
+              calculatedOutputAmount = 'Error';
+              setExchangeRate('Error calculating rate');
             }
           }
-          setExchangeRate(calculatedRate);
+          setOutputAmount(calculatedOutputAmount);
 
-        } catch (e) {
-          console.error("Error parsing quote amounts:", e);
-          calculatedOutputAmount = 'Error';
-          setExchangeRate('Error calculating rate');
+        } catch (err) {
+          console.error("Quote fetch error:", err);
+          const errorMessage = err instanceof Error ? err.message : 'Failed to fetch quote';
+          if (errorMessage.includes('Insufficient liquidity') || errorMessage.includes('not found')) {
+             setQuoteError(`Could not find a quote for this pair/amount.`);
+          } else {
+             setQuoteError(`Quote Error: ${errorMessage}`);
+          }
+          setQuote(null);
+          setOutputAmount('');
+          setExchangeRate(null);
+        } finally {
+          setIsQuoteLoading(false);
         }
-      }
-      setOutputAmount(calculatedOutputAmount);
-      // --- End Output Amount & Rate Update Logic ---
+    };
 
-    } catch (err) {
-      console.error("Quote fetch error:", err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch quote';
-      // Provide more specific feedback if possible
-      if (errorMessage.includes('Insufficient liquidity') || errorMessage.includes('not found')) {
-         setQuoteError(`Could not find a quote for this pair/amount.`);
-      } else {
-         setQuoteError(`Quote Error: ${errorMessage}`);
-      }
-      setQuote(null);
-      setOutputAmount('');
-      setExchangeRate(null);
-    } finally {
-      setIsQuoteLoading(false);
-    }
-  }, [assetIn, assetOut, debouncedInputAmount, connectedAddress, btcPriceUsd]);
+    fetchQuoteAsync(); // Call the async function defined inside
+
+  }, [assetIn, assetOut, debouncedInputAmount, connectedAddress, btcPriceUsd,
+      setIsQuoteLoading, setQuote, setQuoteError, setExchangeRate, setOutputAmount
+  ]);
 
 
   // Effect to call the memoized fetchQuote when debounced amount or assets change
@@ -605,6 +624,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
       setOutputAmount('');
       setExchangeRate(null);
       setInputUsdValue(null); // Also reset USD value
+      setQuoteExpired(false); // Reset quote expired state here too
     }
   }, [debouncedInputAmount, assetIn, assetOut, handleFetchQuote]);
 
@@ -667,8 +687,6 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
     setIsSwapping(false);
     setSwapStep('idle');
     setSwapError(null);
-    setPsbtData(null);
-    setSignedPsbtBase64(null);
     setTxId(null);
     // Don't reset amounts/assets here, handled by selection logic
   }, [inputAmount, assetIn, assetOut, address, connected]);
@@ -688,6 +706,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
     setIsSwapping(true);
     setSwapError(null);
     setTxId(null);
+    setQuoteExpired(false); // Ensure reset before attempting swap
 
     try {
       // 1. Get PSBT
@@ -706,19 +725,14 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
         // slippage: 9, // Optional: Add UI for this later
         // rbfProtection: false, // Start without RBF
       });
-      setPsbtData(psbtResult);
 
-      // Extract PSBT base64 and swap ID safely
-      const psbtBase64 = (psbtResult as any)?.psbtBase64 || (psbtResult as any)?.psbt; // Check both common names
-      const swapId = (psbtResult as any)?.swapId;
-      const rbfPsbtBase64 = (psbtResult as any)?.rbfProtected?.base64; // Check for RBF PSBT
+      const psbtBase64 = (psbtResult as unknown as { psbtBase64?: string, psbt?: string })?.psbtBase64 
+                       || (psbtResult as unknown as { psbtBase64?: string, psbt?: string })?.psbt;
+      const swapId = (psbtResult as unknown as { swapId?: string })?.swapId;
+      const rbfPsbtBase64 = (psbtResult as unknown as { rbfProtected?: { base64?: string } })?.rbfProtected?.base64;
 
-      // More specific checks
-      if (!psbtBase64) {
-        throw new Error(`Invalid PSBT data: Missing PSBT base64 property. Response: ${JSON.stringify(psbtResult)}`);
-      }
-      if (!swapId) {
-        throw new Error(`Invalid PSBT data: Missing 'swapId' property. Response: ${JSON.stringify(psbtResult)}`);
+      if (!psbtBase64 || !swapId) {
+        throw new Error(`Invalid PSBT data received: ${JSON.stringify(psbtResult)}`);
       }
 
       // 2. Sign PSBT(s)
@@ -728,13 +742,11 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
       if (!signedMainPsbt) {
           throw new Error("Main PSBT signing cancelled or failed.");
       }
-      setSignedPsbtBase64(signedMainPsbt); // Store main signed PSBT
 
       let signedRbfPsbt: string | null = null;
-      // Check if RBF protection PSBT exists and needs signing
       if (rbfPsbtBase64) {
           const rbfSigningResult = await signPsbt(rbfPsbtBase64);
-          signedRbfPsbt = rbfSigningResult?.signedPsbtBase64 ?? null; 
+          signedRbfPsbt = rbfSigningResult?.signedPsbtBase64 ?? null;
           if (!signedRbfPsbt) {
               console.warn("RBF PSBT signing cancelled or failed. Proceeding without RBF confirmation might be possible depending on API.");
           }
@@ -758,39 +770,62 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
       };
       const confirmResult = await confirmPSBT(confirmParams);
 
-      if (!confirmResult || !confirmResult.txid) {
-        // Handle potential RBF-related txid structure
-        const finalTxId = confirmResult.txid || confirmResult.rbfProtection?.fundsPreparationTxId;
-        if (!finalTxId) {
-            throw new Error(`Confirmation failed or transaction ID missing. Response: ${JSON.stringify(confirmResult)}`);
-        }
-        setTxId(finalTxId);
-      } else {
-          setTxId(confirmResult.txid);
+      // TODO: Define a stricter type for confirmResult based on API response variations
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const finalTxId = (confirmResult as any)?.txid || (confirmResult as any)?.rbfProtection?.fundsPreparationTxId;
+      if (!finalTxId) {
+          throw new Error(`Confirmation failed or transaction ID missing. Response: ${JSON.stringify(confirmResult)}`);
       }
+      setTxId(finalTxId);
 
       setSwapStep('success');
 
 
     } catch (error) {
       console.error("Swap failed:", error);
-      setSwapError(error instanceof Error ? error.message : "An unknown error occurred during the swap.");
-      setSwapStep('error');
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred during the swap.";
+
+      // Check for specific errors
+      if (errorMessage.includes("Quote expired. Please, fetch again.") || (error && typeof error === 'object' && (error as { code?: string }).code === 'ERR677K3')) {
+        // Quote expired error
+        setQuoteExpired(true);
+        setSwapError("Quote expired. Please fetch a new one."); // Set error message
+        setSwapStep('idle'); // Reset step to allow button click for re-fetch
+      } else if (errorMessage.includes("User canceled the request")) {
+        // User cancelled signing
+        setSwapError(errorMessage); // Keep the error message
+        setSwapStep('idle'); // Reset step to allow retry, button remains active
+      } else {
+        // Other swap errors
+        setQuoteExpired(false); // Ensure quote expired state is reset
+        setSwapError(errorMessage);
+        setSwapStep('error'); // Set to error state, button might disable
+      }
     } finally {
-      setIsSwapping(false);
+      // Setting isSwapping false ONLY if not in a state that requires user action (like quote expired)
+      // This ensures the button text/state reflects the quoteExpired status correctly.
+      if (!quoteExpired) {
+         setIsSwapping(false); // Only set isSwapping false if it wasn't a quote expiry error
+      }
+      // If quoteExpired is true, isSwapping should remain false anyway because we didn't set it true
+      // or we exited the try block before confirming. Let's ensure it's false in finally.
+       setIsSwapping(false); // Ensure isSwapping is always false after attempt
     }
   };
 
   // Dynamic swap button text
   const getSwapButtonText = () => {
+    if (quoteExpired) return 'Fetch New Quote'; // Check first
     if (!connected) return 'Connect Wallet';
     if (isQuoteLoading) return `Fetching Quote${loadingDots}`;
     if (!assetIn || !assetOut) return 'Select Assets';
     if (!inputAmount || parseFloat(inputAmount) <= 0) return 'Enter Amount';
-    if (!quote && !quoteError && debouncedInputAmount > 0) return `Getting Quote${loadingDots}`; // Show loading if waiting for quote
-    if (quoteError) return 'Quote Error';
-    if (!quote) return 'Get Quote'; // Should only show if amount > 0 but no quote yet (e.g., before debounce)
-    if (isSwapping) {
+    // If quote expired, we already returned. If quoteError exists BUT it wasn't expiry, show error.
+    if (quoteError && !quoteExpired) return 'Quote Error';
+    // Show loading quote only if not expired and amount > 0
+    if (!quote && !quoteError && !quoteExpired && debouncedInputAmount > 0) return `Getting Quote${loadingDots}`;
+    if (!quote && !quoteExpired) return 'Get Quote'; // Before debounce or if amount is 0
+    if (isSwapping) { // isSwapping is false if quoteExpired is true due to finally block logic
       switch (swapStep) {
         case 'getting_psbt': return `Generating Transaction${loadingDots}`;
         case 'signing': return `Waiting for Signature${loadingDots}`;
@@ -799,7 +834,9 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
       }
     }
     if (swapStep === 'success' && txId) return 'Swap Successful!';
-    if (swapStep === 'error') return 'Swap Failed';
+    // Show 'Swap Failed' only if it's an error state AND not a quote expiry requiring action
+    if (swapStep === 'error' && !quoteExpired) return 'Swap Failed';
+    // If idle after cancellation, show Swap. If idle after quote expiry, show Fetch New Quote (handled above)
     return 'Swap';
   };
 
@@ -816,138 +853,144 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
       currentRunesError: string | null,
       searchQuery: string,
       handleSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-  ) => (
-    <div className={styles.listboxContainer}>
-        <Listbox value={value} onChange={onChange} disabled={disabled || isLoadingRunes}>
-            <div className={styles.listboxRelative}>
-                <Listbox.Button className={styles.listboxButton}>
-                    <span className={styles.listboxButtonText}>
-                        {value?.imageURI && (
-                            <img
-                                src={value.imageURI}
-                                alt={`${value.name} logo`}
-                                className={styles.assetButtonImage} // Use same style as BTC button image
-                                aria-hidden="true"
-                                onError={(e) => (e.currentTarget.style.display = 'none')}
-                            />
-                        )}
-                        {isLoadingRunes && purpose === 'selectRune' ? 'Loading...' : value ? value.name : 'Select Asset'}
-                    </span>
-                    <span className={styles.listboxButtonIconContainer}>
-                        <ChevronUpDownIcon className={styles.listboxButtonIcon} aria-hidden="true" />
-                    </span>
-                </Listbox.Button>
-                <Transition
-                    as={Fragment}
-                    leave="transition ease-in duration-100"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
-                >
-                    <Listbox.Options className={styles.listboxOptions}>
-                        {purpose === 'selectBtcOrRune' && (
-                           <Listbox.Option
-                                key={BTC_ASSET.id}
-                                className={({ active }) =>
-                                    `${styles.listboxOption} ${ active ? styles.listboxOptionActive : styles.listboxOptionInactive }`
-                                }
-                                value={BTC_ASSET}
-                                disabled={BTC_ASSET.id === otherAsset?.id}
-                           >
-                                {({ selected }) => (
-                                     <>
-                                        <span className={styles.runeOptionContent}> {/* Use rune option style */}
-                                            {BTC_ASSET.imageURI && (
-                                                <img src={BTC_ASSET.imageURI} alt="" className={styles.runeImage} aria-hidden="true" />
-                                            )}
-                                            <span className={`${styles.listboxOptionText} ${ selected ? styles.listboxOptionTextSelected : styles.listboxOptionTextUnselected }`}>
-                                                {BTC_ASSET.name}
-                                            </span>
-                                        </span>
-                                        {selected && (
-                                            <span className={styles.listboxOptionCheckContainer}>
-                                                <CheckIcon className={styles.listboxOptionCheckIcon} aria-hidden="true" />
-                                            </span>
-                                        )}
-                                    </>
-                                )}
-                           </Listbox.Option>
-                        )}
+  ) => {
+    const runesToShow = purpose === 'selectBtcOrRune' ? [BTC_ASSET, ...availableRunes] : availableRunes;
+    // Filter out the other selected asset if necessary
+    const filteredRunes = runesToShow.filter(rune => !otherAsset || rune.id !== otherAsset.id);
 
-                        <div className={styles.searchContainer}>
-                            <div className={styles.searchWrapper}>
-                                <img 
-                                    src="/icons/magnifying_glass-0.png" 
-                                    alt="Search" 
-                                    className={styles.searchIconEmbedded} 
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Search runes..."
-                                    value={searchQuery}
-                                    onChange={handleSearchChange}
-                                    className={styles.searchInput}
-                                />
-                            </div>
-                        </div>
+    return (
+      <div className={styles.listboxContainer}>
+          <Listbox value={value} onChange={onChange} disabled={disabled || isLoadingRunes}>
+              <div className={styles.listboxRelative}>
+                  <Listbox.Button className={styles.listboxButton}>
+                      <span className={styles.listboxButtonText}>
+                          {value?.imageURI && (
+                              <img
+                                  src={value.imageURI}
+                                  alt={`${value.name} logo`}
+                                  className={styles.assetButtonImage} // Use same style as BTC button image
+                                  aria-hidden="true"
+                                  onError={(e) => (e.currentTarget.style.display = 'none')}
+                              />
+                          )}
+                          {isLoadingRunes && purpose === 'selectRune' ? 'Loading...' : value ? value.name : 'Select Asset'}
+                      </span>
+                      <span className={styles.listboxButtonIconContainer}>
+                          <ChevronUpDownIcon className={styles.listboxButtonIcon} aria-hidden="true" />
+                      </span>
+                  </Listbox.Button>
+                  <Transition
+                      as={Fragment}
+                      leave="transition ease-in duration-100"
+                      leaveFrom="opacity-100"
+                      leaveTo="opacity-0"
+                  >
+                      <Listbox.Options className={styles.listboxOptions}>
+                          {purpose === 'selectBtcOrRune' && (
+                             <Listbox.Option
+                                  key={BTC_ASSET.id}
+                                  className={({ active }) =>
+                                      `${styles.listboxOption} ${ active ? styles.listboxOptionActive : styles.listboxOptionInactive }`
+                                  }
+                                  value={BTC_ASSET}
+                                  disabled={BTC_ASSET.id === otherAsset?.id}
+                             >
+                                  {({ selected }) => (
+                                       <>
+                                          <span className={styles.runeOptionContent}> {/* Use rune option style */}
+                                              {BTC_ASSET.imageURI && (
+                                                  <img src={BTC_ASSET.imageURI} alt="" className={styles.runeImage} aria-hidden="true" />
+                                              )}
+                                              <span className={`${styles.listboxOptionText} ${ selected ? styles.listboxOptionTextSelected : styles.listboxOptionTextUnselected }`}>
+                                                  {BTC_ASSET.name}
+                                              </span>
+                                          </span>
+                                          {selected && (
+                                              <span className={styles.listboxOptionCheckContainer}>
+                                                  <CheckIcon className={styles.listboxOptionCheckIcon} aria-hidden="true" />
+                                              </span>
+                                          )}
+                                      </>
+                                  )}
+                             </Listbox.Option>
+                          )}
 
-                        {isLoadingRunes && <div className={styles.listboxLoadingOrEmpty}>Loading Runes...</div>}
-                        {!isLoadingRunes && currentRunesError && (
-                          <div className={`${styles.listboxError} ${styles.messageWithIcon}`}>
-                            <img 
-                              src="/icons/msg_error-0.png" 
-                              alt="Error" 
-                              className={styles.messageIcon} 
-                            />
-                            <span>{currentRunesError}</span>
+                          <div className={styles.searchContainer}>
+                              <div className={styles.searchWrapper}>
+                                  <img 
+                                      src="/icons/magnifying_glass-0.png" 
+                                      alt="Search" 
+                                      className={styles.searchIconEmbedded} 
+                                  />
+                                  <input
+                                      type="text"
+                                      placeholder="Search runes..."
+                                      value={searchQuery}
+                                      onChange={handleSearchChange}
+                                      className={styles.searchInput}
+                                  />
+                              </div>
                           </div>
-                        )}
-                        {!isLoadingRunes && !currentRunesError && availableRunes.length === 0 && (
-                             <div className={styles.listboxLoadingOrEmpty}>
-                                {searchQuery ? 'No matching runes found' : (purpose === 'selectBtcOrRune' ? 'No other runes available' : 'No runes available')}
-                             </div>
-                        )}
 
-                        {availableRunes
-                            .filter(rune => rune.id !== otherAsset?.id)
-                            .map((rune) => (
-                            <Listbox.Option
-                                key={rune.id}
-                                className={({ active }) =>
-                                    `${styles.listboxOption} ${ active ? styles.listboxOptionActive : styles.listboxOptionInactive }`
-                                }
-                                value={rune}
-                            >
-                                {({ selected }) => (
-                                    <>
-                                        <span className={styles.runeOptionContent}> {/* Use rune option style */}
-                                            {rune.imageURI && (
-                                                <img
-                                                    src={rune.imageURI}
-                                                    alt=""
-                                                    className={styles.runeImage} // Use rune image style
-                                                    aria-hidden="true"
-                                                    onError={(e) => (e.currentTarget.style.display = 'none')}
-                                                />
-                                            )}
-                                            <span className={`${styles.listboxOptionText} ${ selected ? styles.listboxOptionTextSelected : styles.listboxOptionTextUnselected }`}>
-                                                {rune.name}
-                                            </span>
-                                        </span>
-                                        {selected && (
-                                            <span className={styles.listboxOptionCheckContainer}>
-                                                <CheckIcon className={styles.listboxOptionCheckIcon} aria-hidden="true" />
-                                            </span>
-                                        )}
-                                    </>
-                                )}
-                            </Listbox.Option>
-                        ))}
-                    </Listbox.Options>
-                </Transition>
-            </div>
-        </Listbox>
-    </div>
-  );
+                          {isLoadingRunes && <div className={styles.listboxLoadingOrEmpty}>Loading Runes...</div>}
+                          {!isLoadingRunes && currentRunesError && (
+                            <div className={`${styles.listboxError} ${styles.messageWithIcon}`}>
+                              <img 
+                                src="/icons/msg_error-0.png" 
+                                alt="Error" 
+                                className={styles.messageIcon} 
+                              />
+                              <span>{currentRunesError}</span>
+                            </div>
+                          )}
+                          {!isLoadingRunes && !currentRunesError && availableRunes.length === 0 && (
+                               <div className={styles.listboxLoadingOrEmpty}>
+                                  {searchQuery ? 'No matching runes found' : (purpose === 'selectBtcOrRune' ? 'No other runes available' : 'No runes available')}
+                               </div>
+                          )}
+
+                          {filteredRunes
+                              .filter(rune => rune.id !== otherAsset?.id)
+                              .map((rune) => (
+                              <Listbox.Option
+                                  key={rune.id}
+                                  className={({ active }) =>
+                                      `${styles.listboxOption} ${ active ? styles.listboxOptionActive : styles.listboxOptionInactive }`
+                                  }
+                                  value={rune}
+                              >
+                                  {({ selected }) => (
+                                      <>
+                                          <span className={styles.runeOptionContent}> {/* Use rune option style */}
+                                              {rune.imageURI && (
+                                                  <img
+                                                      src={rune.imageURI}
+                                                      alt=""
+                                                      className={styles.runeImage} // Use rune image style
+                                                      aria-hidden="true"
+                                                      onError={(e) => (e.currentTarget.style.display = 'none')}
+                                                  />
+                                              )}
+                                              <span className={`${styles.listboxOptionText} ${ selected ? styles.listboxOptionTextSelected : styles.listboxOptionTextUnselected }`}>
+                                                  {rune.name}
+                                              </span>
+                                          </span>
+                                          {selected && (
+                                              <span className={styles.listboxOptionCheckContainer}>
+                                                  <CheckIcon className={styles.listboxOptionCheckIcon} aria-hidden="true" />
+                                              </span>
+                                          )}
+                                      </>
+                                  )}
+                              </Listbox.Option>
+                          ))}
+                      </Listbox.Options>
+                  </Transition>
+              </div>
+          </Listbox>
+      </div>
+    );
+  };
 
   // --- Find specific rune balance --- (Helper Function)
   const getSpecificRuneBalance = (runeName: string | undefined): string | null => {
@@ -965,442 +1008,395 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) { // Destructur
     return runesList;
   }, [runesList, runeInfoSearchQuery]);
 
-  return (
-    <div className={styles.container}>
-      {/* --- REMOVE Tabs --- */}
-      {/* <div className={styles.tabContainer}> ... </div> */}
+  // Main Render Function
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'swap':
+        return (
+          <div className={styles.container}>
+            <h2 className={styles.title}>Swap</h2>
 
-      {/* --- Conditional Content (using prop) --- */}
-      {activeTab === 'swap' && (
-        <>
-          <h2 className={styles.title}>Swap</h2> {/* Updated title */}
-
-          {/* Input Area */}
-          <div className={styles.inputArea}>
-            <div className={styles.inputHeader}> {/* Wrap label and balance */}
-              <label htmlFor="input-amount" className={styles.inputLabel}>You Pay</label>
-              {/* --- Balance Display Logic --- */}
-              {connected && assetIn && (
-                <span className={styles.availableBalance}>
-                  Available: {' '}
-                  {assetIn.isBTC ? (
-                    // BTC Balance Display
-                    isBtcBalanceLoading ? (
-                      'Loading...'
-                    ) : btcBalanceError ? (
-                      'Error'
-                    ) : btcBalanceSats !== undefined ? (
-                      `${(btcBalanceSats / 100_000_000).toLocaleString(undefined, { maximumFractionDigits: 8 })} BTC`
+            {/* Input Area */}
+            <div className={styles.inputArea}>
+              <div className={styles.inputHeader}>
+                <label htmlFor="input-amount" className={styles.inputLabel}>You Pay</label>
+                {connected && assetIn && (
+                  <span className={styles.availableBalance}>
+                    Available: {' '}
+                    {assetIn.isBTC ? (
+                      isBtcBalanceLoading ? (
+                        'Loading...'
+                      ) : btcBalanceError ? (
+                        'Error'
+                      ) : btcBalanceSats !== undefined ? (
+                        `${(btcBalanceSats / 100_000_000).toLocaleString(undefined, { maximumFractionDigits: 8 })} BTC`
+                      ) : (
+                        'N/A' // Should not happen if connected
+                      )
                     ) : (
-                      'N/A' // Should not happen if connected
-                    )
-                  ) : (
-                    // Rune Balance Display (Updated for Swap Tab)
-                    isRuneBalancesLoading || isSwapRuneInfoLoading ? (
-                      'Loading...'
-                    ) : runeBalancesError || swapRuneInfoError ? (
-                      'Error'
-                    ) : (
-                      () => {
-                        const rawBalance = getSpecificRuneBalance(assetIn.name);
-                        const decimals = swapRuneInfo?.decimals ?? 0; 
-                        
-                        if (rawBalance === null) return 'N/A';
-                        try {
-                          const balanceNum = parseFloat(rawBalance);
-                          if (isNaN(balanceNum)) return 'Invalid Balance';
-                          const displayValue = balanceNum / (10 ** decimals);
-                          return `${displayValue.toLocaleString(undefined, { maximumFractionDigits: decimals })} ${assetIn.name}`;
-                        } catch (e) {
-                          console.error("Error formatting rune balance:", e);
-                          return 'Formatting Error';
+                      isRuneBalancesLoading || isSwapRuneInfoLoading ? (
+                        'Loading...'
+                      ) : runeBalancesError || swapRuneInfoError ? (
+                        'Error'
+                      ) : (
+                        () => {
+                          const rawBalance = getSpecificRuneBalance(assetIn.name);
+                          const decimals = swapRuneInfo?.decimals ?? 0; 
+                          
+                          if (rawBalance === null) return 'N/A';
+                          try {
+                            const balanceNum = parseFloat(rawBalance);
+                            if (isNaN(balanceNum)) return 'Invalid Balance';
+                            const displayValue = balanceNum / (10 ** decimals);
+                            return `${displayValue.toLocaleString(undefined, { maximumFractionDigits: decimals })} ${assetIn.name}`;
+                          } catch (e) {
+                            console.error("Error formatting rune balance:", e);
+                            return 'Formatting Error';
+                          }
                         }
-                      }
-                    )()
-                  )}
-                </span>
+                      )()
+                    )}
+                  </span>
+                )}
+                {!connected && (<span className={styles.availableBalance}></span>)}
+              </div>
+              <div className={styles.inputRow}>
+                <input
+                  type="number"
+                  id="input-amount"
+                  placeholder="0.0"
+                  value={inputAmount}
+                  onChange={(e) => setInputAmount(e.target.value)}
+                  className={styles.amountInput}
+                  min="0"
+                  step="0.001"
+                />
+                {renderAssetSelector(
+                    assetIn,
+                    handleSelectAssetIn,
+                    false,
+                    assetOut?.isBTC ? 'selectRune' : 'selectBtcOrRune',
+                    assetOut,
+                    availableRunes,
+                    isLoadingRunes,
+                    currentRunesError,
+                    searchQuery,
+                    handleSearchChange
+                )}
+              </div>
+              {inputUsdValue && !isQuoteLoading && (
+                <div className={styles.usdValueText}>≈ {inputUsdValue}</div>
               )}
-              {!connected && (<span className={styles.availableBalance}></span>)} {/* Placeholder when not connected */}
-               {/* --- End Balance Display Logic --- */}
             </div>
-            <div className={styles.inputRow}>
-              <input
-                type="number"
-                id="input-amount"
-                placeholder="0.0"
-                value={inputAmount}
-                onChange={(e) => setInputAmount(e.target.value)}
-                className={styles.amountInput}
-                min="0" // Prevent negative numbers
-                step="0.001" // Allow decimals, set increment step
-              />
-              {/* Asset Selector for Input - Pass assetOut as otherAsset */}
-              {renderAssetSelector(
-                  assetIn,
-                  handleSelectAssetIn,
-                  false, // Not disabled by default
-                  assetOut?.isBTC ? 'selectRune' : 'selectBtcOrRune',
-                  assetOut, // Pass the output asset as the "other" asset
-                  availableRunes,
-                  isLoadingRunes,
-                  currentRunesError,
-                  searchQuery,
-                  handleSearchChange
+
+            {/* Swap Direction Button */}
+            <div className={styles.swapIconContainer}>
+                <button
+                    onClick={handleSwapDirection}
+                    className={styles.swapIconButton}
+                    aria-label="Swap direction"
+                    disabled={!assetIn || !assetOut || isSwapping || isQuoteLoading}
+                >
+                    <ArrowPathIcon className={styles.swapIcon} />
+                </button>
+            </div>
+
+            {/* Output Area */}
+            <div className={styles.inputArea}>
+               <label htmlFor="output-amount" className={styles.inputLabel}>
+                 You Receive (Estimated)
+               </label>
+              <div className={styles.inputRow}>
+                 <input
+                  type="text"
+                  id="output-amount"
+                  placeholder="0.0"
+                  value={isQuoteLoading ? loadingDots : outputAmount}
+                  readOnly
+                  className={styles.amountInputReadOnly}
+                />
+                {renderAssetSelector(
+                   assetOut,
+                   handleSelectAssetOut,
+                   false,
+                   assetIn?.isBTC ? 'selectRune' : 'selectBtcOrRune',
+                   assetIn,
+                   availableRunes,
+                   isLoadingRunes,
+                   currentRunesError,
+                   searchQuery,
+                   handleSearchChange
+                )}
+              </div>
+              {inputUsdValue && !isQuoteLoading && (
+                <div className={styles.usdValueText}>≈ {inputUsdValue}</div>
+              )}
+              {quoteError && !isQuoteLoading && (
+                 <div className={`${styles.quoteErrorText} ${styles.messageWithIcon}`}>
+                     <img 
+                       src="/icons/msg_error-0.png" 
+                       alt="Error" 
+                       className={styles.messageIcon} 
+                     />
+                     <span>{quoteError}</span>
+                 </div>
               )}
             </div>
-            {/* Display Input USD Value */}
-            {inputUsdValue && !isQuoteLoading && ( // Hide USD value while quote is loading as it might be inaccurate
-              <div className={styles.usdValueText}>≈ {inputUsdValue}</div>
-            )}
-          </div>
 
-          {/* Swap Direction Button */}
-           <div className={styles.swapIconContainer}>
-               <button
-                   onClick={handleSwapDirection}
-                   className={styles.swapIconButton}
-                   aria-label="Swap direction"
-                   disabled={!assetIn || !assetOut || isSwapping || isQuoteLoading} // Disable during swap/load
-               >
-                   <ArrowPathIcon className={styles.swapIcon} />
-               </button>
-           </div>
-
-
-          {/* Output Area */}
-          <div className={styles.inputArea}>
-             <label htmlFor="output-amount" className={styles.inputLabel}>
-               You Receive (Estimated)
-             </label>
-            <div className={styles.inputRow}>
-               <input
-                type="text" // Read-only, display calculated value
-                id="output-amount"
-                placeholder="0.0"
-                value={isQuoteLoading ? loadingDots : outputAmount}
-                readOnly
-                className={styles.amountInputReadOnly} // Style as read-only
-              />
-              {/* Asset Selector for Output - Pass assetIn as otherAsset */}
-               {renderAssetSelector(
-                  assetOut,
-                  handleSelectAssetOut,
-                  false, // Not disabled by default
-                  assetIn?.isBTC ? 'selectRune' : 'selectBtcOrRune',
-                  assetIn, // Pass the input asset as the "other" asset
-                  availableRunes,
-                  isLoadingRunes,
-                  currentRunesError,
-                  searchQuery,
-                  handleSearchChange
-               )}
+            {/* Info Area */}
+            <div className={styles.infoArea}>
+              {assetIn && assetOut && (
+                <div className={styles.infoRow}>
+                   <span>Price:</span>
+                   <span>
+                     {(() => {
+                       if (isQuoteLoading) return loadingDots;
+                       if (exchangeRate) return exchangeRate;
+                       // Show N/A only if amount entered, but no quote/rate yet and no specific quote error
+                       if (debouncedInputAmount > 0 && !quoteError) return 'N/A'; 
+                       return ''; // Otherwise, display nothing
+                     })()}
+                   </span>
+                </div>
+              )}
             </div>
-            {/* Display Output USD Value - Mirrors Input USD Value */}
-            {inputUsdValue && !isQuoteLoading && (
-              <div className={styles.usdValueText}>≈ {inputUsdValue}</div>
-            )}
-            {/* Display Quote Error specific to output */}
-            {quoteError && !isQuoteLoading && (
-               <div className={`${styles.quoteErrorText} ${styles.messageWithIcon}`}>
-                   <img 
-                     src="/icons/msg_error-0.png" 
-                     alt="Error" 
-                     className={styles.messageIcon} 
-                   />
-                   <span>{quoteError}</span>
+
+            {/* Swap Button */}
+            <button
+              className={styles.swapButton}
+              onClick={quoteExpired ? handleFetchQuote : handleSwap} 
+              disabled={
+                 // Simplified logic without comments inside JSX
+                 (quoteExpired && isQuoteLoading) ||
+                 (!quoteExpired && (
+                   !connected ||
+                   !inputAmount ||
+                   parseFloat(inputAmount) <= 0 ||
+                   !assetIn ||
+                   !assetOut ||
+                   isQuoteLoading || 
+                   !!quoteError || // Still disable if any quote error exists
+                   !quote || 
+                   isSwapping || 
+                   swapStep === 'success' ||
+                   (swapStep === 'error' && !quoteExpired) // Disable on error unless it's the specific quote expired case
+                 ))
+              }
+            >
+              {getSwapButtonText()}
+            </button>
+
+            {/* Display Swap Error/Success Messages */}
+            {swapError && (
+               <div className={`${styles.errorText} ${styles.messageWithIcon}`}>
+                  <img src="/icons/msg_error-0.png" alt="Error" className={styles.messageIcon} />
+                  <span>Error: {swapError}</span>
                </div>
             )}
-          </div>
-
-
-          {/* Info Area - REMOVE BTC Price from here */}
-          <div className={styles.infoArea}>
-            {/* Exchange Rate */}
-            {assetIn && assetOut && ( // Show row if both assets are selected
-              <div className={styles.infoRow}>
-                 <span>Price:</span>
-                 <span>
-                    {isQuoteLoading
-                        ? loadingDots
-                        : exchangeRate
-                        ? exchangeRate
-                        : (debouncedInputAmount > 0 && !quoteError) // Only show N/A if trying to load but no rate yet
-                        ? 'N/A'
-                        : ''} {/* Hide if no amount entered or error */}
-                 </span>
+            {!swapError && swapStep === 'success' && txId && (
+              <div className={`${styles.successText} ${styles.messageWithIcon}`}>
+                   <img src="/icons/info-0.png" alt="Success" className={styles.messageIcon} />
+                   <span>
+                      Swap successful!
+                      <a
+                          href={`https://ordiscan.com/tx/${txId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={styles.txLink}
+                      >
+                          View on Ordiscan
+                      </a>
+                   </span>
               </div>
             )}
           </div>
-
-          {/* Swap Button */}
-          <button
-            className={styles.swapButton}
-            onClick={handleSwap}
-            disabled={
-              !connected ||
-              !inputAmount ||
-              parseFloat(inputAmount) <= 0 ||
-              !assetIn ||
-              !assetOut ||
-              isQuoteLoading ||
-              !!quoteError ||
-              !quote ||
-              isSwapping ||
-              swapStep === 'success' ||
-              swapStep === 'error'
-            }
-          >
-            {getSwapButtonText()}
-          </button>
-
-          {/* Display Swap Error/Success Messages */}
-          {swapStep === 'error' && swapError && (
-             <div className={`${styles.errorText} ${styles.messageWithIcon}`}>
-                <img src="/icons/msg_error-0.png" alt="Error" className={styles.messageIcon} />
-                <span>Error: {swapError}</span>
-             </div>
-          )}
-          {swapStep === 'success' && txId && (
-            <div className={`${styles.successText} ${styles.messageWithIcon}`}>
-                 <img src="/icons/info-0.png" alt="Success" className={styles.messageIcon} />
-                 <span>
-                    Swap successful!
-                    <a
-                        href={`https://ordiscan.com/tx/${txId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={styles.txLink}
-                    >
-                        View on Ordiscan
-                    </a>
-                 </span>
+        );
+      case 'runesInfo':
+        return (
+          <div className={styles.runesInfoTabContainer}>
+            <div className={styles.searchContainerRunesInfo}>
+               <div className={styles.searchWrapper}>
+                  <img src="/icons/magnifying_glass-0.png" alt="Search" className={styles.searchIconEmbedded} />
+                  <input
+                      type="text"
+                      placeholder="Search runes by exact name..."
+                      value={runeInfoSearchQuery}
+                      onChange={(e) => setRuneInfoSearchQuery(e.target.value)}
+                      className={styles.searchInput} 
+                  />
+               </div>
             </div>
-          )}
-        </>
-      )}
 
-      {activeTab === 'runesInfo' && (
-        <div className={styles.runesInfoTabContainer}>
-          {/* Search Bar */} 
-          <div className={styles.searchContainerRunesInfo}>
-             <div className={styles.searchWrapper}> {/* Reuse search wrapper style */} 
-                <img src="/icons/magnifying_glass-0.png" alt="Search" className={styles.searchIconEmbedded} />
-                <input
-                    type="text"
-                    placeholder="Search runes by exact name..."
-                    value={runeInfoSearchQuery}
-                    onChange={(e) => setRuneInfoSearchQuery(e.target.value)}
-                    className={styles.searchInput} 
-                />
-             </div>
-          </div>
+            <div className={styles.runesListContainer}>
+              {!debouncedSearchQuery && (
+                <>
+                  {isRunesListLoading && <div className={styles.listboxLoadingOrEmpty}>Loading Latest Runes...</div>}
+                  {runesListError && <div className={styles.listboxError}>Error loading runes: {runesListError.message}</div>}
+                  {!isRunesListLoading && !runesListError && filteredRunesList.length === 0 && (
+                      <div className={styles.listboxLoadingOrEmpty}>No recent runes found</div>
+                  )}
+                  {!isRunesListLoading && !runesListError && filteredRunesList.map((rune) => (
+                      <button 
+                          key={rune.id}
+                          className={`${styles.runeListItem} ${selectedRuneForInfo?.id === rune.id ? styles.runeListItemSelected : ''}`}
+                          onClick={() => setSelectedRuneForInfo(rune)}
+                      >
+                          {rune.formatted_name}
+                      </button>
+                  ))}
+                </>
+              )}
 
-          {/* Rune List / Search Results Area */} 
-          <div className={styles.runesListContainer}>
-            {/* --- Case 1: Browsing (Search Empty) --- */} 
-            {!debouncedSearchQuery && (
-              <>
-                {isRunesListLoading && <div className={styles.listboxLoadingOrEmpty}>Loading Latest Runes...</div>}
-                {runesListError && <div className={styles.listboxError}>Error loading runes: {runesListError.message}</div>}
-                {!isRunesListLoading && !runesListError && filteredRunesList.length === 0 && (
-                    <div className={styles.listboxLoadingOrEmpty}>No recent runes found</div>
-                )}
-                {!isRunesListLoading && !runesListError && filteredRunesList.map((rune) => (
+              {debouncedSearchQuery && (
+                <>
+                  {isFetchingSearchedRuneInfo && <div className={styles.listboxLoadingOrEmpty}>Searching for {debouncedSearchQuery}...</div>}
+                  {searchRuneInfoError && <div className={styles.listboxError}>Error searching: {searchRuneInfoError.message}</div>}
+                  {!isFetchingSearchedRuneInfo && !searchRuneInfoError && searchedRuneInfo && (
                     <button 
-                        key={rune.id}
-                        className={`${styles.runeListItem} ${selectedRuneForInfo?.id === rune.id ? styles.runeListItemSelected : ''}`}
-                        onClick={() => setSelectedRuneForInfo(rune)}
+                        key={searchedRuneInfo.id}
+                        className={`${styles.runeListItem} ${selectedRuneForInfo?.id === searchedRuneInfo.id ? styles.runeListItemSelected : ''}`}
+                        onClick={() => setSelectedRuneForInfo(searchedRuneInfo)}
                     >
-                        {rune.formatted_name}
+                        {searchedRuneInfo.formatted_name}
                     </button>
-                ))}
-              </>
-            )}
-
-            {/* --- Case 2: Searching (Search Not Empty) --- */}
-            {debouncedSearchQuery && (
-              <>
-                {isFetchingSearchedRuneInfo && <div className={styles.listboxLoadingOrEmpty}>Searching for {debouncedSearchQuery}...</div>}
-                {searchRuneInfoError && <div className={styles.listboxError}>Error searching: {searchRuneInfoError.message}</div>}
-                {!isFetchingSearchedRuneInfo && !searchRuneInfoError && searchedRuneInfo && (
-                  // Found a result
-                  <button 
-                      key={searchedRuneInfo.id}
-                      className={`${styles.runeListItem} ${selectedRuneForInfo?.id === searchedRuneInfo.id ? styles.runeListItemSelected : ''}`}
-                      onClick={() => setSelectedRuneForInfo(searchedRuneInfo)}
-                  >
-                      {searchedRuneInfo.formatted_name}
-                  </button>
-                )}
-                {!isFetchingSearchedRuneInfo && !searchRuneInfoError && !searchedRuneInfo && (
-                   // Not found (and not loading/error)
-                   <div className={styles.listboxLoadingOrEmpty}>Rune "{debouncedSearchQuery}" not found.</div>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* Rune Details */} 
-          <div className={styles.runeDetailsContainer}>
-            {isDetailedRuneInfoLoading && selectedRuneForInfo && <p>Loading details for {selectedRuneForInfo.formatted_name}...</p>}
-            {detailedRuneInfoError && selectedRuneForInfo && <p className={styles.errorText}>Error loading details: {detailedRuneInfoError.message}</p>}
-            {detailedRuneInfo && (
-                <div>
-                    <h3>{detailedRuneInfo.formatted_name} ({detailedRuneInfo.symbol})</h3>
-                    <p><strong>ID:</strong> {detailedRuneInfo.id}</p>
-                    <p><strong>Number:</strong> {detailedRuneInfo.number}</p>
-                    <p><strong>Decimals:</strong> {detailedRuneInfo.decimals}</p>
-                    <p><strong>Etching Tx:</strong> {detailedRuneInfo.etching_txid ? <a href={`https://ordiscan.com/tx/${detailedRuneInfo.etching_txid}`} target="_blank" rel="noopener noreferrer" className={styles.txLink}>{detailedRuneInfo.etching_txid.substring(0,8)}...</a> : 'N/A'}</p>
-                    {/* Add more details as needed */} 
-                    <p><strong>Current Supply:</strong> {detailedRuneInfo.current_supply ? parseFloat(detailedRuneInfo.current_supply) / (10 ** detailedRuneInfo.decimals) : 'N/A'}</p>
-                </div>
-            )}
-            {/* Updated Hint Text Logic */}
-            {!selectedRuneForInfo && !isRunesListLoading && !isFetchingSearchedRuneInfo && (
-                 <p className={styles.hintText}>{(debouncedSearchQuery && searchedRuneInfo) ? 'Click the rune above to load details.' : 'Select a rune from the list or search by name.'}</p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* --- NEW: Your TXs Tab --- */} 
-      {activeTab === 'yourTxs' && (
-        <div className={styles.yourTxsTabContainer}>
-          <h2 className={styles.title}>Your Rune Transactions</h2>
-          {!connected || !address ? (
-            <p className={styles.hintText}>Connect your wallet to view your transactions.</p>
-          ) : isRuneActivityLoading ? (
-            <p className={styles.listboxLoadingOrEmpty}>Loading your transactions...</p>
-          ) : runeActivityError ? (
-            <p className={styles.listboxError}>Error loading transactions: {runeActivityError.message}</p>
-          ) : !runeActivity || runeActivity.length === 0 ? (
-            <p className={styles.hintText}>No recent rune transactions found for this address.</p>
-          ) : (
-            <div className={styles.txListContainer}> 
-              {runeActivity.map((tx) => (
-                <div key={tx.txid} className={styles.txListItem}>
-                  <div className={styles.txHeader}>
-                    <a 
-                      href={`https://ordiscan.com/tx/${tx.txid}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className={styles.txLinkBold}
-                    >
-                      TXID: {tx.txid.substring(0, 8)}...{tx.txid.substring(tx.txid.length - 8)}
-                    </a>
-                    <span className={styles.txTimestamp}>
-                      {new Date(tx.timestamp).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className={styles.txDetails}> 
-                    {/* --- Updated TX Details Logic --- */}
-                    {(() => {
-                       // Determine Action, Rune, and Amount
-                       let action = 'Unknown';
-                       let runeName = 'N/A';
-                       let runeAmountRaw = 'N/A';
-                       const userAddress = address; // Use the connected ordinals address
-
-                       // Prioritize MINT/ETCH from messages
-                       const mintEtchMessage = tx.runestone_messages.find(m => m.type === 'MINT' || m.type === 'ETCH');
-                       if (mintEtchMessage) {
-                          action = mintEtchMessage.type === 'MINT' ? 'Minted' : 'Etched';
-                          runeName = mintEtchMessage.rune;
-                          // Find amount received by user in outputs for mint/etch
-                          const userOutput = tx.outputs.find(o => o.address === userAddress && o.rune === runeName);
-                          runeAmountRaw = userOutput ? userOutput.rune_amount : 'N/A';
-                       } else {
-                          // Handle Transfers
-                          const userSent = tx.inputs.some(i => i.address === userAddress);
-                          const userReceived = tx.outputs.some(o => o.address === userAddress);
-
-                          if (userSent && !userReceived) {
-                              action = 'Sent';
-                              // Find rune/amount from input involving user
-                              const sentInput = tx.inputs.find(i => i.address === userAddress);
-                              if (sentInput) {
-                                  runeName = sentInput.rune;
-                                  runeAmountRaw = sentInput.rune_amount;
-                              }
-                          } else if (userReceived && !userSent) {
-                              action = 'Received';
-                              // Find rune/amount from output involving user
-                              const receivedOutput = tx.outputs.find(o => o.address === userAddress);
-                              if (receivedOutput) {
-                                  runeName = receivedOutput.rune;
-                                  runeAmountRaw = receivedOutput.rune_amount;
-                              }
-                          } else if (userSent && userReceived) {
-                              action = 'Transferred (Internal?)'; // E.g., sending to self
-                              // Try to find relevant rune/amount (might need refinement)
-                              const relevantRune = tx.runestone_messages[0]?.rune;
-                              const relevantOutput = tx.outputs.find(o => o.address === userAddress && o.rune === relevantRune);
-                              if (relevantOutput) {
-                                runeName = relevantOutput.rune;
-                                runeAmountRaw = relevantOutput.rune_amount;
-                              } else {
-                                const relevantInput = tx.inputs.find(i => i.address === userAddress && i.rune === relevantRune);
-                                if (relevantInput) {
-                                    runeName = relevantInput.rune;
-                                    runeAmountRaw = relevantInput.rune_amount;
-                                }
-                              }
-                          } else {
-                              action = 'Transfer (External)'; // Involved but not sender/receiver?
-                              runeName = tx.runestone_messages[0]?.rune || tx.inputs[0]?.rune || 'N/A';
-                              runeAmountRaw = 'N/A'; // Hard to determine amount if not direct in/out
-                          }
-                       }
-
-                      return (
-                        <>
-                          <div className={styles.txDetailRow}> 
-                              <span>Action:</span>
-                              <span style={{ fontWeight: 'bold' }}>{action}</span>
-                          </div>
-                           <div className={styles.txDetailRow}> 
-                              <span>Rune:</span>
-                              <span className={styles.runeNameHighlight}>{runeName}</span>
-                          </div>
-                           <div className={styles.txDetailRow}> 
-                              <span>Amount (Raw):</span>
-                              <span>{runeAmountRaw}</span>
-                          </div>
-                        </>
-                      );
-                    })()}
-                    {/* --- End Updated TX Details Logic --- */}
-                  </div>
-                </div>
-              ))}
-              {/* Add pagination controls here later */} 
+                  )}
+                  {!isFetchingSearchedRuneInfo && !searchRuneInfoError && !searchedRuneInfo && (
+                     <div className={styles.listboxLoadingOrEmpty}>Rune &quot;{debouncedSearchQuery}&quot; not found.</div>
+                  )}
+                </>
+              )}
             </div>
-          )}
-        </div>
-      )}
 
-      {/* BTC Price Footer */} 
-      {activeTab === 'swap' && (
-          <div className={styles.btcPriceFooter}>
-              <span>BTC Price:</span>
-              <span>
-                {isBtcPriceLoading
-                  ? loadingDots
-                  : btcPriceError
-                  ? 'Error'
-                  : btcPriceUsd
-                  ? btcPriceUsd.toLocaleString(undefined, {
-                      style: 'currency',
-                      currency: 'USD',
-                    })
-                  : 'N/A'}
-              </span>
+            <div className={styles.runeDetailsContainer}>
+              {isDetailedRuneInfoLoading && selectedRuneForInfo && <p>Loading details for {selectedRuneForInfo.formatted_name}...</p>}
+              {detailedRuneInfoError && selectedRuneForInfo && <p className={styles.errorText}>Error loading details: {detailedRuneInfoError.message}</p>}
+              {detailedRuneInfo && (
+                  <div>
+                      <h3>{detailedRuneInfo.formatted_name} ({detailedRuneInfo.symbol})</h3>
+                      <p><strong>ID:</strong> {detailedRuneInfo.id}</p>
+                      <p><strong>Number:</strong> {detailedRuneInfo.number}</p>
+                      <p><strong>Decimals:</strong> {detailedRuneInfo.decimals}</p>
+                      <p><strong>Etching Tx:</strong> {detailedRuneInfo.etching_txid ? <a href={`https://ordiscan.com/tx/${detailedRuneInfo.etching_txid}`} target="_blank" rel="noopener noreferrer" className={styles.txLink}>{detailedRuneInfo.etching_txid.substring(0,8)}...</a> : 'N/A'}</p>
+                      <p><strong>Current Supply:</strong> {detailedRuneInfo.current_supply ? parseFloat(detailedRuneInfo.current_supply) / (10 ** detailedRuneInfo.decimals) : 'N/A'}</p>
+                  </div>
+              )}
+              {!selectedRuneForInfo && !isRunesListLoading && !isFetchingSearchedRuneInfo && (
+                   <p className={styles.hintText}>{(debouncedSearchQuery && searchedRuneInfo) ? 'Click the rune above to load details.' : 'Select a rune from the list or search by name.'}</p>
+              )}
+            </div>
           </div>
-      )}
-    </div>
-  );
-}
+        );
+      case 'yourTxs':
+        return (
+          <div className={styles.yourTxsTabContainer}>
+            <h2 className={styles.title}>Your Rune Transactions</h2>
+            {!connected || !address ? (
+              <p className={styles.hintText}>Connect your wallet to view your transactions.</p>
+            ) : isRuneActivityLoading ? (
+              <p className={styles.listboxLoadingOrEmpty}>Loading your transactions...</p>
+            ) : runeActivityError ? (
+              <p className={styles.listboxError}>Error loading transactions: {runeActivityError.message}</p>
+            ) : !runeActivity || runeActivity.length === 0 ? (
+              <p className={styles.hintText}>No recent rune transactions found for this address.</p>
+            ) : (
+              <div className={styles.txListContainer}> 
+                {runeActivity.map((tx) => (
+                  <div key={tx.txid} className={styles.txListItem}>
+                    <div className={styles.txHeader}>
+                      <a 
+                        href={`https://ordiscan.com/tx/${tx.txid}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className={styles.txLinkBold}
+                      >
+                        TXID: {tx.txid.substring(0, 8)}...{tx.txid.substring(tx.txid.length - 8)}
+                      </a>
+                      <span className={styles.txTimestamp}>
+                        {new Date(tx.timestamp).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className={styles.txDetails}> 
+                      {(() => {
+                         let action = 'Unknown';
+                         let runeName = 'N/A';
+                         let runeAmountRaw = 'N/A';
+                         const userAddress = address;
 
-// ... Asset type, BTC_ASSET, MOCK_ADDRESS ...
+                         const mintEtchMessage = tx.runestone_messages.find(m => m.type === 'MINT' || m.type === 'ETCH');
+                         if (mintEtchMessage) {
+                            action = mintEtchMessage.type === 'MINT' ? 'Minted' : 'Etched';
+                            runeName = mintEtchMessage.rune;
+                            const userOutput = tx.outputs.find(o => o.address === userAddress && o.rune === runeName);
+                            runeAmountRaw = userOutput ? userOutput.rune_amount : 'N/A';
+                         } else {
+                            const userSent = tx.inputs.some(i => i.address === userAddress);
+                            const userReceived = tx.outputs.some(o => o.address === userAddress);
+
+                            if (userSent && !userReceived) {
+                                action = 'Sent';
+                                const sentInput = tx.inputs.find(i => i.address === userAddress);
+                                if (sentInput) {
+                                    runeName = sentInput.rune;
+                                    runeAmountRaw = sentInput.rune_amount;
+                                }
+                            } else if (userReceived && !userSent) {
+                                action = 'Received';
+                                const receivedOutput = tx.outputs.find(o => o.address === userAddress);
+                                if (receivedOutput) {
+                                    runeName = receivedOutput.rune;
+                                    runeAmountRaw = receivedOutput.rune_amount;
+                                }
+                            } else if (userSent && userReceived) {
+                                action = 'Transferred (Internal?)';
+                                const relevantRune = tx.runestone_messages[0]?.rune;
+                                const relevantOutput = tx.outputs.find(o => o.address === userAddress && o.rune === relevantRune);
+                                if (relevantOutput) {
+                                  runeName = relevantOutput.rune;
+                                  runeAmountRaw = relevantOutput.rune_amount;
+                                } else {
+                                  const relevantInput = tx.inputs.find(i => i.address === userAddress && i.rune === relevantRune);
+                                  if (relevantInput) {
+                                      runeName = relevantInput.rune;
+                                      runeAmountRaw = relevantInput.rune_amount;
+                                  }
+                                }
+                            } else {
+                                action = 'Transfer (External)';
+                                runeName = tx.runestone_messages[0]?.rune || tx.inputs[0]?.rune || 'N/A';
+                                runeAmountRaw = 'N/A';
+                            }
+                         }
+
+                        return (
+                          <>
+                            <div className={styles.txDetailRow}> 
+                                <span>Action:</span>
+                                <span style={{ fontWeight: 'bold' }}>{action}</span>
+                            </div>
+                             <div className={styles.txDetailRow}> 
+                                <span>Rune:</span>
+                                <span className={styles.runeNameHighlight}>{runeName}</span>
+                            </div>
+                             <div className={styles.txDetailRow}> 
+                                <span>Amount (Raw):</span>
+                                <span>{runeAmountRaw}</span>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return <div className={styles.container}>{renderContent()}</div>;
+}
 
 export default SwapInterface;

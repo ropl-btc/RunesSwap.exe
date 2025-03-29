@@ -124,14 +124,25 @@ export const getRuneInfo = async (name: string): Promise<RuneInfo | null> => {
     // Assuming the method is getInfo and it returns an object matching our RuneInfo interface
     const info: RuneInfo = await ordiscan.rune.getInfo({ name: formattedName });
     return info;
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Ordiscan might throw 404 as an error, check for that
-    if (error?.status === 404) {
+    // Perform type check for error properties
+    let status = 0;
+    if (error && typeof error === 'object' && 'status' in error) {
+        status = (error as { status: number }).status;
+    }
+    if (status === 404) {
         console.warn(`[Ordiscan SDK] Rune info not found for ${formattedName}.`);
         return null; // Return null specifically for 404
     }
     console.error(`[Ordiscan SDK] Error fetching info for rune ${formattedName}:`, error);
-    throw error; // Re-throw other errors for useQuery handling
+    // Re-throw other errors for useQuery handling
+    // Need to re-throw the original error or a new Error object
+    if (error instanceof Error) {
+      throw error;
+    } else {
+      throw new Error(`An unknown error occurred: ${error}`);
+    }
   }
 };
 

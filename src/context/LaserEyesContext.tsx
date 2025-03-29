@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext } from 'react';
+import { createContext, useContext } from 'react';
 import type { ProviderType } from '@omnisat/lasereyes'; // Import ProviderType
 // REMOVED: import type { LaserEyesData } from '@omnisat/lasereyes'; // Assuming LaserEyes exports a type for its hook return value
 
@@ -15,7 +15,7 @@ interface ILaserEyesContext {
   provider?: string; // Keep this as string for display?
   connect: (providerName: ProviderType) => Promise<void>; // Use ProviderType
   disconnect: () => void;
-  signPsbt: (psbtBase64: string, options?: any) => Promise<{ 
+  signPsbt: (tx: string, finalize?: boolean, broadcast?: boolean) => Promise<{ 
     signedPsbtHex?: string;
     signedPsbtBase64?: string;
     txId?: string;
