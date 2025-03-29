@@ -1,11 +1,93 @@
 /* src/app/page.module.css */
 
 .mainContainer {
-  /* No specific container styles needed beyond what Layout provides */
+  padding: 1rem;
+  /* Add any overall container styles if needed */
 }
 
-.connectButtonContainer {
+/* --- New Header Styles --- */
+.headerContainer {
   display: flex;
-  justify-content: flex-end;
-  padding-bottom: 1rem; /* pb-4 */
-} 
+  justify-content: space-between; /* Pushes tabs left, button right */
+  align-items: flex-end; /* Align items to the bottom */
+  margin-bottom: 1rem; /* Space below the header */
+  /* Add a bottom border maybe? */
+  /* border-bottom: 2px solid var(--win98-dark-gray); */
+  /* padding-bottom: 0.5rem; */
+}
+
+.tabsInHeader {
+  display: flex;
+  /* Add styles for the group of tabs */
+}
+
+/* Style for individual tab buttons in the page header */
+.pageTabButton {
+  padding: 0.5rem 1rem;
+  background-color: var(--win98-gray);
+  /* Use standard Win98 button border */
+  border-width: 2px;
+  border-style: solid;
+  border-top-color: var(--win98-light-gray);
+  border-left-color: var(--win98-light-gray);
+  border-right-color: var(--win98-dark-gray);
+  border-bottom-color: var(--win98-dark-gray);
+  /* Remove tab-specific styles */
+  /* border-bottom: none; */ 
+  /* margin-right: 2px; */ /* Keep margin */
+  margin-right: 2px;
+  position: relative;
+  /* bottom: -2px; */ /* Remove lift */
+  font-weight: bold;
+  color: var(--win98-black);
+  /* border-top-left-radius: 3px; */ /* Remove radius */
+  /* border-top-right-radius: 3px; */ /* Remove radius */
+  
+  /* Reuse Win98 button shadow - Might need adjustment if border changes */
+  box-shadow: inset -1px -1px 0px var(--win98-black), inset 1px 1px 0px var(--win98-white), inset -2px -2px 0px var(--win98-dark-gray), inset 2px 2px 0px var(--win98-light-gray);
+}
+
+.pageTabButton:hover {
+  background-color: var(--win98-light-gray);
+}
+
+.pageTabButton:active {
+  /* Standard button active state */
+  background-color: var(--win98-gray); /* Keep gray */
+  border-top-color: var(--win98-dark-gray);
+  border-left-color: var(--win98-dark-gray);
+  border-right-color: var(--win98-light-gray);
+  border-bottom-color: var(--win98-light-gray);
+  box-shadow: none; /* Remove shadow on press */
+  /* Add slight padding adjustment for press effect */
+  padding-top: 0.6rem; 
+  padding-bottom: 0.4rem;
+}
+
+.pageTabActive {
+  /* Style active tab like a pressed button or slightly different background */
+  background-color: var(--win98-gray); /* Keep standard gray */
+  border-top-color: var(--win98-dark-gray);
+  border-left-color: var(--win98-dark-gray);
+  border-right-color: var(--win98-light-gray);
+  border-bottom-color: var(--win98-light-gray);
+  box-shadow: none; /* Remove shadow for pressed look */
+  /* Adjust padding to match active state */
+  padding-top: 0.6rem; 
+  padding-bottom: 0.4rem;
+}
+
+.pageTabActive:hover {
+  /* Keep pressed look on hover */
+  background-color: var(--win98-gray);
+}
+
+/* --- End New Header Styles --- */
+
+.connectButtonContainer {
+  /* Keep original styles or adjust as needed */
+  /* Example: Add some margin if needed */
+  /* margin-bottom: 2px; /* Align better with raised tabs */
+}
+
+/* Add any other styles for page.tsx here */ 

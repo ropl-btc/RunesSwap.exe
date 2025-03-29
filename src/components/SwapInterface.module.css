@@ -1,16 +1,27 @@
 /* src/components/SwapInterface.module.css */
 
 .container {
-  padding: 1rem; /* p-4 */
+  padding-top: 0; /* Explicitly remove top padding */
+  padding-bottom: 1rem; /* Keep bottom padding */
+  padding-left: 1rem;   /* Keep left padding */
+  padding-right: 1rem;  /* Keep right padding */
+  /* Add padding-top back dynamically if needed, or handle spacing differently */
+  max-width: 500px; /* Increased from 400px for desktop */
+  margin-left: auto; /* Center the container */
+  margin-right: auto; /* Center the container */
   display: flex;
   flex-direction: column;
   gap: 1rem; /* space-y-4 */
+  /* Apply Win98-style font */
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+  min-height: 450px; /* Add minimum height */
 }
 
 .title {
   font-size: 1.125rem; /* text-lg */
   line-height: 1.75rem; /* text-lg */
   font-weight: 700; /* font-bold */
+  /* margin-top: 1rem; */ /* Remove compensating margin */
 }
 
 .inputArea {
@@ -25,11 +36,27 @@
   border-left-color: var(--win98-dark-gray);
   border-top-color: var(--win98-dark-gray);
   background-color: var(--win98-white);
+  /* margin-top: 1rem; */ /* Remove compensating margin */
 }
 
 .inputLabel {
   font-size: 0.75rem; /* text-xs */
   line-height: 1rem; /* text-xs */
+}
+
+.inputHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline; /* Align baselines of label and balance text */
+  width: 100%; /* Ensure it takes full width */
+}
+
+.availableBalance {
+  font-size: 0.7rem; /* Smaller than label */
+  line-height: 1rem;
+  color: var(--win98-dark-gray);
+  text-align: right;
+  margin-left: 0.5rem; /* Add some space between label and balance */
 }
 
 .inputRow {
@@ -87,11 +114,15 @@
   justify-content: center; /* Center content within the button */
 }
 
-/* Style for the image inside the asset button */
+/* Style for the asset image within the button */
 .assetButtonImage {
-  width: 20px; /* Increased size to match runeImage */
-  height: 20px; /* Increased size to match runeImage */
-  margin-right: 4px; /* Space between image and text */
+  height: 1.25rem; /* h-5 */
+  width: 1.25rem; /* w-5 */
+  margin-right: 0.5rem; /* mr-2 */
+  flex-shrink: 0;
+  /* Disable image smoothing */
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 .assetButton:active {
@@ -103,7 +134,7 @@
 
 .swapButton {
   width: 100%;
-  padding: 0.25rem 1rem; /* px-4 py-1 */
+  padding: 0.5rem 1rem; /* Increased vertical padding slightly for better feel */
   background-color: var(--win98-gray);
   border-width: 2px;
   border-style: solid;
@@ -160,6 +191,23 @@
   color: #1e40af; /* darker blue on hover */
 }
 
+/* Container for messages with icons */
+.messageWithIcon {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem; /* space-x-2 */
+}
+
+/* Style for message icons (error, warning, etc.) */
+.messageIcon {
+  width: 1rem; /* w-4 */
+  height: 1rem; /* h-4 */
+  flex-shrink: 0; /* Prevent icon from shrinking */
+  /* Disable image smoothing */
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
 /* New Info Area Styles */
 .infoArea {
   margin-top: 1rem; /* mt-4 */
@@ -180,7 +228,6 @@
 
 /* Headless UI Listbox Styles */
 .listboxContainer {
-  width: 18rem; /* Increased from 12rem */
   flex-shrink: 0;
 }
 
@@ -239,26 +286,31 @@
 
 .listboxOptions {
   position: absolute;
+  right: 0; /* Align right edge with the button's right edge */
   margin-top: 0.25rem; /* mt-1 */
   max-height: 15rem; /* max-h-60 */
-  width: 100%;
-  overflow: auto;
-  background-color: var(--win98-white);
+  min-width: 100%; /* Ensure it's at least as wide as the button */
+  width: max-content; /* Allow dropdown to expand for long names */
+  /* Remove scrollbar but keep scrolling functionality */
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  background-color: var(--win98-gray); /* Match other UI elements */
   padding: 0.25rem 0; /* py-1 */
   font-size: 0.875rem; /* sm:text-sm */
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-lg */
   /* ring-1 ring-black/5 approximation */
   border-width: 2px;
   border-style: solid;
-  border-top-color: var(--win98-dark-gray);
-  border-left-color: var(--win98-dark-gray);
-  border-right-color: var(--win98-light-gray);
-  border-bottom-color: var(--win98-light-gray);
+  border-top-color: var(--win98-light-gray);
+  border-left-color: var(--win98-light-gray);
+  border-right-color: var(--win98-dark-gray);
+  border-bottom-color: var(--win98-dark-gray);
   z-index: 20; /* Added z-index */
 }
 
-.listboxOptions:focus {
-  outline: none;
+/* Hide webkit scrollbar */
+.listboxOptions::-webkit-scrollbar {
+  display: none;
 }
 
 .listboxOption {
@@ -279,7 +331,7 @@
 
 .listboxOptionText {
   display: block;
-  white-space: normal; /* Changed from nowrap to normal to allow text wrapping */
+  white-space: nowrap; /* Ensure full name is visible on one line */
   padding: 0.25rem 0; /* Add some padding */
 }
 
@@ -301,8 +353,8 @@
 }
 
 .listboxOptionCheckIcon {
-  height: 1rem; /* h-4 */
-  width: 1rem; /* w-4 */
+  height: 1.25rem; /* h-5 */
+  width: 1.25rem; /* w-5 */
 }
 
 .listboxLoadingOrEmpty {
@@ -344,13 +396,19 @@
   outline: 1px solid var(--win98-blue);
 }
 
-.searchIconEmbedded { /* Style for icon inside input */
+/* Style for the embedded search icon */
+.searchIconEmbedded {
   position: absolute;
-  left: 0.5rem; /* Adjust as needed */
-  width: 1rem; /* w-4 */
+  left: 0.5rem; /* pl-2 */
+  top: 50%;
+  transform: translateY(-50%);
   height: 1rem; /* h-4 */
-  color: var(--win98-dark-gray);
-  pointer-events: none; /* Make icon non-interactive */
+  width: 1rem; /* w-4 */
+  color: var(--win98-dark-gray); /* text-gray-500 approximation */
+  pointer-events: none; /* Don't interfere with input clicks */
+  /* Disable image smoothing */
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 /* Remove old search form/button styles if they exist */
@@ -364,17 +422,13 @@
 
 /* Style for the rune image in the dropdown */
 .runeImage {
-  width: 20px; /* Adjust size as needed */
-  height: 20px;
-  margin-right: 8px; /* Space between image and text */
-  vertical-align: middle; /* Align image nicely with text */
-  /* Windows 98 "pixelated" look - not perfect but indicative */
+  height: 1.25rem; /* h-5 */
+  width: 1.25rem; /* w-5 */
+  margin-right: 0.5rem; /* mr-2 */
+  flex-shrink: 0;
+  /* Disable image smoothing */
   image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
-  /* Optional: Add a subtle border like old icons */
-  border: 1px solid var(--win98-dark-gray);
-  background-color: var(--win98-light-gray); /* Background for transparent images */
 }
 
 /* Wrapper for rune image + text in dropdown option */
@@ -420,4 +474,116 @@
   color: var(--win98-black);
 }
 
-/* ... rest of the styles ... */ 
+/* Mobile Responsiveness */
+@media (max-width: 640px) { /* Adjust breakpoint as needed (sm: 640px) */
+  .inputRow {
+    flex-direction: column; /* Stack input and selector vertically */
+    align-items: stretch; /* Make children take full width */
+    gap: 0.5rem; /* Add space between input and selector */
+  }
+
+  .amountInput,
+  .amountInputReadOnly {
+    font-size: 1.125rem; /* text-lg - Slightly smaller font on mobile */
+    text-align: left; /* Ensure text starts left */
+  }
+
+  .listboxContainer {
+    width: 100%; /* Make selector take full width */
+  }
+
+  .listboxButton {
+    width: 100%; /* Ensure button takes full width */
+  }
+
+  .container {
+    padding: 0.5rem; /* Reduce padding on smaller screens */
+    max-width: 100%; /* Allow container to take full width on mobile */
+  }
+
+  .title {
+    font-size: 1rem; /* text-base */
+  }
+}
+
+/* --- Runes Info Tab Styles --- */
+.runesInfoTabContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  /* margin-top: 1rem; */ /* Remove compensating margin */
+}
+
+.searchContainerRunesInfo {
+  /* Add specific styles if needed, otherwise it reuses general search styles */
+  margin-bottom: 0.5rem;
+}
+
+.runesListContainer {
+  max-height: 200px; /* Limit height */
+  overflow-y: auto; /* Add scrollbar */
+  border: 1px inset var(--win98-dark-gray);
+  background-color: var(--win98-white);
+  padding: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.runeListItem {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid transparent; /* For hover/selected state */
+  background: none;
+  text-align: left;
+  width: 100%;
+  font-family: inherit;
+  font-size: 0.875rem;
+}
+
+.runeListItem:hover {
+  background-color: var(--win98-highlight);
+  color: var(--win98-highlight-text);
+}
+
+.runeListItemSelected {
+  background-color: var(--win98-highlight);
+  color: var(--win98-highlight-text);
+  border: 1px dotted var(--win98-highlight-text); /* Indicate selection */
+}
+
+.runeDetailsContainer {
+  border: 1px inset var(--win98-dark-gray);
+  padding: 0.5rem;
+  background-color: var(--win98-white);
+  min-height: 100px; /* Give it some initial height */
+}
+
+.runeDetailsContainer h3 {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--win98-dark-gray);
+  padding-bottom: 0.25rem;
+}
+
+.runeDetailsContainer p {
+  margin-bottom: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.hintText {
+  color: var(--win98-dark-gray);
+  font-style: italic;
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 1rem;
+}
+
+.listboxError { /* Reuse from listbox options */
+  composes: listboxLoadingOrEmpty; /* Inherit padding/text style */
+  color: var(--win98-red);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ... Rest of CSS ... */ 

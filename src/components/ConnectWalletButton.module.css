@@ -50,6 +50,7 @@
   position: absolute;
   top: 100%; /* Position below the button */
   left: 0;
+  width: 100%; /* Make dropdown exactly the same width as the button */
   background-color: var(--win98-gray);
   border-width: 2px;
   border-style: solid;
@@ -58,7 +59,6 @@
   border-right-color: var(--win98-light-gray);
   border-bottom-color: var(--win98-light-gray);
   z-index: 50; /* Ensure dropdown is above other content - Increased z-index */
-  min-width: 160px; /* Adjust as needed */
   padding: 2px; /* Inner padding for the border effect */
   box-shadow: 2px 2px 0px 0px var(--win98-dark-gray); /* Optional: subtle shadow */
 }
