@@ -1,23 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { GetPSBTParams, RuneOrder } from 'satsterminal-sdk';
 import { getSatsTerminalClient } from '@/lib/serverUtils';
+import { z } from 'zod';
 
-// Basic validation helper
-function validateGetPsbtParams(params: unknown): params is GetPSBTParams {
-  if (!params || typeof params !== 'object') return false;
-  const p = params as Record<string, unknown>;
-  
-  return (
-    Array.isArray(p.orders) &&
-    typeof p.address === 'string' &&
-    typeof p.publicKey === 'string' &&
-    typeof p.paymentAddress === 'string' &&
-    typeof p.paymentPublicKey === 'string' &&
-    typeof p.runeName === 'string' &&
-    (p.sell === undefined || typeof p.sell === 'boolean')
-    // Add more checks for optional fields if needed
-  );
-}
+const runeOrderSchema = z.object({
+  id: z.string(),
+  // Other RuneOrder fields would be defined here
+  // Since we don't have the full RuneOrder type details, using a more permissive approach
+  // If specific fields are known, they should be added here
+}).passthrough(); // Allow other fields that might be in RuneOrder
+
+const getPsbtParamsSchema = z.object({
+  orders: z.array(runeOrderSchema),
+  address: z.string().min(1),
+  publicKey: z.string().min(1),
+  paymentAddress: z.string().min(1),
+  paymentPublicKey: z.string().min(1),
+  runeName: z.string().min(1),
+  sell: z.boolean().optional(),
+  // Add other optional fields from GetPSBTParams if needed
+});
 
 export async function POST(request: NextRequest) {
   let params;
@@ -27,17 +29,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  // Validate required parameters
-  if (!validateGetPsbtParams(params)) {
-    return NextResponse.json({ error: 'Missing or invalid required parameters for getPSBT' }, { status: 400 });
+  const validationResult = getPsbtParamsSchema.safeParse(params);
+
+  if (!validationResult.success) {
+    console.error("PSBT API Validation Error:", validationResult.error.flatten()); // Log detailed error server-side
+    return NextResponse.json({
+        error: 'Invalid request body for PSBT creation.',
+        details: validationResult.error.flatten().fieldErrors
+    }, { status: 400 });
   }
+
+  // Use the validated and typed data from now on
+  const validatedParams = validationResult.data;
 
   try {
     const terminal = getSatsTerminalClient();
-    // Ensure orders are properly typed before sending (though validation helps)
+    // Ensure orders are properly typed before sending
     const psbtParams: GetPSBTParams = {
-      ...params,
-      orders: params.orders as RuneOrder[], // Cast after validation
+      ...validatedParams,
+      orders: validatedParams.orders as unknown as RuneOrder[], // Cast through unknown first
     };
 
     const psbtResponse = await terminal.getPSBT(psbtParams);

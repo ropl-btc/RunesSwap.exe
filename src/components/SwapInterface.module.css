@@ -406,7 +406,10 @@
 
 .listboxError {
   composes: listboxLoadingOrEmpty;
-  color: #dc2626; /* text-red-600 */
+  color: var(--win98-red);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 /* Add styles for the search container */
@@ -562,6 +565,116 @@
   white-space: nowrap;
 }
 
+/* Create a container that wraps both the search and results */
+.searchAndResultsContainer {
+  display: flex;
+  flex-direction: column;
+  border-width: 2px;
+  border-style: solid;
+  border-top-color: var(--win98-light-gray);
+  border-left-color: var(--win98-light-gray);
+  border-right-color: var(--win98-dark-gray);
+  border-bottom-color: var(--win98-dark-gray);
+  background-color: var(--win98-gray);
+  overflow: hidden; /* Ensure no gaps between children */
+}
+
+.searchContainerRunesInfo {
+  padding: 0.25rem;
+  background-color: var(--win98-gray);
+  /* Remove all borders as parent container handles them */
+  border: none;
+  margin: 0;
+  position: relative;
+}
+
+/* Special style for search input in runes info tab */
+.searchContainerRunesInfo .searchInput {
+  border: 1px solid var(--win98-dark-gray);
+  border-width: 1px;
+  background-color: var(--win98-white);
+  width: 100%;
+}
+
+.runesListContainer {
+  max-height: 200px; 
+  overflow-y: auto; 
+  background-color: var(--win98-gray);
+  padding: 0.25rem 0; 
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  /* Remove all borders as parent container handles them */
+  border: none;
+  /* Add a subtle separator */
+  border-top: 1px solid var(--win98-dark-gray);
+}
+
+.runeListItem {
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent; 
+  background-color: transparent;
+  text-align: left;
+  width: 100%;
+  font-family: inherit;
+  font-size: 0.875rem;
+  cursor: default; 
+  color: var(--win98-black);
+}
+
+/* Ensure hover state applies correctly */
+.runeListItem:hover {
+  background-color: var(--win98-highlight); 
+  color: var(--win98-highlight-text); 
+}
+
+/* Ensure selected state applies correctly */
+.runeListItemSelected {
+  background-color: var(--win98-highlight); 
+  color: var(--win98-highlight-text);
+}
+
+.runeListItemContent {
+  display: flex;
+  align-items: center;
+}
+
+.runeDetailsContainer {
+  border: 2px inset var(--win98-dark-gray); /* Match container border style */
+  padding: 0.5rem;
+  background-color: var(--win98-white);
+  min-height: 100px; 
+}
+
+.runeDetailsContainer h3 {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--win98-dark-gray);
+  padding-bottom: 0.25rem;
+}
+
+.runeDetailsContainer p {
+  margin-bottom: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.hintText {
+  color: var(--win98-dark-gray);
+  font-style: italic;
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 1rem;
+}
+
+.loadingText {
+  font-style: italic;
+  color: var(--win98-dark-gray);
+}
+
+.errorText {
+  color: var(--win98-red);
+}
+
 /* --- Styles for Your TXs Tab --- */
 .yourTxsTabContainer {
   /* Similar padding/spacing as other tabs */
@@ -596,56 +709,6 @@
   margin-bottom: 0.5rem;
 }
 
-.searchContainerRunesInfo {
-  /* Add specific styles if needed, otherwise it reuses general search styles */
-  margin-bottom: 0.5rem;
-}
-
-.runesListContainer {
-  max-height: 200px; 
-  overflow-y: auto; 
-  /* Match .listboxOptions border */
-  border-width: 2px;
-  border-style: solid;
-  border-top-color: var(--win98-light-gray);
-  border-left-color: var(--win98-light-gray);
-  border-right-color: var(--win98-dark-gray);
-  border-bottom-color: var(--win98-dark-gray);
-  background-color: var(--win98-gray);
-  /* Match .listboxOptions padding */
-  /* padding: 2px; */ 
-  padding: 0.25rem 0; 
-  display: flex;
-  flex-direction: column;
-  gap: 0; 
-}
-
-.runeListItem {
-  /* Adjust padding to be similar to .listboxOption (without check space) */
-  /* padding: 0.25rem 0.5rem; */
-  padding: 0.5rem 1rem;
-  border: 1px solid transparent; 
-  background-color: transparent;
-  text-align: left;
-  width: 100%;
-  font-family: inherit;
-  font-size: 0.875rem;
-  cursor: default; 
-  color: var(--win98-black);
-}
-
-/* Ensure hover state applies correctly */
-.runeListItem:hover {
-  background-color: var(--win98-highlight); 
-  color: var(--win98-highlight-text); 
-}
-
-/* Ensure selected state applies correctly */
-.runeListItemSelected {
-  background-color: var(--win98-highlight); 
-  color: var(--win98-highlight-text);
-}
-
 .runeDetailsContainer {
   border: 2px inset var(--win98-dark-gray); /* Match container border style */
   padding: 0.5rem;
@@ -671,14 +734,6 @@
   font-size: 0.875rem;
   text-align: center;
   padding: 1rem;
-}
-
-.listboxError { /* Reuse from listbox options */
-  composes: listboxLoadingOrEmpty; /* Inherit padding/text style */
-  color: var(--win98-red);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 
 /* --- New BTC Price Footer Styles --- */

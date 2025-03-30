@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { QuoteParams } from 'satsterminal-sdk';
 import { getSatsTerminalClient } from '@/lib/serverUtils';
+import { z } from 'zod';
 
-// Helper function to validate parameters (basic example)
-function validateQuoteParams(params: unknown): params is Omit<QuoteParams, 'btcAmount'> & { btcAmount: string | number } {
-  if (!params || typeof params !== 'object') return false;
-  const p = params as Record<string, unknown>;
-  
-  return (
-    (typeof p.btcAmount === 'string' || typeof p.btcAmount === 'number') && // btcAmount is required and should be string/number
-    typeof p.runeName === 'string' &&
-    typeof p.address === 'string' &&
-    (p.sell === undefined || typeof p.sell === 'boolean')
-    // Add more checks as needed for marketplaces, rbfProtection etc.
-  );
-}
+const quoteParamsSchema = z.object({
+  btcAmount: z.union([z.string().min(1), z.number().positive()]).transform(val => String(val)), // Require non-empty string or positive number, always transform to string
+  runeName: z.string().min(1),
+  address: z.string().min(1),
+  sell: z.boolean().optional(),
+  // Add other optional fields from QuoteParams if needed, e.g.:
+  // marketplaces: z.array(z.string()).optional(),
+  // rbfProtection: z.boolean().optional(),
+});
 
 export async function POST(request: NextRequest) {
   let params;
@@ -24,17 +21,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  // Validate required parameters
-  if (!validateQuoteParams(params)) {
-    return NextResponse.json({ error: 'Missing or invalid required parameters for quote' }, { status: 400 });
+  const validationResult = quoteParamsSchema.safeParse(params);
+
+  if (!validationResult.success) {
+    console.error("Quote API Validation Error:", validationResult.error.flatten()); // Log detailed error server-side
+    return NextResponse.json({
+        error: 'Invalid request body for quote.',
+        details: validationResult.error.flatten().fieldErrors
+    }, { status: 400 });
   }
+
+  // Use the validated and typed data from now on
+  const validatedParams = validationResult.data;
 
   try {
     const terminal = getSatsTerminalClient();
     // Ensure btcAmount is a string for the SDK
     const quoteParams: QuoteParams = {
-      ...params,
-      btcAmount: String(params.btcAmount),
+      ...validatedParams,
+      btcAmount: validatedParams.btcAmount,
     };
 
     const quoteResponse = await terminal.fetchQuote(quoteParams);

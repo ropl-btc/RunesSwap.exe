@@ -20,7 +20,6 @@ export function Layout({ children }: LayoutProps) {
   // suggesting an issue with the library's internal auto-reconnect/initialization logic.
   // Forcing disconnect on mount prevents these multiple prompts, requiring manual reconnect after refresh.
   useEffect(() => {
-    console.log('[Layout] Attempting disconnect on initial mount (Workaround for multi-prompt bug)...');
     disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Use empty dependency array to run only ONCE on mount

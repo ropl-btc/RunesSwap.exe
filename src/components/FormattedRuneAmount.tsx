@@ -6,8 +6,6 @@ import { type RuneInfo } from '@/types/ordiscan';
 // Import API client function
 import { fetchRuneInfoFromApi } from '@/lib/apiClient';
 
-// --- Removed API Client Function ---
-
 interface FormattedRuneAmountProps {
   runeName: string | null | undefined;
   rawAmount: string | null | undefined;

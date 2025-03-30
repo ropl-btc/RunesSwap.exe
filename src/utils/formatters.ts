@@ -6,14 +6,18 @@ export const truncateTxid = (txid: string, length: number = 8): string => {
 };
 
 // Function to format large number strings with commas
-export const formatNumberString = (numStr: string | null | undefined): string => {
-  if (numStr === null || numStr === undefined || numStr === '') return 'N/A';
+export function formatNumberString(numStr: string | undefined | null, defaultDisplay = 'N/A'): string {
+  if (!numStr) return defaultDisplay;
+  
   try {
-    // Use BigInt for potentially very large supply/cap numbers
-    const num = BigInt(numStr);
+    // Parse the number string
+    const num = parseFloat(numStr);
+    if (isNaN(num)) return defaultDisplay;
+    
+    // Format with commas for thousands separator
     return num.toLocaleString();
   } catch (error) {
     console.error("Error formatting number string:", numStr, error);
-    return numStr; // Return original string if formatting fails
+    return defaultDisplay;
   }
-}; 
+} 
