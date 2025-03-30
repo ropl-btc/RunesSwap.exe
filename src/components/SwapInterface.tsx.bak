@@ -1,19 +1,17 @@
+use client;
+import { Asset, BTC_ASSET } from '@/types/common';
 'use client';
 
 import React, { useState, useEffect, Fragment, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-// Import Ordiscan types from the new location
+// Import ONLY types from the library now
+// import { type Rune as LibRune } from '@/lib/sats-terminal'; // Rename to avoid conflict if needed
 import {
-  type RuneBalance as OrdiscanRuneBalance, // Keep Ordiscan specific name if needed for raw API response
+  type RuneBalance as OrdiscanRuneBalance,
   type RuneInfo as OrdiscanRuneInfo,
   type RuneMarketInfo as OrdiscanRuneMarketInfo,
   type RuneActivityEvent,
-  type RunestoneMessage, // Add for tx details
-  type RunicInput,       // Add for tx details
-  type RunicOutput       // Add for tx details
-} from '@/types/ordiscan'; // <-- Corrected path
-// Import SatsTerminal Rune type
-import type { Rune } from '@/types/satsTerminal.ts'; // <-- Added import
+} from '@/lib/ordiscan';
 import { Listbox, Transition } from '@headlessui/react';
 import { ChevronUpDownIcon, CheckIcon, ArrowPathIcon } from '@heroicons/react/24/solid';
 import debounce from 'lodash.debounce';
@@ -23,24 +21,6 @@ import { type QuoteResponse, type RuneOrder, type GetPSBTParams, type ConfirmPSB
 import { useSharedLaserEyes } from '@/context/LaserEyesContext';
 import { useDebounce } from 'use-debounce';
 import { FormattedRuneAmount } from './FormattedRuneAmount';
-// Import common types
-import { Asset, BTC_ASSET } from '@/types/common';
-// Import API client functions
-import {
-  fetchRunesFromApi,
-  fetchPopularFromApi,
-  fetchQuoteFromApi,
-  getPsbtFromApi,
-  confirmPsbtViaApi,
-  fetchBtcBalanceFromApi,
-  fetchRuneBalancesFromApi,
-  fetchRuneInfoFromApi,
-  fetchRuneMarketFromApi,
-  fetchListRunesFromApi,
-  fetchRuneActivityFromApi,
-} from '@/lib/apiClient';
-// Import formatter functions
-import { truncateTxid, formatNumberString } from '@/utils/formatters';
 
 // CoinGecko API endpoint
 const COINGECKO_BTC_PRICE_URL = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd';
@@ -58,6 +38,185 @@ const getBtcPrice = async (): Promise<number> => {
   return data.bitcoin.usd;
 };
 
+// Define local Rune type matching the API response structure
+// This aligns with the type defined in the search API route
+interface Rune {
+  id: string;
+  name: string;
+  imageURI?: string;
+  formattedAmount?: string;
+  formattedUnitPrice?: string;
+  price?: number;
+}
+
+// --- API Client Functions --- 
+
+// Fetch Runes search results from API
+const fetchRunesFromApi = async (query: string): Promise<Rune[]> => {
+  if (!query) return [];
+  const response = await fetch(`/api/sats-terminal/search?query=${encodeURIComponent(query)}`);
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `Network response was not ok: ${response.statusText}`);
+  }
+  return response.json();
+};
+
+// Fetch Popular Collections from API
+const fetchPopularFromApi = async (): Promise<Record<string, unknown>[]> => { 
+  const response = await fetch(`/api/sats-terminal/popular`);
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `Network response was not ok: ${response.statusText}`);
+  }
+  return response.json();
+};
+
+// Fetch Quote from API
+const fetchQuoteFromApi = async (params: Record<string, unknown>): Promise<QuoteResponse> => {
+  const response = await fetch('/api/sats-terminal/quote', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.details || data.error || `Network response was not ok: ${response.statusText}`);
+  }
+  return data;
+};
+
+// Get PSBT from API
+const getPsbtFromApi = async (params: GetPSBTParams): Promise<Record<string, unknown>> => {
+  const response = await fetch('/api/sats-terminal/psbt/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.details || data.error || `Network response was not ok: ${response.statusText}`);
+  }
+  return data;
+};
+
+// Confirm PSBT via API
+const confirmPsbtViaApi = async (params: ConfirmPSBTParams): Promise<Record<string, unknown>> => {
+  const response = await fetch('/api/sats-terminal/psbt/confirm', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    // Handle specific status code for expired quote if needed
+    if (response.status === 410) { 
+       const error = new Error(data.details || data.error || 'Quote expired.');
+       ((error as unknown) as { code: string }).code = 'QUOTE_EXPIRED'; // Add custom code with proper type casting
+       throw error;
+    }
+    throw new Error(data.details || data.error || `Network response was not ok: ${response.statusText}`);
+  }
+  return data;
+};
+
+// --- End API Client Functions ---
+
+// --- NEW Ordiscan API Client Functions ---
+
+// Fetch BTC Balance from API
+const fetchBtcBalanceFromApi = async (address: string): Promise<number> => {
+  const response = await fetch(`/api/ordiscan/btc-balance?address=${encodeURIComponent(address)}`);
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.details || data.error || `Failed to fetch BTC balance: ${response.statusText}`);
+  }
+  return data.balance; // Assuming the API returns { balance: number }
+};
+
+// Fetch Rune Balances from API
+const fetchRuneBalancesFromApi = async (address: string): Promise<OrdiscanRuneBalance[]> => {
+  const response = await fetch(`/api/ordiscan/rune-balances?address=${encodeURIComponent(address)}`);
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.details || data.error || `Failed to fetch Rune balances: ${response.statusText}`);
+  }
+  return data; // Assuming the API returns OrdiscanRuneBalance[]
+};
+
+// Fetch Rune Info from API
+const fetchRuneInfoFromApi = async (name: string): Promise<OrdiscanRuneInfo | null> => {
+  const formattedName = name.replace(/•/g, '');
+  const response = await fetch(`/api/ordiscan/rune-info?name=${encodeURIComponent(formattedName)}`);
+  if (response.status === 404) {
+    return null; // API returns null for 404
+  }
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.details || data.error || `Failed to fetch Rune info: ${response.statusText}`);
+  }
+  return data; // Assuming the API returns OrdiscanRuneInfo or null
+};
+
+// Fetch Rune Market Info from API
+const fetchRuneMarketFromApi = async (name: string): Promise<OrdiscanRuneMarketInfo | null> => {
+  const formattedName = name.replace(/•/g, '');
+  const response = await fetch(`/api/ordiscan/rune-market?name=${encodeURIComponent(formattedName)}`);
+  if (response.status === 404) {
+    return null; // API returns null for 404
+  }
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.details || data.error || `Failed to fetch Rune market info: ${response.statusText}`);
+  }
+  return data;
+};
+
+// Fetch List Runes from API
+const fetchListRunesFromApi = async (): Promise<OrdiscanRuneInfo[]> => {
+  const response = await fetch(`/api/ordiscan/list-runes`);
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.details || data.error || `Failed to fetch runes list: ${response.statusText}`);
+  }
+  return data; // Assuming the API returns OrdiscanRuneInfo[]
+};
+
+// Fetch Rune Activity from API
+const fetchRuneActivityFromApi = async (address: string): Promise<RuneActivityEvent[]> => {
+  // console.log(`[Client] Fetching rune activity for: ${address}`); // Removed log
+  const response = await fetch(`/api/ordiscan/rune-activity?address=${encodeURIComponent(address)}`);
+  // console.log(`[Client] API Response Status: ${response.status}`); // Removed log
+
+  let data;
+  try {
+    data = await response.json();
+    // console.log("[Client] Parsed API Response Body:", data); // Removed log
+  } catch (e) {
+    console.error("[Client] Failed to parse API response as JSON:", e); // Keep client error log
+    if (!response.ok) {
+       throw new Error(`Failed to fetch rune activity: Server responded with status ${response.status}`);
+    }
+    throw new Error("Failed to parse successful API response.");
+  }
+
+  if (!response.ok) {
+    console.error("[Client] API returned error:", data); // Keep client error log
+    throw new Error(data?.details || data?.error || `Failed to fetch rune activity: ${response.statusText}`);
+  }
+
+  if (!Array.isArray(data)) {
+    console.error("[Client] API response was OK, but data is not an array:", data); // Keep client error log
+    throw new Error("Received unexpected data format from API.");
+  }
+
+  // console.log(`[Client] Successfully fetched rune activity: ${data.length} items`); // Removed log
+  return data; 
+};
+
+// --- End API Client Functions ---
+
+
 // Mock address for fetching quotes when disconnected
 const MOCK_ADDRESS = '34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo';
 
@@ -69,7 +228,25 @@ interface SwapInterfaceProps {
 
 // --- Helper Functions ---
 
-// REMOVED: Function definitions moved to src/utils/formatters.ts
+// Function to truncate TXIDs for display
+const truncateTxid = (txid: string, length: number = 8): string => {
+  if (!txid) return '';
+  if (txid.length <= length * 2 + 3) return txid;
+  return `${txid.substring(0, length)}...${txid.substring(txid.length - length)}`;
+};
+
+// Function to format large number strings with commas
+const formatNumberString = (numStr: string | null | undefined): string => {
+  if (numStr === null || numStr === undefined || numStr === '') return 'N/A';
+  try {
+    // Use BigInt for potentially very large supply/cap numbers
+    const num = BigInt(numStr);
+    return num.toLocaleString();
+  } catch (error) {
+    console.error("Error formatting number string:", numStr, error);
+    return numStr; // Return original string if formatting fails
+  }
+};
 
 // --- End Helper Functions ---
 
@@ -1412,33 +1589,33 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
                          let runeAmountRaw = 'N/A';
                          const userAddress = address;
 
-                         const mintEtchMessage = tx.runestone_messages.find((m: RunestoneMessage) => m.type === 'MINT' || m.type === 'ETCH'); // Added type
+                         const mintEtchMessage = tx.runestone_messages.find(m => m.type === 'MINT' || m.type === 'ETCH');
                          if (mintEtchMessage) {
                             action = mintEtchMessage.type === 'MINT' ? 'Minted' : 'Etched';
                             runeName = mintEtchMessage.rune;
-                            const userOutput = tx.outputs.find((o: RunicOutput) => o.address === userAddress && o.rune === runeName); // Added type
+                            const userOutput = tx.outputs.find(o => o.address === userAddress && o.rune === runeName);
                             runeAmountRaw = userOutput ? userOutput.rune_amount : 'N/A';
                          } else {
-                            const userSent = tx.inputs.some((i: RunicInput) => i.address === userAddress); // Added type
-                            const userReceived = tx.outputs.some((o: RunicOutput) => o.address === userAddress); // Added type
+                            const userSent = tx.inputs.some(i => i.address === userAddress);
+                            const userReceived = tx.outputs.some(o => o.address === userAddress);
 
                             if (userSent && !userReceived) {
                                 action = 'Sent';
-                                const sentInput = tx.inputs.find((i: RunicInput) => i.address === userAddress); // Added type
+                                const sentInput = tx.inputs.find(i => i.address === userAddress);
                                 if (sentInput) {
                                     runeName = sentInput.rune;
                                     runeAmountRaw = sentInput.rune_amount;
                                 }
                             } else if (userReceived && !userSent) {
                                 action = 'Received';
-                                const receivedOutput = tx.outputs.find((o: RunicOutput) => o.address === userAddress); // Added type
+                                const receivedOutput = tx.outputs.find(o => o.address === userAddress);
                                 if (receivedOutput) {
                                     runeName = receivedOutput.rune;
                                     runeAmountRaw = receivedOutput.rune_amount;
                                 }
                             } else if (userSent && userReceived) {
                                 // User sent runes and received change back OR consolidated UTXOs
-                                const sentOutput = tx.outputs.find((o: RunicOutput) => o.address !== userAddress && o.rune && parseFloat(o.rune_amount) > 0); // Added type
+                                const sentOutput = tx.outputs.find(o => o.address !== userAddress && o.rune && parseFloat(o.rune_amount) > 0);
 
                                 if (sentOutput) {
                                     // Found an output sending runes to another address - this is the primary action
@@ -1450,20 +1627,20 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
                                     // Label as 'Internal Transfer' and show amount received back by user.
                                     action = 'Internal Transfer'; 
                                     const relevantRune = tx.runestone_messages[0]?.rune; 
-                                    const userOutput = tx.outputs.find((o: RunicOutput) => o.address === userAddress && o.rune === relevantRune); // Added type
+                                    const userOutput = tx.outputs.find(o => o.address === userAddress && o.rune === relevantRune);
                                     
                                     if (userOutput) {
                                         runeName = userOutput.rune;
                                         runeAmountRaw = userOutput.rune_amount;
                                     } else {
                                         // Fallback: Look for *any* rune output back to the user
-                                        const anyUserOutput = tx.outputs.find((o: RunicOutput) => o.address === userAddress && o.rune && parseFloat(o.rune_amount) > 0); // Added type
+                                        const anyUserOutput = tx.outputs.find(o => o.address === userAddress && o.rune && parseFloat(o.rune_amount) > 0);
                                         if (anyUserOutput) {
                                             runeName = anyUserOutput.rune;
                                             runeAmountRaw = anyUserOutput.rune_amount;
                                         } else {
                                             // If still nothing, default to N/A or use input info cautiously
-                                            runeName = relevantRune || tx.inputs.find((i: RunicInput) => i.address === userAddress && i.rune)?.rune || 'N/A'; // Added type
+                                            runeName = relevantRune || tx.inputs.find(i => i.address === userAddress && i.rune)?.rune || 'N/A';
                                             runeAmountRaw = 'N/A'; // Can't reliably determine amount received back
                                         }
                                     }
@@ -1473,7 +1650,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
                                 // This might be an external event related to a rune they watch, or just BTC tx.
                                 action = 'Transfer (External)'; 
                                 // Try to find *any* rune involved in the transaction
-                                runeName = tx.runestone_messages[0]?.rune || tx.inputs.find((i: RunicInput) => i.rune)?.rune || tx.outputs.find((o: RunicOutput) => o.rune)?.rune || 'N/A'; // Added types
+                                runeName = tx.runestone_messages[0]?.rune || tx.inputs.find(i => i.rune)?.rune || tx.outputs.find(o => o.rune)?.rune || 'N/A';
                                 runeAmountRaw = 'N/A'; // Amount for external transfers is ambiguous
                             }
                          }

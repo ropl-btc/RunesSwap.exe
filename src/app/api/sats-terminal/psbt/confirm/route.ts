@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { SatsTerminal, type ConfirmPSBTParams, type RuneOrder } from 'satsterminal-sdk';
+import type { ConfirmPSBTParams, RuneOrder } from 'satsterminal-sdk';
+import { getSatsTerminalClient } from '@/lib/serverUtils';
 
 // Basic validation helper
 function validateConfirmPsbtParams(params: unknown): params is ConfirmPSBTParams {
@@ -35,16 +36,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Missing or invalid required parameters for confirmPSBT' }, { status: 400 });
   }
 
-  // --- Server-side Initialization ---
-  const apiKey = process.env.SATS_TERMINAL_API_KEY;
-  if (!apiKey) {
-    console.error("SatsTerminal API key not found on server. Please set SATS_TERMINAL_API_KEY environment variable.");
-    return NextResponse.json({ error: 'Server configuration error: Missing API Key' }, { status: 500 });
-  }
-  const terminal = new SatsTerminal({ apiKey });
-  // --- End Server-side Initialization ---
-
   try {
+    const terminal = getSatsTerminalClient();
     // Ensure orders are properly typed
     const confirmParams: ConfirmPSBTParams = {
       ...params,

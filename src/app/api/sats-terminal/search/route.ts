@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { SatsTerminal } from 'satsterminal-sdk';
+import { getSatsTerminalClient } from '@/lib/serverUtils';
+import type { Rune } from '@/types/satsTerminal';
 
 // Define types for rune responses locally or import if shared
-interface Rune {
-  id: string;
-  name: string;
-  imageURI?: string;
-  formattedAmount?: string;
-  formattedUnitPrice?: string;
-  price?: number;
-}
+// interface Rune {
+//   id: string;
+//   name: string;
+//   imageURI?: string;
+//   formattedAmount?: string;
+//   formattedUnitPrice?: string;
+//   price?: number;
+// }
 
 // Simple internal type for expected order structure from search
 interface SearchOrder {
@@ -31,18 +32,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Search query is required' }, { status: 400 });
   }
 
-  // --- Server-side Initialization ---
-  const apiKey = process.env.SATS_TERMINAL_API_KEY; // Use the server-side private key
-
-  if (!apiKey) {
-    console.error("SatsTerminal API key not found on server. Please set SATS_TERMINAL_API_KEY environment variable.");
-    return NextResponse.json({ error: 'Server configuration error: Missing API Key' }, { status: 500 });
-  }
-
-  const terminal = new SatsTerminal({ apiKey });
-  // --- End Server-side Initialization ---
-
   try {
+    const terminal = getSatsTerminalClient();
     const searchResults = await terminal.search({
       rune_name: query,
       sell: false // Or get from query params if needed

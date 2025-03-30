@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Ordiscan } from 'ordiscan';
+import { getOrdiscanClient } from '@/lib/serverUtils';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -9,16 +9,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Address parameter is required' }, { status: 400 });
   }
 
-  // --- Server-side Initialization ---
-  const apiKey = process.env.ORDISCAN_API_KEY;
-  if (!apiKey) {
-    console.error("Ordiscan API key not found on server. Please set ORDISCAN_API_KEY environment variable.");
-    return NextResponse.json({ error: 'Server configuration error: Missing Ordiscan API Key' }, { status: 500 });
-  }
-  const ordiscan = new Ordiscan(apiKey);
-  // --- End Server-side Initialization ---
-
   try {
+    const ordiscan = getOrdiscanClient();
     // Use the original logic from src/lib/ordiscan.ts
     const utxos = await ordiscan.address.getUtxos({ address });
 

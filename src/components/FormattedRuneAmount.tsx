@@ -2,25 +2,11 @@
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { type RuneInfo } from '@/lib/ordiscan';
+import { type RuneInfo } from '@/types/ordiscan';
+// Import API client function
+import { fetchRuneInfoFromApi } from '@/lib/apiClient';
 
-// --- Add API Client Function --- 
-// (Can be moved to a shared util later)
-const fetchRuneInfoFromApi = async (name: string): Promise<RuneInfo | null> => {
-  if (!name) return null; // Don't fetch if name is empty
-  const formattedName = name.replace(/•/g, '');
-  const response = await fetch(`/api/ordiscan/rune-info?name=${encodeURIComponent(formattedName)}`);
-  if (response.status === 404) {
-    return null; // API returns null for 404
-  }
-  const data = await response.json();
-  if (!response.ok) {
-    // Use error details from API response if available
-    throw new Error(data?.details || data?.error || `Failed to fetch Rune info: ${response.statusText}`);
-  }
-  return data; // Assuming the API returns RuneInfo or null
-};
-// --- End API Client Function ---
+// --- Removed API Client Function ---
 
 interface FormattedRuneAmountProps {
   runeName: string | null | undefined;

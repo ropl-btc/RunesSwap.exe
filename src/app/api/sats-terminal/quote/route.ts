@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { SatsTerminal, type QuoteParams } from 'satsterminal-sdk';
+import type { QuoteParams } from 'satsterminal-sdk';
+import { getSatsTerminalClient } from '@/lib/serverUtils';
 
 // Helper function to validate parameters (basic example)
 function validateQuoteParams(params: unknown): params is Omit<QuoteParams, 'btcAmount'> & { btcAmount: string | number } {
@@ -28,16 +29,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Missing or invalid required parameters for quote' }, { status: 400 });
   }
 
-  // --- Server-side Initialization ---
-  const apiKey = process.env.SATS_TERMINAL_API_KEY;
-  if (!apiKey) {
-    console.error("SatsTerminal API key not found on server. Please set SATS_TERMINAL_API_KEY environment variable.");
-    return NextResponse.json({ error: 'Server configuration error: Missing API Key' }, { status: 500 });
-  }
-  const terminal = new SatsTerminal({ apiKey });
-  // --- End Server-side Initialization ---
-
   try {
+    const terminal = getSatsTerminalClient();
     // Ensure btcAmount is a string for the SDK
     const quoteParams: QuoteParams = {
       ...params,

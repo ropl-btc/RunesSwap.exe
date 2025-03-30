@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getOrdiscanClient } from '@/lib/serverUtils'; // <-- Import client utility
+// Import the necessary types from the shared location
+import { RuneActivityEvent } from '@/types/ordiscan';
 
 // Define local types matching the ones in the lib (or import from shared location)
 // Commented out to avoid linter errors - might use later
@@ -32,49 +35,40 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Address parameter is required" }, { status: 400 });
   }
 
-  const apiKey = process.env.ORDISCAN_API_KEY;
-  if (!apiKey) {
-    console.error("[API /rune-activity] Ordiscan API key is not set");
-    return NextResponse.json({ error: "Server configuration error: API key missing" }, { status: 500 });
-  }
+  // const apiKey = process.env.ORDISCAN_API_KEY;
+  // if (!apiKey) {
+  //   console.error("[API /rune-activity] Ordiscan API key is not set");
+  //   return NextResponse.json({ error: "Server configuration error: API key missing" }, { status: 500 });
+  // }
 
-  const apiUrl = `https://api.ordiscan.com/v1/address/${address}/activity/runes`;
+  // const apiUrl = `https://api.ordiscan.com/v1/address/${address}/activity/runes`;
 
   try {
-    const apiResponse = await fetch(apiUrl, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-      },
-    });
+    const ordiscan = getOrdiscanClient(); // <-- Use utility function
 
-    const responseBody = await apiResponse.text();
+    // Use the method suggested by the linter
+    const activity: RuneActivityEvent[] = await ordiscan.address.getRunesActivity({ address }); // <-- Corrected method name
 
-    if (!apiResponse.ok) {
-      console.error(`[API /rune-activity] Ordiscan API Error (${apiResponse.status}): ${responseBody}`);
-      let errorDetails = responseBody;
-      try {
-        const errorJson = JSON.parse(responseBody);
-        errorDetails = errorJson.error || errorJson.message || responseBody;
-      } catch { /* Ignore JSON parse error */ }
-      return NextResponse.json({ error: "Failed to fetch from Ordiscan", details: errorDetails }, { status: apiResponse.status });
-    }
+    // Return the data received from the SDK
+    return NextResponse.json(activity);
 
-    try {
-      const data = JSON.parse(responseBody);
-      
-      if (data && Array.isArray(data.data)) {
-         return NextResponse.json(data.data);
-      } else {
-         console.error("[API /rune-activity] Unexpected Ordiscan response format. Expected { data: [...] } structure.", data);
-         return NextResponse.json([], { status: 200 });
-      }
-    } catch (parseError) {
-      console.error("[API /rune-activity] Error parsing Ordiscan JSON response:", parseError, "Response text:", responseBody);
-      return NextResponse.json({ error: "Failed to parse Ordiscan response" }, { status: 500 });
-    }
+    // Remove old fetch logic:
+    // const apiResponse = await fetch(apiUrl, {
+    //   headers: {
+    //     'Authorization': `Bearer ${apiKey}`,
+    //   },
+    // });
+    // ... removed response handling and parsing ...
 
   } catch (error) {
-    console.error("[API /rune-activity] Error calling Ordiscan API route:", error);
-    return NextResponse.json({ error: "Internal server error calling Ordiscan route" }, { status: 500 });
+    console.error(`[API /rune-activity] Error calling Ordiscan SDK for address ${address}:`, error);
+    // Use a more generic error message as SDK might throw various errors
+    const message = (error instanceof Error) ? error.message : 'Failed to fetch rune activity via SDK';
+    // Check for potential 404 or other specific statuses if the SDK surfaces them
+    let status = 500;
+    if (error && typeof error === 'object' && 'status' in error) {
+      status = (error as { status: number }).status; // Use status from SDK error if available
+    }
+    return NextResponse.json({ error: "Failed to fetch rune activity", details: message }, { status });
   }
 } 

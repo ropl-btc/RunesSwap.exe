@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Ordiscan, type RuneBalance as OrdiscanRuneBalance } from 'ordiscan';
+import { getOrdiscanClient } from '@/lib/serverUtils';
+import { RuneBalance } from '@/types/ordiscan';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -9,18 +10,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Address parameter is required' }, { status: 400 });
   }
 
-  // --- Server-side Initialization ---
-  const apiKey = process.env.ORDISCAN_API_KEY;
-  if (!apiKey) {
-    console.error("Ordiscan API key not found on server. Please set ORDISCAN_API_KEY environment variable.");
-    return NextResponse.json({ error: 'Server configuration error: Missing Ordiscan API Key' }, { status: 500 });
-  }
-  const ordiscan = new Ordiscan(apiKey);
-  // --- End Server-side Initialization ---
-
   try {
-    const balances: OrdiscanRuneBalance[] = await ordiscan.address.getRunes({ address });
-    const validBalances = Array.isArray(balances) ? balances : [];
+    const ordiscan = getOrdiscanClient();
+    const balances: RuneBalance[] = await ordiscan.address.getRunes({ address });
+    const validBalances: RuneBalance[] = Array.isArray(balances) ? balances : [];
     return NextResponse.json(validBalances);
 
   } catch (error) {

@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Ordiscan } from 'ordiscan';
-
-// Define market info type based on Ordiscan docs
-interface RuneMarketInfo {
-  price_in_sats: number;
-  price_in_usd: number;
-  market_cap_in_btc: number;
-  market_cap_in_usd: number;
-}
+import { getOrdiscanClient } from '@/lib/serverUtils';
+import { RuneMarketInfo } from '@/types/ordiscan'; // Import from shared types
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -17,19 +10,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Rune name parameter is required' }, { status: 400 });
   }
 
-  // --- Server-side Initialization ---
-  const apiKey = process.env.ORDISCAN_API_KEY;
-  if (!apiKey) {
-    console.error("Ordiscan API key not found on server. Please set ORDISCAN_API_KEY environment variable.");
-    return NextResponse.json({ error: 'Server configuration error: Missing Ordiscan API Key' }, { status: 500 });
-  }
-  const ordiscan = new Ordiscan(apiKey);
-  // --- End Server-side Initialization ---
-
   // Ensure name doesn't have spacers for the API call
   const formattedName = name.replace(/•/g, '');
 
   try {
+    const ordiscan = getOrdiscanClient();
     const marketInfo: RuneMarketInfo = await ordiscan.rune.getMarketInfo({ name: formattedName });
     return NextResponse.json(marketInfo);
 

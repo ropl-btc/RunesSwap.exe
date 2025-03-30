@@ -1,20 +1,12 @@
 import { NextResponse } from 'next/server';
-import { SatsTerminal } from 'satsterminal-sdk';
+import { getSatsTerminalClient } from '@/lib/serverUtils';
 
 export async function GET() {
 
-  // --- Server-side Initialization ---
-  const apiKey = process.env.SATS_TERMINAL_API_KEY;
-  if (!apiKey) {
-    console.error("SatsTerminal API key not found on server. Please set SATS_TERMINAL_API_KEY environment variable.");
-    return NextResponse.json({ error: 'Server configuration error: Missing API Key' }, { status: 500 });
-  }
-  const terminal = new SatsTerminal({ apiKey });
-  // --- End Server-side Initialization ---
-
   try {
+    const terminal = getSatsTerminalClient();
     // No parameters needed for popularCollections based on current usage
-    const popularResponse = await terminal.popularCollections({}); 
+    const popularResponse = await terminal.popularCollections({});
     return NextResponse.json(popularResponse);
 
   } catch (error) {
