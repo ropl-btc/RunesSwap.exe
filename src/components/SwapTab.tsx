@@ -185,7 +185,7 @@ export function SwapTab({ connected, address, paymentAddress, publicKey, payment
   }, [assetIn.isBTC, assetOut, setAssetOut, setIsPopularLoading, setPopularError, setPopularRunes]); 
 
   // Debounced search function using API
-  const searchAssets = useCallback(debounce(async (query: string, type: 'input' | 'output') => {
+  const searchAssets = useCallback(debounce(async (query: string) => {
     if (!query) {
       setSearchResults([]);
       setIsSearching(false);
@@ -218,7 +218,7 @@ export function SwapTab({ connected, address, paymentAddress, publicKey, payment
     const query = e.target.value;
     setSearchQuery(query);
     setIsSearching(true); // Indicate searching immediately
-    searchAssets(query, 'input');
+    searchAssets(query);
   };
 
   // Determine which runes to display (use Asset type)

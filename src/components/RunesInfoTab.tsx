@@ -18,9 +18,11 @@ import { formatNumberString, truncateTxid } from '@/utils/formatters'; // Import
 import { FormattedRuneAmount } from './FormattedRuneAmount'; // Import component
 import type { Rune } from '@/types/satsTerminal.ts';
 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 interface RunesInfoTabProps {
   // Empty for now, could add props if needed later
 }
+/* eslint-enable @typescript-eslint/no-empty-object-type */
 
 export function RunesInfoTab({}: RunesInfoTabProps) {
   // --- State and hooks ---
