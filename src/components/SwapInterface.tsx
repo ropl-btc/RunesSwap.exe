@@ -9,6 +9,7 @@ import styles from './SwapInterface.module.css';
 import SwapTab from './SwapTab';
 import RunesInfoTab from './RunesInfoTab';
 import YourTxsTab from './YourTxsTab';
+import FooterComponent from './FooterComponent';
 
 // CoinGecko API endpoint
 const COINGECKO_BTC_PRICE_URL = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd';
@@ -82,6 +83,13 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
             return null;
         }
       })()}
+      
+      {/* Render footer for all tabs */}
+      <FooterComponent 
+        btcPriceUsd={btcPriceUsd}
+        isBtcPriceLoading={isBtcPriceLoading}
+        btcPriceError={btcPriceError}
+      />
     </div>
   );
 }

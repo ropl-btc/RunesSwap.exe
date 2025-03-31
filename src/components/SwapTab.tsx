@@ -1125,19 +1125,6 @@ export function SwapTab({ connected, address, paymentAddress, publicKey, payment
           </span>
         </div>
       )}
-
-      {/* BTC Price Footer */}
-      <div className={styles.btcPriceFooter}>
-        {isBtcPriceLoading ? (
-          <span>Loading BTC price...</span>
-        ) : btcPriceError ? (
-          <span className={styles.errorText}>Error loading price</span>
-        ) : btcPriceUsd ? (
-          <span>BTC Price: {btcPriceUsd.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</span>
-        ) : (
-          <span>BTC Price: N/A</span> 
-        )}
-      </div>
     </div>
   );
 }

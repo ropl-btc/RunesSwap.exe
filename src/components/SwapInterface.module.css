@@ -753,15 +753,47 @@
   font-size: 0.875rem; /* text-sm */
   color: var(--win98-black);
   display: flex; /* Use flex to space content */
+  justify-content: space-between; /* Push social links to the right */
   gap: 0.5rem; /* Space between "BTC Price:" and the value */
   align-items: center;
+  width: auto; /* Allow width to adjust based on content */
+  min-width: 300px; /* Ensure minimum width for readability */
+  max-width: 90%; /* Don't exceed screen width on small devices */
   /* Optional: Add a subtle shadow like buttons */
   /* box-shadow: 2px 2px 0px 0px var(--win98-black); */
 }
 
-/* Ensure text within the footer looks okay - adjust if needed */
+/* Ensure text within the footer looks okay */
 .btcPriceFooter span {
   /* No specific overrides needed for now */
+}
+
+.socialLinks {
+  display: flex;
+  gap: 0.75rem;
+  margin-left: 1rem;
+  align-items: center;
+}
+
+.socialLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--win98-dark-gray);
+  background-color: var(--win98-light-gray);
+  padding: 2px;
+  border-radius: 2px;
+  transition: background-color 0.2s;
+}
+
+.socialLink:hover {
+  background-color: var(--win98-white);
+}
+
+.socialLink:active {
+  border-style: inset;
 }
 /* --- End BTC Price Footer Styles --- */
 

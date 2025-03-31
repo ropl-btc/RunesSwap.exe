@@ -18,4 +18,4 @@ If we run into an error and we need multiple attempts to fix it, add logs to the
 
 after big changes, run pnpm build to see if you caused anything to break.
 
-if you run npm run dev or pnpm dev, check if there is already a localhost running. if yes, shut it down first so we are always on localhost:3000.
+if you run npm run dev or pnpm dev unless i specifically tell you to.
