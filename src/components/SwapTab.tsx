@@ -158,25 +158,55 @@ export function SwapTab({ connected, address, paymentAddress, publicKey, payment
       setPopularError(null);
       setPopularRunes([]);
       try {
+        // Define the hardcoded asset
+        const liquidiumToken: Asset = {
+          id: 'liquidiumtoken', // Use a consistent ID
+          name: 'LIQUIDIUM•TOKEN',
+          imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
+          isBTC: false,
+        };
+
         // *** Use the new API fetch function ***
-        const response = await fetchPopularFromApi(); 
+        const response = await fetchPopularFromApi();
+        let mappedRunes: Asset[] = [];
+
         if (!Array.isArray(response)) {
-          setPopularRunes([]);
+          // Even if fetch fails or returns non-array, still show Liquidium
+          mappedRunes = [liquidiumToken];
         } else {
-          const mappedRunes: Asset[] = response.map((collection: Record<string, unknown>) => ({
-            id: collection?.rune as string || `unknown_${Math.random()}`,
-            name: ((collection?.etching as Record<string, unknown>)?.runeName as string) || collection?.rune as string || 'Unknown',
-            imageURI: collection?.icon_content_url_data as string || collection?.imageURI as string,
-            isBTC: false,
-          }));
-          setPopularRunes(mappedRunes);
-          if (assetIn.isBTC && !assetOut && mappedRunes.length > 0) {
-            setAssetOut(mappedRunes[0]);
-          }
+          const fetchedRunes: Asset[] = response
+            .map((collection: Record<string, unknown>) => ({
+              id: collection?.rune as string || `unknown_${Math.random()}`,
+              name: ((collection?.etching as Record<string, unknown>)?.runeName as string) || collection?.rune as string || 'Unknown',
+              imageURI: collection?.icon_content_url_data as string || collection?.imageURI as string,
+              isBTC: false,
+            }))
+            // Filter out any existing liquidium token from the API result to avoid duplicates
+            .filter(rune => rune.id !== liquidiumToken.id && rune.name !== liquidiumToken.name);
+
+          // Prepend the hardcoded token
+          mappedRunes = [liquidiumToken, ...fetchedRunes];
         }
+
+        setPopularRunes(mappedRunes);
+
+        // Update default assetOut logic if necessary
+        if (assetIn.isBTC && !assetOut && mappedRunes.length > 0) {
+          // Ensure it defaults to Liquidium if it's the only one, otherwise the first *after* Liquidium
+          // Or simply default to Liquidium if it's the first element
+          setAssetOut(mappedRunes[0]);
+        }
+
       } catch (error) {
         setPopularError(error instanceof Error ? error.message : 'Failed to fetch popular runes');
-        setPopularRunes([]);
+        // Still show Liquidium even on error
+         const liquidiumTokenOnError: Asset = {
+          id: 'liquidiumtoken',
+          name: 'LIQUIDIUM•TOKEN',
+          imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
+          isBTC: false,
+        };
+        setPopularRunes([liquidiumTokenOnError]);
       } finally {
         setIsPopularLoading(false);
       }

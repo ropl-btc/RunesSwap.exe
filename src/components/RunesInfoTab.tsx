@@ -71,21 +71,47 @@ export function RunesInfoTab({}: RunesInfoTabProps) {
       setPopularError(null);
       setPopularRunes([]);
       try {
+        // Define the hardcoded asset (using Rune type for consistency in this tab)
+        const liquidiumToken: Rune = {
+          id: 'liquidiumtoken', // Use a consistent ID
+          name: 'LIQUIDIUM•TOKEN',
+          imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
+          // Add other Rune fields if necessary based on your Rune type definition
+        };
+
         const response = await fetchPopularFromApi();
+        let mappedRunes: Rune[] = [];
+
         if (!Array.isArray(response)) {
-          setPopularRunes([]);
+          // Even if fetch fails or returns non-array, still show Liquidium
+          mappedRunes = [liquidiumToken];
         } else {
-          const mappedRunes: Rune[] = response.map((collection: Record<string, unknown>) => ({
-            id: collection?.rune as string || `unknown_${Math.random()}`,
-            name: ((collection?.etching as Record<string, unknown>)?.runeName as string) || collection?.rune as string || 'Unknown',
-            imageURI: collection?.icon_content_url_data as string || collection?.imageURI as string,
-          }));
-          setPopularRunes(mappedRunes);
+          const fetchedRunes: Rune[] = response
+            .map((collection: Record<string, unknown>) => ({
+              id: collection?.rune as string || `unknown_${Math.random()}`,
+              name: ((collection?.etching as Record<string, unknown>)?.runeName as string) || collection?.rune as string || 'Unknown',
+              imageURI: collection?.icon_content_url_data as string || collection?.imageURI as string,
+              // Map other Rune fields if necessary
+            }))
+            // Filter out any existing liquidium token from the API result
+            .filter(rune => rune.id !== liquidiumToken.id && rune.name !== liquidiumToken.name);
+
+          // Prepend the hardcoded token
+          mappedRunes = [liquidiumToken, ...fetchedRunes];
         }
+        
+        setPopularRunes(mappedRunes);
+
       } catch (error) {
         console.error("Error fetching popular runes:", error);
         setPopularError(error instanceof Error ? error.message : 'Failed to fetch popular runes');
-        setPopularRunes([]);
+        // Still show Liquidium even on error
+         const liquidiumTokenOnError: Rune = {
+          id: 'liquidiumtoken',
+          name: 'LIQUIDIUM•TOKEN',
+          imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
+        };
+        setPopularRunes([liquidiumTokenOnError]);
       } finally {
         setIsPopularLoading(false);
       }
