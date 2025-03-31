@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(runes);
 
   } catch (error) {
-    console.error(`Error searching for runes with query "${query}" on server:`, error);
+    console.error(`[API Route] /api/sats-terminal/search: Error searching for runes with query "${query}" on server:`, error);
     // Check if error is an object and has a message property
     const message = (error instanceof Error) ? error.message : 'Failed to search for runes';
     // Avoid leaking sensitive error details to the client

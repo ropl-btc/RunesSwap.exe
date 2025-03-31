@@ -16,6 +16,7 @@ import {
 } from '@omnisat/lasereyes';
 import { useSharedLaserEyes } from '@/context/LaserEyesContext'; // Import the shared hook
 import styles from './ConnectWalletButton.module.css'; // Import CSS module
+import Image from 'next/image';
 
 // Helper function to truncate address
 const truncateAddress = (address: string) => {
@@ -308,10 +309,12 @@ export function ConnectWalletButton() {
                 <span>{name}</span>
                 {disclaimer && (
                   <div className={styles.warningIconContainer} title={`Warning: ${disclaimer}`}>
-                    <img 
+                    <Image 
                       src="/icons/msg_warning-0.png" 
                       alt="Warning" 
                       className={styles.warningIcon} 
+                      width={16}
+                      height={16}
                     />
                   </div>
                 )}

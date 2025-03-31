@@ -1,6 +1,7 @@
 import React, { useState, useMemo, Fragment } from 'react';
 import { Listbox, Transition } from '@headlessui/react';
 import { ChevronUpDownIcon, CheckIcon } from '@heroicons/react/24/solid';
+import Image from 'next/image';
 import { Asset, BTC_ASSET } from '@/types/common';
 import styles from './SwapTab.module.css'; // Reuse styles for now
 
@@ -49,8 +50,21 @@ export function AssetSelector({
         const ticker = selected.isBTC ? 'BTC' : (selected.name.split('•')[0] || selected.name);
         return (
             <span className={styles.selectedToken}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                {selected.imageURI && <img src={selected.imageURI} alt={ticker} className={styles.tokenIcon} onError={e => { e.currentTarget.style.display = 'none'; }} />} {ticker}
+                {selected.imageURI && (
+                  <Image 
+                    src={selected.imageURI} 
+                    alt={ticker} 
+                    className={styles.tokenIcon} 
+                    width={20}
+                    height={20}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      if (target) {
+                        target.style.display = 'none';
+                      }
+                    }}
+                  />
+                )} {ticker}
             </span>
         );
     };
@@ -94,8 +108,21 @@ export function AssetSelector({
                                             return (
                                                 <>
                                                     <span className={`${styles.optionContent} ${selected ? styles.selectedOptionText : ''}`}>
-                                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                        {asset.imageURI && <img src={asset.imageURI} alt={ticker} className={styles.tokenIcon} onError={e => { e.currentTarget.style.display = 'none'; }} />}
+                                                        {asset.imageURI && (
+                                                          <Image 
+                                                            src={asset.imageURI} 
+                                                            alt={ticker} 
+                                                            className={styles.tokenIcon} 
+                                                            width={20}
+                                                            height={20}
+                                                            onError={(e) => {
+                                                              const target = e.target as HTMLImageElement;
+                                                              if (target) {
+                                                                target.style.display = 'none';
+                                                              }
+                                                            }}
+                                                          />
+                                                        )}
                                                         <span className={styles.optionTicker}>{ticker}</span>
                                                         {!asset.isBTC && <span className={styles.optionName}>({asset.name})</span>}
                                                     </span>

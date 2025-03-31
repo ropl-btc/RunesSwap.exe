@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import Image from 'next/image';
 import styles from './SwapInterface.module.css'; // Reuse styles for now
 import { 
   RuneActivityEvent, 
@@ -43,7 +44,13 @@ export function YourTxsTab({ connected, address }: YourTxsTabProps) {
         </div>
       ) : runeActivityError ? (
         <div className={`${styles.listboxError} ${styles.messageWithIcon}`}>
-          <img src="/icons/msg_error-0.png" alt="Error" className={styles.messageIcon} />
+          <Image 
+            src="/icons/msg_error-0.png" 
+            alt="Error" 
+            className={styles.messageIcon} 
+            width={16}
+            height={16}
+          />
           <span>Error loading transactions: {runeActivityError instanceof Error ? runeActivityError.message : String(runeActivityError)}</span>
         </div>
       ) : !runeActivity || runeActivity.length === 0 ? (

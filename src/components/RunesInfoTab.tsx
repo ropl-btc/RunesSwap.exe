@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import debounce from 'lodash.debounce';
+import Image from 'next/image';
 import styles from './SwapInterface.module.css'; // Reuse styles for now
 import { 
   type RuneInfo as OrdiscanRuneInfo,
@@ -92,34 +93,43 @@ export function RunesInfoTab({}: RunesInfoTabProps) {
     fetchPopular();
   }, []);
 
-  // Debounced search function using SatsTerminal API
-  const searchRunes = useCallback(debounce(async (query: string) => {
-    if (!query) {
-      setSearchResults([]);
-      setIsSearching(false);
+  // Create a debounced search function - MEMOIZED
+  const debouncedSearch = useMemo(() => 
+    debounce(async (query: string) => {
+      if (!query) {
+        setSearchResults([]);
+        setIsSearching(false);
+        setSearchError(null);
+        return;
+      }
+      setIsSearching(true);
       setSearchError(null);
-      return;
-    }
-    setIsSearching(true);
-    setSearchError(null);
-    try {
-      const results: Rune[] = await fetchRunesFromApi(query);
-      setSearchResults(results);
-    } catch (error: unknown) {
-      console.error("Error searching runes:", error);
-      setSearchError(error instanceof Error ? error.message : 'Failed to search');
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
-    }
-  }, 300), [setSearchResults, setIsSearching, setSearchError]);
+      try {
+        const results: Rune[] = await fetchRunesFromApi(query);
+        setSearchResults(results);
+      } catch (error: unknown) {
+        console.error("[RunesInfoTab] Error searching runes:", error);
+        setSearchError(error instanceof Error ? error.message : 'Failed to search');
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300), 
+  []); // <-- Empty dependency array ensures it's created only once
+
+  // Clean up the debounced function on component unmount
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
   // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setRuneInfoSearchQuery(query);
     setIsSearching(true); // Indicate searching immediately
-    searchRunes(query);
+    debouncedSearch(query);
   };
 
   // Determine which runes to display
@@ -155,14 +165,22 @@ export function RunesInfoTab({}: RunesInfoTabProps) {
     <div className={styles.runesInfoTabContainer}>
       <div className={styles.searchAndResultsContainer}>
         <div className={styles.searchContainerRunesInfo}>
+          {/* Restore original structure */}
           <div className={styles.searchWrapper}>
-            <img src="/icons/magnifying_glass-0.png" alt="Search" className={styles.searchIconEmbedded} />
+            <Image
+              src="/icons/magnifying_glass-0.png" 
+              alt="Search" 
+              className={styles.searchIconEmbedded}
+              width={16}
+              height={16}
+            />
             <input
               type="text"
               placeholder="Search runes..."
               value={runeInfoSearchQuery}
               onChange={handleSearchChange}
               className={styles.searchInput}
+              // Remove inline style
             />
           </div>
         </div>
@@ -177,7 +195,13 @@ export function RunesInfoTab({}: RunesInfoTabProps) {
           )}
           {currentRunesError && (
             <div className={`${styles.listboxError} ${styles.messageWithIcon}`}>
-              <img src="/icons/msg_error-0.png" alt="Error" className={styles.messageIcon} />
+              <Image 
+                src="/icons/msg_error-0.png" 
+                alt="Error" 
+                className={styles.messageIcon}
+                width={16}
+                height={16}
+              />
               <span>{currentRunesError}</span>
             </div>
           )}
@@ -196,11 +220,19 @@ export function RunesInfoTab({}: RunesInfoTabProps) {
             >
               <div className={styles.runeListItemContent}>
                 {rune.imageURI && (
-                  <img 
+                  <Image 
                     src={rune.imageURI} 
                     alt="" 
                     className={styles.runeImage}
-                    onError={(e) => (e.currentTarget.style.display = 'none')}
+                    width={24}
+                    height={24}
+                    onError={(e) => {
+                      // Handle error in Next Image component by setting display to none
+                      const target = e.target as HTMLImageElement;
+                      if (target) {
+                        target.style.display = 'none';
+                      }
+                    }}
                   />
                 )}
                 <span>{rune.name}</span>

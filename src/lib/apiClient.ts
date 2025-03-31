@@ -10,12 +10,19 @@ import { type QuoteResponse, type GetPSBTParams, type ConfirmPSBTParams } from '
 // Fetch Runes search results from API
 export const fetchRunesFromApi = async (query: string): Promise<Rune[]> => {
     if (!query) return [];
-    const response = await fetch(`/api/sats-terminal/search?query=${encodeURIComponent(query)}`);
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Network response was not ok: ${response.statusText}`);
+    try {
+      const response = await fetch(`/api/sats-terminal/search?query=${encodeURIComponent(query)}`);
+      if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('[apiClient] fetchRunesFromApi: Fetch response not OK', errorData);
+          throw new Error(errorData.error || `Network response was not ok: ${response.statusText}`);
+      }
+      const results = await response.json();
+      return results;
+    } catch (error) {
+      console.error(`[apiClient] fetchRunesFromApi: Error during fetch for query "${query}":`, error);
+      throw error; // Re-throw the error after logging
     }
-    return response.json();
 };
 
 // Fetch Popular Collections from API

@@ -1,7 +1,8 @@
-import React, { useState, useEffect, Fragment, useCallback } from 'react';
+import React, { useState, useEffect, Fragment, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Listbox, Transition } from '@headlessui/react';
 import { ChevronUpDownIcon, CheckIcon, ArrowPathIcon } from '@heroicons/react/24/solid';
+import Image from 'next/image';
 import styles from './SwapInterface.module.css';
 import debounce from 'lodash.debounce';
 import { useDebounce } from 'use-debounce';
@@ -184,41 +185,52 @@ export function SwapTab({ connected, address, paymentAddress, publicKey, payment
   // Ensure assetOut is included as a dependency to reset correctly
   }, [assetIn.isBTC, assetOut, setAssetOut, setIsPopularLoading, setPopularError, setPopularRunes]); 
 
-  // Debounced search function using API
-  const searchAssets = useCallback(debounce(async (query: string) => {
-    if (!query) {
-      setSearchResults([]);
-      setIsSearching(false);
+  // Create a debounced search function - MEMOIZED
+  const debouncedSearch = useMemo(() => 
+    debounce(async (query: string) => {
+      if (!query) {
+        setSearchResults([]);
+        setIsSearching(false);
+        setSearchError(null);
+        return;
+      }
+      setIsSearching(true);
       setSearchError(null);
-      return;
-    }
-    setIsSearching(true);
-    setSearchError(null);
-    try {
-      // *** Ensure this uses the API fetch function ***
-      const results: Rune[] = await fetchRunesFromApi(query); 
-      // Map results to Asset type for consistency in the component
-      const mappedResults: Asset[] = results.map(rune => ({
-        id: rune.id, 
-        name: rune.name,
-        imageURI: rune.imageURI,
-        isBTC: false,
-      }));
-      setSearchResults(mappedResults); // Store as Asset[]
-    } catch (error: unknown) {
-      setSearchError(error instanceof Error ? error.message : 'Failed to search');
-      setSearchResults([]); // Clear results on error
-    } finally {
-      setIsSearching(false);
-    }
-  }, 300), [setSearchResults, setIsSearching, setSearchError]); // Added dependencies
+      try {
+        // *** Ensure this uses the API fetch function ***
+        const results: Rune[] = await fetchRunesFromApi(query); 
+        // Map results to Asset type for consistency in the component
+        const mappedResults: Asset[] = results.map(rune => ({
+          id: rune.id, 
+          name: rune.name,
+          imageURI: rune.imageURI,
+          isBTC: false,
+        }));
+        setSearchResults(mappedResults); // Store as Asset[]
+      } catch (error: unknown) {
+        // Keep actual error logging
+        console.error("[SwapTab] Error searching runes:", error);
+        setSearchError(error instanceof Error ? error.message : 'Failed to search');
+        setSearchResults([]); // Clear results on error
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300),
+  []); // <-- Empty dependency array ensures it's created only once
+
+  // Clean up the debounced function on component unmount
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
   // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
     setIsSearching(true); // Indicate searching immediately
-    searchAssets(query);
+    debouncedSearch(query);
   };
 
   // Determine which runes to display (use Asset type)
@@ -419,7 +431,7 @@ export function SwapTab({ connected, address, paymentAddress, publicKey, payment
     };
     fetchQuoteAsync();
   }, [assetIn, assetOut, inputAmount, address, btcPriceUsd,
-      setIsQuoteLoading, setQuote, setQuoteError, setExchangeRate, setOutputAmount
+      setIsQuoteLoading, setQuote, setQuoteError, setExchangeRate, setOutputAmount, setQuoteExpired
   ]);
 
   // Effect to call the memoized fetchQuote when debounced amount or assets change
@@ -714,12 +726,19 @@ export function SwapTab({ connected, address, paymentAddress, publicKey, payment
                   <Listbox.Button className={styles.listboxButton}>
                       <span className={styles.listboxButtonText}>
                           {value?.imageURI && (
-                              <img
+                              <Image
                                   src={value.imageURI}
                                   alt={`${value.name} logo`}
-                                  className={styles.assetButtonImage} // Use same style as BTC button image
+                                  className={styles.assetButtonImage}
+                                  width={24}
+                                  height={24}
                                   aria-hidden="true"
-                                  onError={(e) => (e.currentTarget.style.display = 'none')}
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    if (target) {
+                                      target.style.display = 'none';
+                                    }
+                                  }}
                               />
                           )}
                           {isLoadingRunes && purpose === 'selectRune' ? 'Loading...' : value ? value.name : 'Select Asset'}
@@ -748,7 +767,14 @@ export function SwapTab({ connected, address, paymentAddress, publicKey, payment
                                        <>
                                           <span className={styles.runeOptionContent}> {/* Use rune option style */}
                                               {BTC_ASSET.imageURI && (
-                                                  <img src={BTC_ASSET.imageURI} alt="" className={styles.runeImage} aria-hidden="true" />
+                                                  <Image 
+                                                    src={BTC_ASSET.imageURI} 
+                                                    alt="" 
+                                                    className={styles.runeImage} 
+                                                    width={24}
+                                                    height={24}
+                                                    aria-hidden="true" 
+                                                  />
                                               )}
                                               <span className={`${styles.listboxOptionText} ${ selected ? styles.listboxOptionTextSelected : styles.listboxOptionTextUnselected }`}>
                                                   {BTC_ASSET.name}
@@ -766,10 +792,12 @@ export function SwapTab({ connected, address, paymentAddress, publicKey, payment
 
                           <div className={styles.searchContainer}>
                               <div className={styles.searchWrapper}>
-                                  <img 
+                                  <Image 
                                       src="/icons/magnifying_glass-0.png" 
                                       alt="Search" 
-                                      className={styles.searchIconEmbedded} 
+                                      className={styles.searchIconEmbedded}
+                                      width={16}
+                                      height={16}
                                   />
                                   <input
                                       type="text"
@@ -784,10 +812,12 @@ export function SwapTab({ connected, address, paymentAddress, publicKey, payment
                           {isLoadingRunes && <div className={styles.listboxLoadingOrEmpty}>Loading Runes...</div>}
                           {!isLoadingRunes && currentRunesError && (
                             <div className={`${styles.listboxError} ${styles.messageWithIcon}`}>
-                              <img 
+                              <Image 
                                 src="/icons/msg_error-0.png" 
                                 alt="Error" 
-                                className={styles.messageIcon} 
+                                className={styles.messageIcon}
+                                width={16}
+                                height={16}
                               />
                               <span>{currentRunesError}</span>
                             </div>
@@ -812,12 +842,19 @@ export function SwapTab({ connected, address, paymentAddress, publicKey, payment
                                       <>
                                           <span className={styles.runeOptionContent}> {/* Use rune option style */}
                                               {rune.imageURI && (
-                                                  <img
+                                                  <Image
                                                       src={rune.imageURI}
                                                       alt=""
-                                                      className={styles.runeImage} // Use rune image style
+                                                      className={styles.runeImage}
+                                                      width={24}
+                                                      height={24}
                                                       aria-hidden="true"
-                                                      onError={(e) => (e.currentTarget.style.display = 'none')}
+                                                      onError={(e) => {
+                                                        const target = e.target as HTMLImageElement;
+                                                        if (target) {
+                                                          target.style.display = 'none';
+                                                        }
+                                                      }}
                                                   />
                                               )}
                                               <span className={`${styles.listboxOptionText} ${ selected ? styles.listboxOptionTextSelected : styles.listboxOptionTextUnselected }`}>
@@ -980,10 +1017,12 @@ export function SwapTab({ connected, address, paymentAddress, publicKey, payment
         )}
         {quoteError && !isQuoteLoading && (
           <div className={`${styles.quoteErrorText} ${styles.messageWithIcon}`}>
-            <img 
+            <Image 
               src="/icons/msg_error-0.png" 
               alt="Error" 
-              className={styles.messageIcon} 
+              className={styles.messageIcon}
+              width={16}
+              height={16}
             />
             <span>{quoteError}</span>
           </div>
@@ -1035,7 +1074,13 @@ export function SwapTab({ connected, address, paymentAddress, publicKey, payment
       {/* Display Swap Process Status */}
       {isSwapping && swapStep !== 'error' && swapStep !== 'success' && (
         <div className={`${styles.statusText} ${styles.messageWithIcon}`}>
-          <img src="/icons/hourglass-0.png" alt="Processing" className={styles.messageIcon} />
+          <Image 
+            src="/icons/hourglass-0.png" 
+            alt="Processing" 
+            className={styles.messageIcon}
+            width={16}
+            height={16}
+          />
           <span>
             {swapStep === 'getting_psbt' && 'Preparing transaction...'}
             {swapStep === 'signing' && 'Waiting for wallet signature...'}
@@ -1048,13 +1093,25 @@ export function SwapTab({ connected, address, paymentAddress, publicKey, payment
       {/* Display Swap Error/Success Messages */}
       {swapError && (
         <div className={`${styles.errorText} ${styles.messageWithIcon}`}>
-          <img src="/icons/msg_error-0.png" alt="Error" className={styles.messageIcon} />
+          <Image 
+            src="/icons/msg_error-0.png" 
+            alt="Error" 
+            className={styles.messageIcon}
+            width={16}
+            height={16}
+          />
           <span>Error: {swapError}</span>
         </div>
       )}
       {!swapError && swapStep === 'success' && txId && (
         <div className={`${styles.successText} ${styles.messageWithIcon}`}>
-          <img src="/icons/check-0.png" alt="Success" className={styles.messageIcon} />
+          <Image 
+            src="/icons/check-0.png" 
+            alt="Success" 
+            className={styles.messageIcon}
+            width={16}
+            height={16}
+          />
           <span>
             Swap successful!
             <a
