@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import styles from './SwapInterface.module.css';
 
 interface FooterComponentProps {
@@ -23,6 +24,13 @@ export function FooterComponent({ btcPriceUsd, isBtcPriceLoading, btcPriceError 
         <span>BTC Price: N/A</span> 
       )}
       <div className={styles.socialLinks}>
+        <Link 
+          href="/docs" 
+          className={styles.docsButton}
+          title="Documentation"
+        >
+          Docs
+        </Link>
         <a 
           href="https://github.com/ropl-btc/RunesSwap.app" 
           target="_blank" 

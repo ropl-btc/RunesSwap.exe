@@ -770,32 +770,65 @@
 
 .socialLinks {
   display: flex;
-  gap: 0.75rem;
-  margin-left: 1rem;
   align-items: center;
+  gap: 0.75rem;
+  margin-left: auto; /* Push social links to the right */
+}
+
+.docsButton {
+  color: var(--win98-blue);
+  font-size: 0.875rem;
+  text-decoration: none;
+  padding: 0.25rem 0.5rem;
+  background-color: var(--win98-gray);
+  border-width: 2px;
+  border-style: solid;
+  border-top-color: var(--win98-light-gray);
+  border-left-color: var(--win98-light-gray);
+  border-right-color: var(--win98-dark-gray);
+  border-bottom-color: var(--win98-dark-gray);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.docsButton:hover {
+  background-color: var(--win98-light-gray);
+}
+
+.docsButton:active {
+  border-top-color: var(--win98-dark-gray);
+  border-left-color: var(--win98-dark-gray);
+  border-right-color: var(--win98-light-gray);
+  border-bottom-color: var(--win98-light-gray);
 }
 
 .socialLink {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  border: 1px solid var(--win98-dark-gray);
-  background-color: var(--win98-light-gray);
-  padding: 2px;
-  border-radius: 2px;
-  transition: background-color 0.2s;
+  width: 22px;
+  height: 22px;
+  background-color: var(--win98-gray);
+  border-width: 2px;
+  border-style: solid;
+  border-top-color: var(--win98-light-gray);
+  border-left-color: var(--win98-light-gray);
+  border-right-color: var(--win98-dark-gray);
+  border-bottom-color: var(--win98-dark-gray);
 }
 
 .socialLink:hover {
-  background-color: var(--win98-white);
+  background-color: var(--win98-light-gray);
 }
 
 .socialLink:active {
-  border-style: inset;
+  border-top-color: var(--win98-dark-gray);
+  border-left-color: var(--win98-dark-gray);
+  border-right-color: var(--win98-light-gray);
+  border-bottom-color: var(--win98-light-gray);
 }
-/* --- End BTC Price Footer Styles --- */
 
 /* Price styling */
 .priceHighlight {

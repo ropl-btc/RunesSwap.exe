@@ -130,3 +130,134 @@
 }
 
 /* Add any other styles for page.tsx here */ 
+
+/* Docs Page Styles */
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: bold;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  color: var(--win98-dark-blue);
+}
+
+.docsContent {
+  background-color: var(--win98-white);
+  border-width: 2px;
+  border-style: solid;
+  border-top-color: var(--win98-dark-gray);
+  border-left-color: var(--win98-dark-gray);
+  border-right-color: var(--win98-light-gray);
+  border-bottom-color: var(--win98-light-gray);
+  padding: 1.5rem;
+}
+
+.docsContent section {
+  margin-bottom: 2rem;
+}
+
+.docsContent h2 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: var(--win98-blue);
+  border-bottom: 1px solid var(--win98-gray);
+  padding-bottom: 0.5rem;
+}
+
+.docsContent h3 {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: var(--win98-dark-blue);
+}
+
+.docsContent p {
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.docsContent ul {
+  list-style-type: square;
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.docsContent li {
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+.contactLinks {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.contactLinks a {
+  color: var(--win98-blue);
+  text-decoration: underline;
+}
+
+.contactLinks a:hover {
+  text-decoration: none;
+}
+
+.backToHome {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.backToHome a {
+  display: inline-block;
+  color: var(--win98-blue);
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  background-color: var(--win98-gray);
+  border-width: 2px;
+  border-style: solid;
+  border-top-color: var(--win98-light-gray);
+  border-left-color: var(--win98-light-gray);
+  border-right-color: var(--win98-dark-gray);
+  border-bottom-color: var(--win98-dark-gray);
+}
+
+.backToHome a:hover {
+  background-color: var(--win98-light-gray);
+}
+
+.backToHome a:active {
+  border-top-color: var(--win98-dark-gray);
+  border-left-color: var(--win98-dark-gray);
+  border-right-color: var(--win98-light-gray);
+  border-bottom-color: var(--win98-light-gray);
+}
+
+/* Media queries for docs page */
+@media (max-width: 640px) {
+  .container {
+    padding: 0.5rem;
+  }
+  
+  .docsContent {
+    padding: 1rem;
+  }
+  
+  .title {
+    font-size: 1.5rem;
+  }
+  
+  .docsContent h2 {
+    font-size: 1.25rem;
+  }
+  
+  .docsContent h3 {
+    font-size: 1.125rem;
+  }
+} 
