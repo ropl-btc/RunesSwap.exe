@@ -14,6 +14,12 @@ export default function Home() {
 
   return (
     <div className={styles.mainContainer}>
+      {/* Alpha Version Disclaimer */}
+      <div className={styles.disclaimer}>
+        <img src="/icons/msg_warning-0.png" alt="Warning" className={styles.warningIcon} />
+        This is an alpha version. Use at your own risk.
+      </div>
+
       {/* New Header Container */}
       <div className={styles.headerContainer}>
         {/* Tab Buttons */}

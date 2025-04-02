@@ -5,6 +5,27 @@
   /* Add any overall container styles if needed */
 }
 
+/* Alpha version disclaimer */
+.disclaimer {
+  background-color: #ffffcc; /* Light yellow background */
+  border: 2px solid #ff9900; /* Orange border */
+  color: #cc3300; /* Dark red text */
+  text-align: center;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  font-weight: bold;
+  box-shadow: inset -1px -1px 0px var(--win98-black), inset 1px 1px 0px var(--win98-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.warningIcon {
+  width: 16px;
+  height: 16px;
+}
+
 /* --- New Header Styles --- */
 .headerContainer {
   display: flex;
@@ -92,6 +113,12 @@
 
 /* Add mobile-specific styles */
 @media (max-width: 640px) {
+  .disclaimer {
+    font-size: 0.875rem; /* Smaller font on mobile */
+    padding: 0.375rem;
+    margin-bottom: 0.75rem;
+  }
+  
   .headerContainer {
     flex-direction: column;
     align-items: center;
