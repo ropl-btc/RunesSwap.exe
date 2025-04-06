@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import type { QuoteParams } from 'satsterminal-sdk';
 import { getSatsTerminalClient } from '@/lib/serverUtils';
 import { z } from 'zod';
+import { createSuccessResponse, createErrorResponse, handleApiError } from '@/lib/apiUtils';
 
 const quoteParamsSchema = z.object({
   btcAmount: z.union([z.string().min(1), z.number().positive()]).transform(val => String(val)), // Require non-empty string or positive number, always transform to string
@@ -18,17 +19,18 @@ export async function POST(request: NextRequest) {
   try {
     params = await request.json();
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    return createErrorResponse('Invalid JSON body', 'Request body could not be parsed as JSON', 400);
   }
 
   const validationResult = quoteParamsSchema.safeParse(params);
 
   if (!validationResult.success) {
-    console.error("Quote API Validation Error:", validationResult.error.flatten()); // Log detailed error server-side
-    return NextResponse.json({
-        error: 'Invalid request body for quote.',
-        details: validationResult.error.flatten().fieldErrors
-    }, { status: 400 });
+    const fieldErrors = validationResult.error.flatten().fieldErrors;
+    return createErrorResponse(
+      'Invalid request body for quote',
+      JSON.stringify(fieldErrors),
+      400
+    );
   }
 
   // Use the validated and typed data from now on
@@ -43,13 +45,22 @@ export async function POST(request: NextRequest) {
     };
 
     const quoteResponse = await terminal.fetchQuote(quoteParams);
-    return NextResponse.json(quoteResponse);
-
+    
+    // Validate the response
+    if (!quoteResponse || typeof quoteResponse !== 'object') {
+      return createErrorResponse('Invalid quote response', 'Quote data is malformed', 500);
+    }
+    
+    return createSuccessResponse(quoteResponse);
   } catch (error) {
-    console.error(`Error fetching quote on server:`, error);
-    const message = (error instanceof Error) ? error.message : 'Failed to fetch quote';
-    // Forward specific error messages if safe, otherwise generic error
-    const statusCode = message.includes('liquidity') ? 404 : 500;
-    return NextResponse.json({ error: 'Failed to fetch quote', details: message }, { status: statusCode });
+    const errorInfo = handleApiError(error, 'Failed to fetch quote');
+    
+    // Special handling for liquidity errors (maintain 404 status)
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.toLowerCase().includes('liquidity')) {
+      return createErrorResponse('No liquidity available', errorMessage, 404);
+    }
+    
+    return createErrorResponse(errorInfo.message, errorInfo.details, errorInfo.status);
   }
 } 

@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getSatsTerminalClient } from '@/lib/serverUtils';
 import type { Rune } from '@/types/satsTerminal';
+import { createSuccessResponse, createErrorResponse, handleApiError } from '@/lib/apiUtils';
 
 // Define types for rune responses locally or import if shared
 // interface Rune {
@@ -28,8 +29,8 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('query');
 
-  if (!query) {
-    return NextResponse.json({ error: 'Search query is required' }, { status: 400 });
+  if (!query || query.trim() === '') {
+    return createErrorResponse('Search query is required', undefined, 400);
   }
 
   try {
@@ -39,14 +40,22 @@ export async function GET(request: NextRequest) {
       sell: false // Or get from query params if needed
     });
 
-    // Map the response (same mapping logic as before)
+    // Map the response with improved type checking
     const orders: SearchOrder[] = Array.isArray(searchResults) ? searchResults :
                   (searchResults && typeof searchResults === 'object' && 'orders' in searchResults && Array.isArray(searchResults.orders)) ?
                   (searchResults.orders as SearchOrder[]) :
                   [];
 
-    const runes: Rune[] = orders.map((order: SearchOrder) => ({
-      id: order.id || order.rune || `unknown_rune_${Math.random()}`,
+    // Generate a stable ID using a hash of properties instead of random
+    const generateStableId = (order: SearchOrder, index: number): string => {
+      const base = order.id || order.rune || order.etching?.runeName;
+      if (base) return base;
+      // Fallback to a stable ID based on properties and index
+      return `unknown_rune_${index}_${order.formattedAmount || ''}_${order.price || 0}`;
+    };
+
+    const runes: Rune[] = orders.map((order: SearchOrder, index: number) => ({
+      id: generateStableId(order, index),
       name: order.etching?.runeName || order.rune || 'Unknown Rune',
       imageURI: order.icon_content_url_data || order.imageURI,
       formattedAmount: order.formattedAmount,
@@ -54,13 +63,9 @@ export async function GET(request: NextRequest) {
       price: order.price
     }));
 
-    return NextResponse.json(runes);
-
+    return createSuccessResponse(runes);
   } catch (error) {
-    console.error(`[API Route] /api/sats-terminal/search: Error searching for runes with query "${query}" on server:`, error);
-    // Check if error is an object and has a message property
-    const message = (error instanceof Error) ? error.message : 'Failed to search for runes';
-    // Avoid leaking sensitive error details to the client
-    return NextResponse.json({ error: 'Failed to search for runes', details: message }, { status: 500 });
+    const errorInfo = handleApiError(error, `Failed to search for runes with query "${query}"`);
+    return createErrorResponse(errorInfo.message, errorInfo.details, errorInfo.status);
   }
 } 

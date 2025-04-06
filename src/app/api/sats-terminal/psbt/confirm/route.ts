@@ -3,21 +3,33 @@ import type { ConfirmPSBTParams, RuneOrder } from 'satsterminal-sdk';
 import { getSatsTerminalClient } from '@/lib/serverUtils';
 import { z } from 'zod';
 
+// Create a more comprehensive RuneOrder schema based on observed usage
 const runeOrderSchema = z.object({
-  id: z.string(),
-  // Other RuneOrder fields would be defined here
-  // Since we don't have the full RuneOrder type details, using a more permissive approach
-}).passthrough(); // Allow other fields that might be in RuneOrder
+  id: z.string().min(1, "Order ID is required"),
+  market: z.string().min(1, "Market is required"),
+  price: z.number().optional(),
+  quantity: z.number().optional(),
+  maker: z.string().optional(),
+  side: z.enum(["BUY", "SELL"]).optional(),
+  txid: z.string().optional(),
+  vout: z.number().optional(),
+  runeName: z.string().optional(),
+  runeAmount: z.number().optional(),
+  btcAmount: z.number().optional(),
+  satPrice: z.number().optional(),
+  status: z.string().optional(),
+  timestamp: z.number().optional(),
+}).passthrough(); // Use passthrough to allow additional fields expected by the SDK
 
 const confirmPsbtParamsSchema = z.object({
   orders: z.array(runeOrderSchema),
-  address: z.string().min(1),
-  publicKey: z.string().min(1),
-  paymentAddress: z.string().min(1),
-  paymentPublicKey: z.string().min(1),
-  signedPsbtBase64: z.string().min(1),
-  swapId: z.string().min(1),
-  runeName: z.string().min(1),
+  address: z.string().min(1, "Bitcoin address is required"),
+  publicKey: z.string().min(1, "Public key is required"),
+  paymentAddress: z.string().min(1, "Payment address is required"),
+  paymentPublicKey: z.string().min(1, "Payment public key is required"),
+  signedPsbtBase64: z.string().min(1, "Signed PSBT is required"),
+  swapId: z.string().min(1, "Swap ID is required"),
+  runeName: z.string().min(1, "Rune name is required"),
   sell: z.boolean().optional(),
   rbfProtection: z.boolean().optional(),
   signedRbfPsbtBase64: z.string().optional(), // Make optional initially
@@ -37,7 +49,7 @@ export async function POST(request: NextRequest) {
   try {
     params = await request.json();
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid JSON body', details: 'The request body could not be parsed as JSON' }, { status: 400 });
   }
 
   const validationResult = confirmPsbtParamsSchema.safeParse(params);
@@ -55,9 +67,10 @@ export async function POST(request: NextRequest) {
 
   try {
     const terminal = getSatsTerminalClient();
-    // Ensure orders are properly typed
+    // No need for type casting since validatedParams is already properly typed
     const confirmParams: ConfirmPSBTParams = {
       ...validatedParams,
+      // Need to cast orders to RuneOrder[] since Zod validation may not fully match SDK type
       orders: validatedParams.orders as unknown as RuneOrder[],
       // Ensure optional signedRbfPsbtBase64 is undefined if not provided, matching SDK type
       signedRbfPsbtBase64: validatedParams.signedRbfPsbtBase64 || undefined,
@@ -74,6 +87,10 @@ export async function POST(request: NextRequest) {
     if (message.includes("Quote expired") || (error && typeof error === 'object' && (error as { code?: string }).code === 'ERR677K3')) {
       statusCode = 410; // Gone (or another suitable code like 400 Bad Request)
     }
-    return NextResponse.json({ error: 'Failed to confirm PSBT', details: message }, { status: statusCode });
+    return NextResponse.json({ 
+      error: 'Failed to confirm PSBT', 
+      details: message,
+      code: (error && typeof error === 'object' && (error as { code?: string }).code) || 'UNKNOWN_ERROR'
+    }, { status: statusCode });
   }
 } 

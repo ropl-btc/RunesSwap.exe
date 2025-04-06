@@ -3,22 +3,35 @@ import type { GetPSBTParams, RuneOrder } from 'satsterminal-sdk';
 import { getSatsTerminalClient } from '@/lib/serverUtils';
 import { z } from 'zod';
 
+// Create a comprehensive RuneOrder schema based on the SDK requirements
 const runeOrderSchema = z.object({
-  id: z.string(),
-  // Other RuneOrder fields would be defined here
-  // Since we don't have the full RuneOrder type details, using a more permissive approach
-  // If specific fields are known, they should be added here
-}).passthrough(); // Allow other fields that might be in RuneOrder
+  id: z.string().min(1, "Order ID is required"),
+  market: z.string().min(1, "Market is required"),
+  price: z.number().optional(),
+  quantity: z.number().optional(),
+  maker: z.string().optional(),
+  side: z.enum(["BUY", "SELL"]).optional(),
+  txid: z.string().optional(),
+  vout: z.number().optional(),
+  runeName: z.string().optional(),
+  runeAmount: z.number().optional(),
+  btcAmount: z.number().optional(),
+  satPrice: z.number().optional(),
+  status: z.string().optional(),
+  timestamp: z.number().optional(),
+}).passthrough(); // Use passthrough to allow additional fields expected by the SDK
 
 const getPsbtParamsSchema = z.object({
   orders: z.array(runeOrderSchema),
-  address: z.string().min(1),
-  publicKey: z.string().min(1),
-  paymentAddress: z.string().min(1),
-  paymentPublicKey: z.string().min(1),
-  runeName: z.string().min(1),
+  address: z.string().min(1, "Bitcoin address is required"),
+  publicKey: z.string().min(1, "Public key is required"),
+  paymentAddress: z.string().min(1, "Payment address is required"),
+  paymentPublicKey: z.string().min(1, "Payment public key is required"),
+  runeName: z.string().min(1, "Rune name is required"),
   sell: z.boolean().optional(),
-  // Add other optional fields from GetPSBTParams if needed
+  rbfProtection: z.boolean().optional(),
+  feeRate: z.number().optional(),
+  slippage: z.number().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -26,7 +39,10 @@ export async function POST(request: NextRequest) {
   try {
     params = await request.json();
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    return NextResponse.json({ 
+      error: 'Invalid JSON body', 
+      details: 'The request body could not be parsed as JSON' 
+    }, { status: 400 });
   }
 
   const validationResult = getPsbtParamsSchema.safeParse(params);
@@ -44,20 +60,29 @@ export async function POST(request: NextRequest) {
 
   try {
     const terminal = getSatsTerminalClient();
-    // Ensure orders are properly typed before sending
+    // Need to cast orders to RuneOrder[] since Zod validation may not fully match SDK type
     const psbtParams: GetPSBTParams = {
       ...validatedParams,
-      orders: validatedParams.orders as unknown as RuneOrder[], // Cast through unknown first
+      orders: validatedParams.orders as unknown as RuneOrder[],
     };
 
     const psbtResponse = await terminal.getPSBT(psbtParams);
-    // Important: The response structure might vary (e.g., psbt vs psbtBase64)
-    // Client needs to handle potential variations
     return NextResponse.json(psbtResponse);
 
   } catch (error) {
     console.error(`Error getting PSBT on server:`, error);
     const message = (error instanceof Error) ? error.message : 'Failed to generate PSBT';
-    return NextResponse.json({ error: 'Failed to generate PSBT', details: message }, { status: 500 });
+    
+    // Check for specific API errors 
+    let statusCode = 500;
+    if (message.includes("Quote expired") || (error && typeof error === 'object' && (error as { code?: string }).code === 'ERR677K3')) {
+      statusCode = 410; // Gone (or another suitable code for expired quotes)
+    }
+    
+    return NextResponse.json({ 
+      error: 'Failed to generate PSBT', 
+      details: message,
+      code: (error && typeof error === 'object' && (error as { code?: string }).code) || 'UNKNOWN_ERROR'
+    }, { status: statusCode });
   }
 } 

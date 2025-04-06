@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { ConnectWalletButton } from '@/components/ConnectWalletButton';
 import { SwapInterface } from '@/components/SwapInterface';
 import styles from './page.module.css';
@@ -16,7 +17,13 @@ export default function Home() {
     <div className={styles.mainContainer}>
       {/* Alpha Version Disclaimer */}
       <div className={styles.disclaimer}>
-        <img src="/icons/msg_warning-0.png" alt="Warning" className={styles.warningIcon} />
+        <Image 
+          src="/icons/msg_warning-0.png" 
+          alt="Warning" 
+          className={styles.warningIcon}
+          width={16}
+          height={16}
+        />
         This is an alpha version. Use at your own risk.
       </div>
 

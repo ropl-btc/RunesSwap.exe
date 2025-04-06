@@ -1,17 +1,19 @@
-import { NextResponse } from 'next/server';
 import { getSatsTerminalClient } from '@/lib/serverUtils';
+import { createSuccessResponse, createErrorResponse, handleApiError } from '@/lib/apiUtils';
 
 export async function GET() {
-
   try {
     const terminal = getSatsTerminalClient();
-    // No parameters needed for popularCollections based on current usage
     const popularResponse = await terminal.popularCollections({});
-    return NextResponse.json(popularResponse);
-
+    
+    // Validate response structure
+    if (!popularResponse || typeof popularResponse !== 'object') {
+      return createErrorResponse('Invalid response from SatsTerminal', 'Popular collections data is malformed', 500);
+    }
+    
+    return createSuccessResponse(popularResponse);
   } catch (error) {
-    console.error(`Error fetching popular collections on server:`, error);
-    const message = (error instanceof Error) ? error.message : 'Failed to fetch popular collections';
-    return NextResponse.json({ error: 'Failed to fetch popular collections', details: message }, { status: 500 });
+    const errorInfo = handleApiError(error, 'Failed to fetch popular collections');
+    return createErrorResponse(errorInfo.message, errorInfo.details, errorInfo.status);
   }
 } 

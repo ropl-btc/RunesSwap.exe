@@ -16,6 +16,13 @@
   width: 100%; /* Ensure container takes available width */
 }
 
+/* Container with price chart visible takes up more space */
+.containerWithChart {
+  max-width: 100%; /* Full width when chart is visible */
+  padding-left: 0;   /* Remove side padding */
+  padding-right: 0;  /* Remove side padding */
+}
+
 .title {
   font-size: 1.125rem; /* text-lg */
   line-height: 1.75rem; /* text-lg */
@@ -36,7 +43,14 @@
   border-top-color: var(--win98-dark-gray);
   background-color: var(--win98-white);
   /* margin-top: 1rem; */ /* Remove compensating margin */
-  min-width: 450px; /* Add minimum width on desktop */
+  width: 100%; /* Set width to 100% of container */
+  min-width: auto; /* Override min-width for narrow containers */
+}
+
+/* Special case for input area when in narrowed container */
+.narrowSwapContainer .inputArea {
+  min-width: auto;
+  width: 100%;
 }
 
 .inputLabel {
@@ -577,6 +591,10 @@
   border-bottom-color: var(--win98-dark-gray);
   background-color: var(--win98-gray);
   overflow: hidden; /* Ensure no gaps between children */
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  max-width: 100%;
 }
 
 .searchContainerRunesInfo {
@@ -639,25 +657,6 @@
   align-items: center;
 }
 
-.runeDetailsContainer {
-  border: 2px inset var(--win98-dark-gray); /* Match container border style */
-  padding: 0.5rem;
-  background-color: var(--win98-white);
-  min-height: 100px; 
-}
-
-.runeDetailsContainer h3 {
-  font-weight: bold;
-  margin-bottom: 0.5rem;
-  border-bottom: 1px solid var(--win98-dark-gray);
-  padding-bottom: 0.25rem;
-}
-
-.runeDetailsContainer p {
-  margin-bottom: 0.25rem;
-  font-size: 0.875rem;
-}
-
 .hintText {
   color: var(--win98-dark-gray);
   font-style: italic;
@@ -707,33 +706,6 @@
   justify-content: space-between;
   align-items: baseline;
   margin-bottom: 0.5rem;
-}
-
-.runeDetailsContainer {
-  border: 2px inset var(--win98-dark-gray); /* Match container border style */
-  padding: 0.5rem;
-  background-color: var(--win98-white);
-  min-height: 100px; 
-}
-
-.runeDetailsContainer h3 {
-  font-weight: bold;
-  margin-bottom: 0.5rem;
-  border-bottom: 1px solid var(--win98-dark-gray);
-  padding-bottom: 0.25rem;
-}
-
-.runeDetailsContainer p {
-  margin-bottom: 0.25rem;
-  font-size: 0.875rem;
-}
-
-.hintText {
-  color: var(--win98-dark-gray);
-  font-style: italic;
-  font-size: 0.875rem;
-  text-align: center;
-  padding: 1rem;
 }
 
 /* --- New BTC Price Footer Styles --- */
@@ -836,4 +808,333 @@
   font-weight: bold;
 }
 
-/* ... Rest of CSS ... */ 
+/* Price Chart Styles */
+.appLayout {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* When chart is visible, app layout should use full width without additional margins */
+.containerWithChart .appLayout {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.swapContainer {
+  flex: 1;
+  transition: all 0.3s ease;
+}
+
+.narrowSwapContainer {
+  max-width: calc(50% - 0.5rem); /* Exactly 50% of the width minus half the gap */
+  width: calc(50% - 0.5rem);
+  transition: all 0.3s ease;
+  margin: 0; /* Ensure no margin when in narrow mode */
+}
+
+.priceChartContainer {
+  padding: 0.5rem;
+  border-width: 2px;
+  border-style: solid;
+  border-right-color: var(--win98-dark-gray);
+  border-bottom-color: var(--win98-dark-gray);
+  border-left-color: var(--win98-light-gray);
+  border-top-color: var(--win98-light-gray);
+  background-color: var(--win98-gray);
+  max-width: calc(50% - 0.5rem); /* Exactly 50% of the width minus half the gap */
+  width: calc(50% - 0.5rem); /* Ensuring exact 50/50 split */
+  flex: 0 0 calc(50% - 0.5rem); /* Do not grow, do not shrink, fixed width */
+  min-height: 300px;
+  max-height: 500px;
+  margin: 0; /* Ensure no margin */
+}
+
+.priceChartInner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  position: relative; /* Ensure positioned elements inside use this as reference */
+}
+
+.priceChartHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.priceChartTitle {
+  font-size: 1rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+.timeframeSelectorBottom {
+  display: flex;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.timeframeButton {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  background-color: var(--win98-gray);
+  border-width: 2px;
+  border-style: solid;
+  border-top-color: var(--win98-light-gray);
+  border-left-color: var(--win98-light-gray);
+  border-right-color: var(--win98-dark-gray);
+  border-bottom-color: var(--win98-dark-gray);
+}
+
+.timeframeButton:active {
+  border-top-color: var(--win98-dark-gray);
+  border-left-color: var(--win98-dark-gray);
+  border-right-color: var(--win98-light-gray);
+  border-bottom-color: var(--win98-light-gray);
+}
+
+.timeframeButtonActive {
+  border-top-color: var(--win98-dark-gray);
+  border-left-color: var(--win98-dark-gray);
+  border-right-color: var(--win98-light-gray);
+  border-bottom-color: var(--win98-light-gray);
+  background-color: var(--win98-navy);
+  color: var(--win98-white);
+}
+
+.priceChartCanvas {
+  width: 100%;
+  height: 250px;
+  border-width: 2px;
+  border-style: solid;
+  border-right-color: var(--win98-light-gray);
+  border-bottom-color: var(--win98-light-gray);
+  border-left-color: var(--win98-dark-gray);
+  border-top-color: var(--win98-dark-gray);
+  background-color: var(--win98-white);
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  cursor: crosshair; /* Change cursor to crosshair when hovering over the chart */
+}
+
+.showPriceChartButton {
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  background-color: var(--win98-gray);
+  border-width: 2px;
+  border-style: solid;
+  border-top-color: var(--win98-light-gray);
+  border-left-color: var(--win98-light-gray);
+  border-right-color: var(--win98-dark-gray);
+  border-bottom-color: var(--win98-dark-gray);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.showPriceChartButton:active {
+  border-top-color: var(--win98-dark-gray);
+  border-left-color: var(--win98-dark-gray);
+  border-right-color: var(--win98-light-gray);
+  border-bottom-color: var(--win98-light-gray);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .appLayout {
+    flex-direction: column;
+  }
+  
+  .priceChartContainer {
+    position: static;
+    width: 100%;
+    height: 300px;
+    margin-top: 1rem;
+  }
+  
+  .swapContainer {
+    width: 100%;
+  }
+  
+  .narrowSwapContainer {
+    width: 100%;
+  }
+}
+
+/* ... Rest of CSS ... */
+
+.collapseChartButton {
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  background-color: var(--win98-gray);
+  border-width: 2px;
+  border-style: solid;
+  border-top-color: var(--win98-light-gray);
+  border-left-color: var(--win98-light-gray);
+  border-right-color: var(--win98-dark-gray);
+  border-bottom-color: var(--win98-dark-gray);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.collapseChartButton:active {
+  border-top-color: var(--win98-dark-gray);
+  border-left-color: var(--win98-dark-gray);
+  border-right-color: var(--win98-light-gray);
+  border-bottom-color: var(--win98-light-gray);
+}
+
+/* Apply mobile layout to narrowSwapContainer */
+.narrowSwapContainer .inputRow {
+  flex-direction: column; /* Stack input and selector vertically */
+  align-items: stretch; /* Make children take full width */
+  gap: 0.5rem; /* Add space between input and selector */
+}
+
+.narrowSwapContainer .amountInput,
+.narrowSwapContainer .amountInputReadOnly {
+  font-size: 1.125rem; /* text-lg - Slightly smaller font */
+  text-align: left; /* Ensure text starts left */
+}
+
+.narrowSwapContainer .listboxContainer {
+  width: 100%; /* Make selector take full width */
+}
+
+.narrowSwapContainer .listboxButton {
+  width: 100%; /* Ensure button takes full width */
+}
+
+/* Style for narrowed rune details panel when price chart is visible */
+.narrowRightPanel {
+  width: calc(100% - 20px);
+  transition: width 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .appLayout {
+    flex-direction: column;
+  }
+  
+  .priceChartContainer {
+    position: static;
+    width: 100%;
+    height: 300px;
+    margin-top: 1rem;
+  }
+  
+  .swapContainer {
+    width: 100%;
+  }
+  
+  .narrowSwapContainer {
+    width: 100%;
+  }
+  
+  /* Update narrowRightPanel for mobile */
+  .narrowRightPanel {
+    width: 100%;
+  }
+}
+
+/* Container for the price chart show/hide button */
+.showPriceChartButtonContainer {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.showPriceChartButton {
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  background-color: var(--win98-gray);
+  border-width: 2px;
+  border-style: solid;
+  border-top-color: var(--win98-light-gray);
+  border-left-color: var(--win98-light-gray);
+  border-right-color: var(--win98-dark-gray);
+  border-bottom-color: var(--win98-dark-gray);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.showPriceChartButton:active {
+  border-top-color: var(--win98-dark-gray);
+  border-left-color: var(--win98-dark-gray);
+  border-right-color: var(--win98-light-gray);
+  border-bottom-color: var(--win98-light-gray);
+}
+
+.runesInfoContainer {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* When the price chart is visible */
+.containerWithChart .runesInfoContainer {
+  max-width: calc(50% - 0.5rem);
+  width: calc(50% - 0.5rem);
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .containerWithChart .runesInfoContainer {
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+.runeDetailsContainerWrapper {
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.runeDetailsContainer {
+  padding: 0.5rem;
+  background-color: var(--win98-white);
+  min-height: 100px;
+  width: 100%; 
+  box-sizing: border-box;
+  margin: 0;
+  border: 2px solid;
+  border-right-color: var(--win98-light-gray);
+  border-bottom-color: var(--win98-light-gray);
+  border-left-color: var(--win98-dark-gray);
+  border-top-color: var(--win98-dark-gray);
+}
+
+.runeDetailsContainer h3 {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--win98-dark-gray);
+  padding-bottom: 0.25rem;
+}
+
+.runeDetailsContainer p {
+  margin-bottom: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.hintText {
+  color: var(--win98-dark-gray);
+  font-style: italic;
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 1rem;
+} 

@@ -35,9 +35,31 @@ interface SwapTabProps {
   btcPriceUsd: number | undefined;
   isBtcPriceLoading: boolean;
   btcPriceError: Error | null;
+  // New props for cached popular runes
+  cachedPopularRunes?: Record<string, unknown>[];
+  isPopularRunesLoading?: boolean;
+  popularRunesError?: Error | null;
+  // New props for price chart
+  onShowPriceChart?: (assetName?: string) => void;
+  showPriceChart?: boolean;
 }
 
-export function SwapTab({ connected, address, paymentAddress, publicKey, paymentPublicKey, signPsbt, btcPriceUsd, isBtcPriceLoading, btcPriceError }: SwapTabProps) {
+export function SwapTab({ 
+  connected, 
+  address, 
+  paymentAddress, 
+  publicKey, 
+  paymentPublicKey, 
+  signPsbt, 
+  btcPriceUsd, 
+  isBtcPriceLoading, 
+  btcPriceError,
+  cachedPopularRunes = [],
+  isPopularRunesLoading = false,
+  popularRunesError = null,
+  onShowPriceChart,
+  showPriceChart = false
+}: SwapTabProps) {
   // State for input/output amounts
   const [inputAmount, setInputAmount] = useState('');
   const [outputAmount, setOutputAmount] = useState('');
@@ -49,11 +71,13 @@ export function SwapTab({ connected, address, paymentAddress, publicKey, payment
   // State for rune fetching/searching
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [isPopularLoading, setIsPopularLoading] = useState(true);
+  const [isPopularLoading, setIsPopularLoading] = useState(isPopularRunesLoading);
   const [popularRunes, setPopularRunes] = useState<Asset[]>([]);
   const [searchResults, setSearchResults] = useState<Asset[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [popularError, setPopularError] = useState<string | null>(null);
+  const [popularError, setPopularError] = useState<string | null>(
+    popularRunesError ? popularRunesError.message : null
+  );
 
   // State for quote fetching
   const [isQuoteLoading, setIsQuoteLoading] = useState(false);
@@ -154,6 +178,39 @@ export function SwapTab({ connected, address, paymentAddress, publicKey, payment
   // Fetch popular runes on mount using API
   useEffect(() => {
     const fetchPopular = async () => {
+      // If we already have cached popular runes, use them instead of fetching again
+      if (cachedPopularRunes && cachedPopularRunes.length > 0) {
+        const liquidiumToken: Asset = {
+          id: 'liquidiumtoken',
+          name: 'LIQUIDIUM•TOKEN',
+          imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
+          isBTC: false,
+        };
+
+        // Map the cached data to Asset format
+        const fetchedRunes: Asset[] = cachedPopularRunes
+          .map((collection: Record<string, unknown>) => ({
+            id: collection?.rune as string || `unknown_${Math.random()}`,
+            name: ((collection?.etching as Record<string, unknown>)?.runeName as string) || collection?.rune as string || 'Unknown',
+            imageURI: collection?.icon_content_url_data as string || collection?.imageURI as string,
+            isBTC: false,
+          }))
+          .filter(rune => rune.id !== liquidiumToken.id && rune.name !== liquidiumToken.name);
+
+        // Prepend the hardcoded token
+        const mappedRunes = [liquidiumToken, ...fetchedRunes];
+        setPopularRunes(mappedRunes);
+        
+        // Update default assetOut logic if necessary
+        if (assetIn.isBTC && !assetOut && mappedRunes.length > 0) {
+          setAssetOut(mappedRunes[0]);
+        }
+        
+        setIsPopularLoading(false);
+        return;
+      }
+      
+      // If no cached data, fetch from API
       setIsPopularLoading(true);
       setPopularError(null);
       setPopularRunes([]);
@@ -213,7 +270,7 @@ export function SwapTab({ connected, address, paymentAddress, publicKey, payment
     };
     fetchPopular();
   // Ensure assetOut is included as a dependency to reset correctly
-  }, [assetIn.isBTC, assetOut, setAssetOut, setIsPopularLoading, setPopularError, setPopularRunes]); 
+  }, [assetIn.isBTC, assetOut, setAssetOut, cachedPopularRunes]);
 
   // Create a debounced search function - MEMOIZED
   const debouncedSearch = useMemo(() => 
@@ -927,7 +984,7 @@ export function SwapTab({ connected, address, paymentAddress, publicKey, payment
   }, [inputAmount, assetIn, assetOut, address, connected]);
 
   return (
-    <div className={styles.container}>
+    <div className={styles.runesInfoTabContainer}>
       <h2 className={styles.title}>Swap</h2>
 
       {/* Input Area */}
@@ -1058,6 +1115,16 @@ export function SwapTab({ connected, address, paymentAddress, publicKey, payment
           </div>
         )}
       </div>
+
+      {/* Show Price Chart button - Moved here */}
+      {!showPriceChart && (
+        <button 
+          className={styles.showPriceChartButton}
+          onClick={() => onShowPriceChart?.(assetOut?.name || "LIQUIDIUM•TOKEN")}
+        >
+          Show Price Chart
+        </button>
+      )}
 
       {/* Info Area */}
       <div className={styles.infoArea}>

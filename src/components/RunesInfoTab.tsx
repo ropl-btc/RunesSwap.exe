@@ -17,18 +17,38 @@ import {
 } from '@/lib/apiClient'; // Import API functions
 import { formatNumberString, truncateTxid } from '@/utils/formatters'; // Import utils
 import { FormattedRuneAmount } from './FormattedRuneAmount'; // Import component
-import type { Rune } from '@/types/satsTerminal.ts';
+import type { Rune } from '@/types/satsTerminal';
+import { useRunesInfoStore } from '@/store/runesInfoStore'; // Import the store
 
-/* eslint-disable @typescript-eslint/no-empty-object-type */
 interface RunesInfoTabProps {
-  // Empty for now, could add props if needed later
+  // Optional props for cached popular runes
+  cachedPopularRunes?: Record<string, unknown>[];
+  isPopularRunesLoading?: boolean;
+  popularRunesError?: Error | null;
+  // New props for price chart
+  onShowPriceChart?: (assetName?: string) => void;
+  showPriceChart?: boolean;
 }
-/* eslint-enable @typescript-eslint/no-empty-object-type */
 
-export function RunesInfoTab({}: RunesInfoTabProps) {
-  // --- State and hooks ---
-  const [runeInfoSearchQuery, setRuneInfoSearchQuery] = useState('');
-  const [selectedRuneForInfo, setSelectedRuneForInfo] = useState<OrdiscanRuneInfo | null>(null);
+export function RunesInfoTab({ 
+  cachedPopularRunes = [],
+  isPopularRunesLoading = false,
+  popularRunesError = null,
+  onShowPriceChart,
+  showPriceChart = false
+}: RunesInfoTabProps) {
+  // --- Get state from zustand store ---
+  const { 
+    selectedRuneInfo: persistedSelectedRuneInfo, 
+    runeSearchQuery: persistedRuneSearchQuery, 
+    setSelectedRuneInfo, 
+    setRuneSearchQuery 
+  } = useRunesInfoStore();
+  
+  // --- Local state and hooks ---
+  // Use persisted values for initial state
+  const [runeInfoSearchQuery, setLocalRuneInfoSearchQuery] = useState(persistedRuneSearchQuery);
+  const [selectedRuneForInfo, setLocalSelectedRuneForInfo] = useState<OrdiscanRuneInfo | null>(persistedSelectedRuneInfo);
   
   // New states for SatsTerminal search
   const [isSearching, setIsSearching] = useState(false);
@@ -36,9 +56,11 @@ export function RunesInfoTab({}: RunesInfoTabProps) {
   const [searchError, setSearchError] = useState<string | null>(null);
   
   // States for popular runes
-  const [isPopularLoading, setIsPopularLoading] = useState(true);
+  const [isPopularLoading, setIsPopularLoading] = useState(isPopularRunesLoading);
   const [popularRunes, setPopularRunes] = useState<Rune[]>([]);
-  const [popularError, setPopularError] = useState<string | null>(null);
+  const [popularError, setPopularError] = useState<string | null>(
+    popularRunesError ? popularRunesError.message : null
+  );
 
   // Query for Selected Rune Details (for details pane)
   const {
@@ -64,9 +86,40 @@ export function RunesInfoTab({}: RunesInfoTabProps) {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
+  // Update the store whenever the detailed rune info changes
+  useEffect(() => {
+    if (detailedRuneInfo) {
+      setSelectedRuneInfo(detailedRuneInfo);
+    }
+  }, [detailedRuneInfo, setSelectedRuneInfo]);
+
   // Fetch popular runes on mount using SatsTerminal API
   useEffect(() => {
     const fetchPopular = async () => {
+      // If we already have cached popular runes, use them instead of fetching again
+      if (cachedPopularRunes && cachedPopularRunes.length > 0) {
+        const liquidiumToken: Rune = {
+          id: 'liquidiumtoken',
+          name: 'LIQUIDIUM•TOKEN',
+          imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
+        };
+
+        // Map the cached data to Rune format
+        const fetchedRunes: Rune[] = cachedPopularRunes
+          .map((collection: Record<string, unknown>) => ({
+            id: collection?.rune as string || `unknown_${Math.random()}`,
+            name: ((collection?.etching as Record<string, unknown>)?.runeName as string) || collection?.rune as string || 'Unknown',
+            imageURI: collection?.icon_content_url_data as string || collection?.imageURI as string,
+          }))
+          .filter(rune => rune.id !== liquidiumToken.id && rune.name !== liquidiumToken.name);
+
+        // Prepend the hardcoded token
+        setPopularRunes([liquidiumToken, ...fetchedRunes]);
+        setIsPopularLoading(false);
+        return;
+      }
+      
+      // If no cached data, fetch from API
       setIsPopularLoading(true);
       setPopularError(null);
       setPopularRunes([]);
@@ -117,7 +170,7 @@ export function RunesInfoTab({}: RunesInfoTabProps) {
       }
     };
     fetchPopular();
-  }, []);
+  }, [cachedPopularRunes]);
 
   // Create a debounced search function - MEMOIZED
   const debouncedSearch = useMemo(() => 
@@ -153,7 +206,8 @@ export function RunesInfoTab({}: RunesInfoTabProps) {
   // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
-    setRuneInfoSearchQuery(query);
+    setLocalRuneInfoSearchQuery(query);
+    setRuneSearchQuery(query); // Update global store
     setIsSearching(true); // Indicate searching immediately
     debouncedSearch(query);
   };
@@ -168,11 +222,12 @@ export function RunesInfoTab({}: RunesInfoTabProps) {
     try {
       // Fetch detailed info from Ordiscan when selecting a rune from SatsTerminal results
       const runeInfo = await fetchRuneInfoFromApi(rune.name);
-      setSelectedRuneForInfo(runeInfo);
+      setLocalSelectedRuneForInfo(runeInfo);
+      setSelectedRuneInfo(runeInfo); // Update global store
     } catch (error) {
       console.error("Error fetching detailed rune info:", error);
       // Create a minimal RuneInfo object from the SatsTerminal data
-      setSelectedRuneForInfo({
+      const fallbackRuneInfo = {
         id: rune.id,
         name: rune.name,
         formatted_name: rune.name,
@@ -183,7 +238,10 @@ export function RunesInfoTab({}: RunesInfoTabProps) {
         premined_supply: '0',
         current_supply: '0',
         // Other fields will be undefined
-      } as OrdiscanRuneInfo);
+      } as OrdiscanRuneInfo;
+      
+      setLocalSelectedRuneForInfo(fallbackRuneInfo);
+      setSelectedRuneInfo(fallbackRuneInfo); // Update global store
     }
   };
 
@@ -191,7 +249,6 @@ export function RunesInfoTab({}: RunesInfoTabProps) {
     <div className={styles.runesInfoTabContainer}>
       <div className={styles.searchAndResultsContainer}>
         <div className={styles.searchContainerRunesInfo}>
-          {/* Restore original structure */}
           <div className={styles.searchWrapper}>
             <Image
               src="/icons/magnifying_glass-0.png" 
@@ -206,7 +263,6 @@ export function RunesInfoTab({}: RunesInfoTabProps) {
               value={runeInfoSearchQuery}
               onChange={handleSearchChange}
               className={styles.searchInput}
-              // Remove inline style
             />
           </div>
         </div>
@@ -268,73 +324,87 @@ export function RunesInfoTab({}: RunesInfoTabProps) {
         </div>
       </div>
       
-      <div className={styles.runeDetailsContainer}>
-        {isDetailedRuneInfoLoading && selectedRuneForInfo && <p>Loading details for {selectedRuneForInfo.formatted_name}...</p>}
-        {detailedRuneInfoError && selectedRuneForInfo && <p className={styles.errorText}>Error loading details: {detailedRuneInfoError.message}</p>}
-        {detailedRuneInfo && (
+      <div className={styles.searchAndResultsContainer}>
+        <div className={`${styles.runeDetailsContainer} ${showPriceChart ? styles.narrowRightPanel : ''}`}>
+          {isDetailedRuneInfoLoading && selectedRuneForInfo && <p>Loading details for {selectedRuneForInfo.formatted_name}...</p>}
+          {detailedRuneInfoError && selectedRuneForInfo && <p className={styles.errorText}>Error loading details: {detailedRuneInfoError.message}</p>}
+          {detailedRuneInfo && (
             <div>
-                <h3>{detailedRuneInfo.formatted_name} ({detailedRuneInfo.symbol})</h3>
-                <p><strong>ID:</strong> {detailedRuneInfo.id}</p>
-                <p><strong>Number:</strong> {detailedRuneInfo.number}</p>
-                <p><strong>Decimals:</strong> {detailedRuneInfo.decimals}</p>
-                <p>
-                  <strong>Etching Tx:</strong> {detailedRuneInfo.etching_txid ? 
-                     <a 
-                       href={`https://ordiscan.com/tx/${detailedRuneInfo.etching_txid}`} 
-                       target="_blank"
-                       rel="noopener noreferrer"
-                      className={styles.etchingTxLink}
-                     >
-                     {truncateTxid(detailedRuneInfo.etching_txid)}
-                     </a>
-                   : 'N/A'
-                 }
-                </p>
-                {/* Price Information */}
-                {runeMarketInfo && (
-                  <>
-                    <p><strong>Price:</strong> <span className={styles.priceHighlight}>{runeMarketInfo.price_in_usd.toFixed(6)} USD</span> ({runeMarketInfo.price_in_sats.toFixed(2)} sats)</p>
-                    <p><strong>Market Cap:</strong> {runeMarketInfo.market_cap_in_usd.toLocaleString()} USD</p>
-                  </>
-                )}
-                {isRuneMarketInfoLoading && (
-                  <p><strong>Price:</strong> <span className={styles.loadingText}>Loading market data...</span></p>
-                )}
-                {runeMarketInfoError && (
-                  <p><strong>Price:</strong> <span className={styles.errorText}>Market data unavailable: {runeMarketInfoError.message}</span></p>
-                )}
-                <p><strong>Premined Supply:</strong> 
-                     <FormattedRuneAmount 
-                       runeName={detailedRuneInfo.name} 
-                      rawAmount={detailedRuneInfo.premined_supply} 
-                    />
-                </p>
-                <p><strong>Total Supply:</strong> {detailedRuneInfo.current_supply !== undefined ? 
-                     <FormattedRuneAmount 
-                       runeName={detailedRuneInfo.name} 
-                    rawAmount={detailedRuneInfo.current_supply} 
-                     />
-                  : 'N/A'
-                }</p>
-                {/* Use FormattedRuneAmount for Amount/Mint */}
-                {detailedRuneInfo.amount_per_mint !== null && detailedRuneInfo.amount_per_mint !== undefined && 
-                  <p><strong>Amount/Mint:</strong> 
-                     <FormattedRuneAmount 
-                       runeName={detailedRuneInfo.name} 
-                        rawAmount={detailedRuneInfo.amount_per_mint}
-                      />
-                  </p>
+              <h3>{detailedRuneInfo.formatted_name} ({detailedRuneInfo.symbol})</h3>
+              <p><strong>ID:</strong> {detailedRuneInfo.id}</p>
+              <p><strong>Number:</strong> {detailedRuneInfo.number}</p>
+              <p><strong>Decimals:</strong> {detailedRuneInfo.decimals}</p>
+              <p>
+                <strong>Etching Tx:</strong> {detailedRuneInfo.etching_txid ? 
+                  <a 
+                    href={`https://ordiscan.com/tx/${detailedRuneInfo.etching_txid}`} 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.etchingTxLink}
+                  >
+                    {truncateTxid(detailedRuneInfo.etching_txid)}
+                  </a>
+                : 'N/A'
                 }
-                {/* Keep using formatNumberString for mint_count_cap as it doesn't inherently have decimals */}
-                {detailedRuneInfo.mint_count_cap && <p><strong>Mint Cap:</strong> {formatNumberString(detailedRuneInfo.mint_count_cap)}</p>}
-                {detailedRuneInfo.mint_start_block !== null && <p><strong>Mint Start Block:</strong> {detailedRuneInfo.mint_start_block}</p>}
-                {detailedRuneInfo.mint_end_block !== null && <p><strong>Mint End Block:</strong> {detailedRuneInfo.mint_end_block}</p>}
-                {detailedRuneInfo.current_mint_count !== undefined && <p><strong>Current Mint Count:</strong> {detailedRuneInfo.current_mint_count.toLocaleString()}</p>}
+              </p>
+              {/* Price Information */}
+              {runeMarketInfo && (
+                <>
+                  <p><strong>Price:</strong> <span className={styles.priceHighlight}>{runeMarketInfo.price_in_usd.toFixed(6)} USD</span> ({runeMarketInfo.price_in_sats.toFixed(2)} sats)</p>
+                  <p><strong>Market Cap:</strong> {runeMarketInfo.market_cap_in_usd.toLocaleString()} USD</p>
+                </>
+              )}
+              {isRuneMarketInfoLoading && (
+                <p><strong>Price:</strong> <span className={styles.loadingText}>Loading market data...</span></p>
+              )}
+              {runeMarketInfoError && (
+                <p><strong>Price:</strong> <span className={styles.errorText}>Market data unavailable: {runeMarketInfoError.message}</span></p>
+              )}
+              <p><strong>Premined Supply:</strong> 
+                <FormattedRuneAmount 
+                  runeName={detailedRuneInfo.name} 
+                  rawAmount={detailedRuneInfo.premined_supply} 
+                />
+              </p>
+              <p><strong>Total Supply:</strong> {detailedRuneInfo.current_supply !== undefined ? 
+                <FormattedRuneAmount 
+                  runeName={detailedRuneInfo.name} 
+                  rawAmount={detailedRuneInfo.current_supply} 
+                />
+                : 'N/A'
+              }</p>
+              {/* Use FormattedRuneAmount for Amount/Mint */}
+              {detailedRuneInfo.amount_per_mint !== null && detailedRuneInfo.amount_per_mint !== undefined && 
+                <p><strong>Amount/Mint:</strong> 
+                  <FormattedRuneAmount 
+                    runeName={detailedRuneInfo.name} 
+                    rawAmount={detailedRuneInfo.amount_per_mint}
+                  />
+                </p>
+              }
+              {/* Keep using formatNumberString for mint_count_cap as it doesn't inherently have decimals */}
+              {detailedRuneInfo.mint_count_cap && <p><strong>Mint Cap:</strong> {formatNumberString(detailedRuneInfo.mint_count_cap)}</p>}
+              {detailedRuneInfo.mint_start_block !== null && <p><strong>Mint Start Block:</strong> {detailedRuneInfo.mint_start_block}</p>}
+              {detailedRuneInfo.mint_end_block !== null && <p><strong>Mint End Block:</strong> {detailedRuneInfo.mint_end_block}</p>}
+              {detailedRuneInfo.current_mint_count !== undefined && <p><strong>Current Mint Count:</strong> {detailedRuneInfo.current_mint_count.toLocaleString()}</p>}
+              
+              {/* Add Price Chart Button */}
+              {onShowPriceChart && (
+                <div className={styles.showPriceChartButtonContainer}>
+                  <button 
+                    className={styles.showPriceChartButton}
+                    onClick={() => onShowPriceChart(detailedRuneInfo.name)}
+                  >
+                    {showPriceChart ? 'Hide Price Chart' : 'Show Price Chart'}
+                  </button>
+                </div>
+              )}
             </div>
-        )}
-        {!selectedRuneForInfo && !isDetailedRuneInfoLoading && (
-          <p className={styles.hintText}>Select a rune from the list or search by name.</p>
-        )}
+          )}
+          {!selectedRuneForInfo && !isDetailedRuneInfoLoading && (
+            <p className={styles.hintText}>Select a rune from the list or search by name.</p>
+          )}
+        </div>
       </div>
     </div>
   );

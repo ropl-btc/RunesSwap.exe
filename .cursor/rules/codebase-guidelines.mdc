@@ -1,0 +1,112 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# RunesSwap.app - Codebase Guidelines
+
+## 1. Overview
+
+RunesSwap.app is a Next.js (App Router) based DEX for swapping Bitcoin Runes. It uses TypeScript, CSS Modules, SatsTerminal SDK (via backend API) for swaps, Ordiscan API (via backend API) for data, and LaserEyes for wallet connections. The UI has a Windows 98 theme.
+
+**Purpose:** Guide developers and AI on understanding, contributing, and maintaining the codebase consistently and safely. Adherence is crucial.
+
+## 2. Technology Stack
+
+*   **Framework:** Next.js 14+ (App Router)
+*   **Language:** TypeScript
+*   **UI:** React 18+
+*   **Styling:** CSS Modules (`.module.css`), Global CSS (`globals.css`), Win98 theme variables.
+*   **State:**
+    *   Server/Cache: TanStack Query (React Query) v5
+    *   Global Client: Zustand (`runesInfoStore.ts`)
+    *   Wallet: React Context (`LaserEyesContext.tsx`)
+*   **Wallet:** `@omnisat/lasereyes`
+*   **Swap Logic:** `satsterminal-sdk` (via backend API)
+*   **Blockchain Data:** `ordiscan` SDK (via backend API)
+*   **Linting:** ESLint (`eslint.config.mjs`)
+*   **API Validation:** Zod (in API routes)
+*   **Deployment:** Vercel
+
+## 3. Setup & Structure
+
+1.  **Install:** `npm install`
+2.  **Environment:** Copy `.env.example` to `.env.local`. **Add `ORDISCAN_API_KEY` and `SATS_TERMINAL_API_KEY`**. Never commit `.env.local`.
+3.  **Run:** `npm run dev`
+
+**Key Directories (`src/`):**
+
+*   `app/`: Next.js App Router (pages, layouts, API routes)
+    *   `api/`: Backend routes (grouped by `ordiscan`/`sats-terminal`)
+*   `components/`: Reusable UI components.
+*   `context/`: React Context (primarily `LaserEyesContext.tsx`).
+*   `lib/`: Core utilities:
+    *   `apiClient.ts`: **Client-side** fetchers for internal API routes. Defines `QUERY_KEYS`.
+    *   `serverUtils.ts`: **Server-side** SDK initializers (uses API Keys).
+    *   `apiUtils.ts`: **Server-side** helpers for standard API responses & error handling.
+*   `store/`: Zustand stores (e.g., `runesInfoStore.ts`).
+*   `types/`: TypeScript definitions.
+*   `utils/`: General helpers (formatting, transaction interpretation).
+*   `public/`: Static assets (images, fonts).
+
+## 4. Architecture & Data Flow
+
+1.  **UI Interaction:** Components in `src/components/`.
+2.  **Client Logic:** Handles UI state, triggers API calls via `apiClient.ts`.
+3.  **Internal API Call:** Client calls `/api/...` routes.
+4.  **API Route (Server):**
+    *   Validates request (Zod).
+    *   Uses `serverUtils.ts` to get SDKs (with API keys).
+    *   Calls Ordiscan/SatsTerminal SDKs.
+    *   Formats response using `apiUtils.ts`.
+5.  **Response:** Client receives response; React Query manages caching/state.
+
+**State Management Strategy:**
+
+*   **React Query:** Server state, API data caching.
+*   **Zustand:** Global client UI state (non-server).
+*   **Context:** Wallet state/functions (`useSharedLaserEyes`).
+*   **`useState`:** Local component state.
+
+## 5. Coding Standards & Best Practices
+
+*   **TypeScript:** Use strict typing, avoid `any`. Define types in `src/types/`.
+*   **Linting/Formatting:** Follow ESLint rules (`eslint.config.mjs`). Ensure code is formatted.
+*   **Naming:** `PascalCase` for Components/Types, `camelCase` for variables/functions, `UPPER_SNAKE_CASE` for constants.
+*   **Components:** Prefer Server Components; use `'use client'` only when needed. Keep components small and reusable.
+*   **API Routes:** Group by service. Use `serverUtils` for SDKs, Zod for validation, `apiUtils` for responses. Log errors server-side.
+*   **Styling:** Use CSS Modules (`styles.myClass`) for component scope. Use `globals.css` for base styles & theme variables (`var(--win98-...)`). Ensure responsiveness.
+*   **Error Handling:** Use `try...catch`. Provide clear loading/error states in UI. Standardize API errors via `apiUtils.ts`.
+*   **Async:** Use `async/await`. Handle promises correctly.
+
+## 6. Wallet Integration (`@omnisat/lasereyes`)
+
+*   Managed via `LaserEyesContext` and `useSharedLaserEyes` hook.
+*   `ConnectWalletButton.tsx` handles connection UI & provider selection logic.
+*   `signPsbt` is used by `SwapTab.tsx`.
+*   **Known Issue:** Layout forces disconnect on mount as a workaround for potential multi-prompt bug on refresh. See `Layout.tsx`.
+
+## 7. Key Modules Summary
+
+*   `apiClient.ts`: Client calls internal API.
+*   `serverUtils.ts`: Server initializes external SDKs (uses API keys).
+*   `apiUtils.ts`: Server standardizes API responses/errors.
+*   `LaserEyesContext.tsx`: Provides `useSharedLaserEyes` hook for wallet access.
+*   `runesInfoStore.ts`: Zustand store for Runes Info tab UI state.
+*   `transactionHelpers.ts`: Interprets Ordiscan activity data.
+
+## 8. External Services
+
+*   **Ordiscan:** Balances, Rune details, Activity (via `/api/ordiscan/*`). Needs `ORDISCAN_API_KEY`.
+*   **SatsTerminal:** Popular runes, Quotes, PSBT generation/confirmation (via `/api/sats-terminal/*`). Needs `SATS_TERMINAL_API_KEY`.
+*   **LaserEyes:** Wallet connections & signing.
+*   **CoinGecko:** BTC price (direct client fetch).
+
+## 9. Critical Reminders & Gotchas
+
+*   **API Keys:** `ORDISCAN_API_KEY`, `SATS_TERMINAL_API_KEY` are **server-side only** and mandatory. Keep them secure in `.env.local`.
+*   **LaserEyes Refresh:** Be aware of the disconnect workaround in `Layout.tsx`.
+*   **API Responses:** Expect `{ success: boolean, data?, error? }` structure from internal APIs.
+*   **Zod Validation:** API routes use Zod. Ensure client calls match schemas. Check 400 responses for details.
+*   **State Strategy:** Use the correct tool: React Query (server), Zustand (global UI), Context (wallet), `useState` (local).
+*   **Mock Address:** Used for quote fetching when disconnected.
