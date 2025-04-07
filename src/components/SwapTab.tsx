@@ -40,7 +40,7 @@ interface SwapTabProps {
   isPopularRunesLoading?: boolean;
   popularRunesError?: Error | null;
   // New props for price chart
-  onShowPriceChart?: (assetName?: string) => void;
+  onShowPriceChart?: (assetName?: string, shouldToggle?: boolean) => void;
   showPriceChart?: boolean;
 }
 
@@ -363,6 +363,11 @@ export function SwapTab({
     const previousAssetIn = assetIn; // Store previous input asset
 
     setAssetOut(selectedAsset);
+
+    // If the price chart is visible, update it with the new asset
+    if (showPriceChart) {
+      onShowPriceChart?.(selectedAsset.name, false);
+    }
 
     // If the NEW output asset is BTC, ensure input is a Rune
     if (selectedAsset.isBTC) {

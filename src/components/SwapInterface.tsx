@@ -80,17 +80,21 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
   });
 
   // Handler for toggling the price chart based on active tab
-  const togglePriceChart = (assetName?: string) => {
+  const togglePriceChart = (assetName?: string, shouldToggle: boolean = true) => {
     if (activeTab === 'swap') {
       if (assetName) {
         setSwapTabSelectedAsset(assetName);
       }
-      setShowSwapTabPriceChart(!showSwapTabPriceChart);
+      if (shouldToggle) {
+        setShowSwapTabPriceChart(!showSwapTabPriceChart);
+      }
     } else if (activeTab === 'runesInfo') {
       if (assetName) {
         setRunesInfoTabSelectedAsset(assetName);
       }
-      setShowRunesInfoTabPriceChart(!showRunesInfoTabPriceChart);
+      if (shouldToggle) {
+        setShowRunesInfoTabPriceChart(!showRunesInfoTabPriceChart);
+      }
     }
   };
 
@@ -103,7 +107,6 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
   const selectedAssetForActiveTab = activeTab === 'swap' ? swapTabSelectedAsset : 
                                    activeTab === 'runesInfo' ? runesInfoTabSelectedAsset : 
                                    "";
-
   // Render the active tab content
   const renderActiveTab = () => {
     switch (activeTab) {
@@ -155,6 +158,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
               <PriceChart 
                 assetName={selectedAssetForActiveTab} 
                 onClose={togglePriceChart}
+                btcPriceUsd={btcPriceUsd}
               />
             </div>
           )}

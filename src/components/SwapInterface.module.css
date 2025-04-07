@@ -849,8 +849,8 @@
   max-width: calc(50% - 0.5rem); /* Exactly 50% of the width minus half the gap */
   width: calc(50% - 0.5rem); /* Ensuring exact 50/50 split */
   flex: 0 0 calc(50% - 0.5rem); /* Do not grow, do not shrink, fixed width */
-  min-height: 300px;
-  max-height: 500px;
+  min-height: auto;
+  max-height: auto;
   margin: 0; /* Ensure no margin */
 }
 
@@ -858,7 +858,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  position: relative; /* Ensure positioned elements inside use this as reference */
+  position: relative;
+  height: 100%;
 }
 
 .priceChartHeader {
@@ -877,7 +878,8 @@
   display: flex;
   justify-content: center;
   gap: 0.25rem;
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
 }
 
 .timeframeButton {
@@ -949,21 +951,45 @@
 @media (max-width: 768px) {
   .appLayout {
     flex-direction: column;
+    width: 100%;
+    max-width: 100%;
   }
   
   .priceChartContainer {
     position: static;
     width: 100%;
-    height: 300px;
+    max-width: 100%;
+    height: auto;
     margin-top: 1rem;
   }
   
-  .swapContainer {
-    width: 100%;
-  }
-  
+  .swapContainer,
   .narrowSwapContainer {
     width: 100%;
+    max-width: 100%;
+  }
+
+  .containerWithChart {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .containerWithChart .runesInfoContainer {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .narrowRightPanel {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Ensure container takes full width in mobile */
+  .container {
+    width: 100%;
+    max-width: 100%;
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 }
 
@@ -972,7 +998,7 @@
 .collapseChartButton {
   width: 100%;
   padding: 0.5rem;
-  margin-top: 0.5rem;
+  margin: 0;
   background-color: var(--win98-gray);
   border-width: 2px;
   border-style: solid;
@@ -982,6 +1008,7 @@
   border-bottom-color: var(--win98-dark-gray);
   font-weight: 700;
   cursor: pointer;
+  margin-top: auto; /* Push button to bottom */
 }
 
 .collapseChartButton:active {

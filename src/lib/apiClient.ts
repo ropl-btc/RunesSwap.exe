@@ -12,6 +12,7 @@ export const QUERY_KEYS = {
   POPULAR_RUNES: 'popularRunes',
   RUNE_INFO: 'runeInfo',
   RUNE_MARKET: 'runeMarket',
+  RUNE_PRICE_HISTORY: 'runePriceHistory',
   BTC_BALANCE: 'btcBalance',
   RUNE_BALANCES: 'runeBalances',
   RUNE_LIST: 'runesList',
@@ -237,4 +238,56 @@ export const fetchRuneActivityFromApi = async (address: string): Promise<RuneAct
   }
 
   return handleApiResponse<RuneActivityEvent[]>(data, true);
+};
+
+// Interface for Price History response
+export interface PriceHistoryDataPoint {
+  timestamp: number; // Unix timestamp in milliseconds
+  price: number;     // Price in USD
+}
+
+export interface PriceHistoryResponse {
+  slug: string;
+  prices: PriceHistoryDataPoint[];
+  available: boolean;
+}
+
+// Fetch Rune Price History from API
+export const fetchRunePriceHistoryFromApi = async (runeName: string): Promise<PriceHistoryResponse> => {
+  // Don't send empty requests
+  if (!runeName || runeName.trim() === '') {
+    return {
+      slug: '',
+      prices: [],
+      available: false
+    };
+  }
+
+  // Apply direct formatting to specific runes
+  let querySlug = runeName;
+  
+  console.log(`[Client] Fetching price history for rune: "${runeName}"`);
+  
+  // Special case for LIQUIDIUM•TOKEN
+  if (runeName.includes('LIQUIDIUM')) {
+    console.log(`[Client] Using special case for LIQUIDIUM`);
+    querySlug = 'LIQUIDIUMTOKEN';
+  }
+
+  const response = await fetch(`/api/rune-price-history?slug=${encodeURIComponent(querySlug)}`);
+  let data;
+  
+  try {
+    data = await response.json();
+  } catch (error) {
+    console.error(`[Client] Failed to parse price history for ${runeName}:`, error);
+    throw new Error(`Failed to parse price history for ${runeName}`);
+  }
+
+  if (!response.ok) {
+    console.error('[Client] API returned error:', data);
+    throw new Error(data?.error?.message || data?.error || `Failed to fetch price history: ${response.statusText}`);
+  }
+
+  return handleApiResponse<PriceHistoryResponse>(data, false);
 }; 
