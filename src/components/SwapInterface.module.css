@@ -640,10 +640,10 @@
   color: var(--win98-black);
 }
 
-/* Ensure hover state applies correctly */
+/* Ensure hover state applies correctly (match listboxOptionActive) */
 .runeListItem:hover {
-  background-color: var(--win98-highlight); 
-  color: var(--win98-highlight-text); 
+  background-color: var(--win98-blue);
+  color: var(--win98-white);
 }
 
 /* Ensure selected state applies correctly */

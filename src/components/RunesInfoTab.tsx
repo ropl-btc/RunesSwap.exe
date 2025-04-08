@@ -70,8 +70,8 @@ export function RunesInfoTab({
   } = useQuery<OrdiscanRuneInfo | null, Error>({
     queryKey: ['runeInfoApi', selectedRuneForInfo?.name], 
     queryFn: () => selectedRuneForInfo ? fetchRuneInfoFromApi(selectedRuneForInfo.name) : Promise.resolve(null),
-    enabled: !!selectedRuneForInfo, // Only enabled when a rune is selected
-    staleTime: Infinity, 
+    enabled: !!selectedRuneForInfo,
+    staleTime: Infinity
   });
 
   // Query for Selected Rune Market Info
@@ -85,13 +85,6 @@ export function RunesInfoTab({
     enabled: !!selectedRuneForInfo,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
-
-  // Update the store whenever the detailed rune info changes
-  useEffect(() => {
-    if (detailedRuneInfo) {
-      setSelectedRuneInfo(detailedRuneInfo);
-    }
-  }, [detailedRuneInfo, setSelectedRuneInfo]);
 
   // Fetch popular runes on mount using SatsTerminal API
   useEffect(() => {
@@ -217,32 +210,33 @@ export function RunesInfoTab({
   const isLoadingRunes = runeInfoSearchQuery.trim() ? isSearching : isPopularLoading;
   const currentRunesError = runeInfoSearchQuery.trim() ? searchError : popularError;
 
-  // Handle rune selection
-  const handleRuneSelect = async (rune: Rune) => {
-    try {
-      // Fetch detailed info from Ordiscan when selecting a rune from SatsTerminal results
-      const runeInfo = await fetchRuneInfoFromApi(rune.name);
-      setLocalSelectedRuneForInfo(runeInfo);
-      setSelectedRuneInfo(runeInfo); // Update global store
-    } catch (error) {
-      console.error("Error fetching detailed rune info:", error);
-      // Create a minimal RuneInfo object from the SatsTerminal data
-      const fallbackRuneInfo = {
-        id: rune.id,
-        name: rune.name,
-        formatted_name: rune.name,
-        symbol: rune.name.split('•')[0] || rune.name,
-        decimals: 0, // Default value
-        number: 0, // Default value
-        etching_txid: '',
-        premined_supply: '0',
-        current_supply: '0',
-        // Other fields will be undefined
-      } as OrdiscanRuneInfo;
-      
-      setLocalSelectedRuneForInfo(fallbackRuneInfo);
-      setSelectedRuneInfo(fallbackRuneInfo); // Update global store
+  // Update global store when detailed info changes
+  useEffect(() => {
+    if (detailedRuneInfo) {
+      setSelectedRuneInfo(detailedRuneInfo);
+    } else if (detailedRuneInfoError && selectedRuneForInfo) {
+      // On error, use the minimal info in the global store
+      setSelectedRuneInfo(selectedRuneForInfo);
     }
+  }, [detailedRuneInfo, detailedRuneInfoError, selectedRuneForInfo, setSelectedRuneInfo]);
+
+  // Handle rune selection
+  const handleRuneSelect = (rune: Rune) => {
+    // Create minimal rune info for immediate UI feedback
+    const minimalRuneInfo = {
+      id: rune.id,
+      name: rune.name,
+      formatted_name: rune.name,
+      symbol: rune.name.split('•')[0] || rune.name,
+      decimals: 0, 
+      number: 0, 
+      etching_txid: '',
+      premined_supply: '0',
+      current_supply: '0',
+    } as OrdiscanRuneInfo;
+
+    // Update local state with minimal info
+    setLocalSelectedRuneForInfo(minimalRuneInfo);
   };
 
   return (
@@ -328,7 +322,7 @@ export function RunesInfoTab({
         <div className={`${styles.runeDetailsContainer} ${showPriceChart ? styles.narrowRightPanel : ''}`}>
           {isDetailedRuneInfoLoading && selectedRuneForInfo && <p>Loading details for {selectedRuneForInfo.formatted_name}...</p>}
           {detailedRuneInfoError && selectedRuneForInfo && <p className={styles.errorText}>Error loading details: {detailedRuneInfoError.message}</p>}
-          {detailedRuneInfo && (
+          {!isDetailedRuneInfoLoading && detailedRuneInfo && (
             <div>
               <h3>{detailedRuneInfo.formatted_name} ({detailedRuneInfo.symbol})</h3>
               <p><strong>ID:</strong> {detailedRuneInfo.id}</p>
@@ -401,6 +395,7 @@ export function RunesInfoTab({
               )}
             </div>
           )}
+          {/* Display hint only if no rune is selected and not currently loading */}
           {!selectedRuneForInfo && !isDetailedRuneInfoLoading && (
             <p className={styles.hintText}>Select a rune from the list or search by name.</p>
           )}
@@ -410,4 +405,4 @@ export function RunesInfoTab({
   );
 }
 
-export default RunesInfoTab; 
+export default RunesInfoTab;

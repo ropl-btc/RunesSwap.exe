@@ -3,7 +3,7 @@ import { Listbox, Transition } from '@headlessui/react';
 import { ChevronUpDownIcon, CheckIcon } from '@heroicons/react/24/solid';
 import Image from 'next/image';
 import { Asset, BTC_ASSET } from '@/types/common';
-import styles from './SwapTab.module.css'; // Reuse styles for now
+import styles from './SwapInterface.module.css'; // Use correct CSS module
 
 interface AssetSelectorProps {
   value: Asset | null;
@@ -102,12 +102,12 @@ export function AssetSelector({
                         ) : (
                             <div className={styles.optionsScroll}>
                                 {options.map((asset) => (
-                                    <Listbox.Option key={asset.id} className={({ active }) => `${styles.listBoxOption} ${active ? styles.activeOption : ''}`} value={asset}>
+                                    <Listbox.Option key={asset.id} className={({ active }) => `${styles.listboxOption} ${active ? styles.listboxOptionActive : styles.listboxOptionInactive}`} value={asset}>
                                         {({ selected }) => {
                                             const ticker = asset.isBTC ? 'BTC' : (asset.name.split('•')[0] || asset.name);
                                             return (
                                                 <>
-                                                    <span className={`${styles.optionContent} ${selected ? styles.selectedOptionText : ''}`}>
+                                                    <span className={`${styles.optionContent} ${selected ? styles.listboxOptionTextSelected : styles.listboxOptionTextUnselected}`}>
                                                         {asset.imageURI && (
                                                           <Image 
                                                             src={asset.imageURI} 
