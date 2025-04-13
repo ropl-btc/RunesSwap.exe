@@ -2,9 +2,8 @@
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { type RuneInfo } from '@/types/ordiscan';
-// Import API client function
 import { fetchRuneInfoFromApi } from '@/lib/apiClient';
+import type { RuneData } from '@/lib/runesData';
 
 interface FormattedRuneAmountProps {
   runeName: string | null | undefined;
@@ -16,7 +15,7 @@ export function FormattedRuneAmount({ runeName, rawAmount }: FormattedRuneAmount
     data: runeInfo,
     isLoading,
     error,
-  } = useQuery<RuneInfo | null, Error>({
+  } = useQuery<RuneData | null, Error>({
     // Update queryKey to reflect API usage
     queryKey: ['runeInfoApi', (runeName || '').toUpperCase()], 
     // Use the new API client function

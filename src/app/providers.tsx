@@ -16,7 +16,19 @@ function SharedLaserEyesProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = React.useState(() => new QueryClient());
+  // This ensures we create only a single instance of the QueryClient
+  const [queryClient] = React.useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 5 * 60 * 1000, // 5 minutes 
+        gcTime: 60 * 60 * 1000, // 1 hour
+        refetchOnMount: false,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+      },
+    },
+  }));
+  
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {

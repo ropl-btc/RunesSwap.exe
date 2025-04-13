@@ -10,6 +10,7 @@ import { fetchPopularFromApi, QUERY_KEYS } from '@/lib/apiClient';
 import SwapTab from './SwapTab';
 import RunesInfoTab from './RunesInfoTab';
 import YourTxsTab from './YourTxsTab';
+import PortfolioTab from './PortfolioTab';
 import FooterComponent from './FooterComponent';
 import PriceChart from './PriceChart';
 
@@ -31,19 +32,30 @@ const getBtcPrice = async (): Promise<number> => {
 
 // --- Props Interface ---
 interface SwapInterfaceProps {
-  activeTab: 'swap' | 'runesInfo' | 'yourTxs';
+  activeTab: 'swap' | 'runesInfo' | 'yourTxs' | 'portfolio';
 }
 // --- End Props --- 
 
 // --- Component ---
 export function SwapInterface({ activeTab }: SwapInterfaceProps) {
+  // Get URL parameters
+  const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+  const preSelectedRune = searchParams.get('rune');
+
   // Separate state for showing/hiding price chart for each tab
   const [showSwapTabPriceChart, setShowSwapTabPriceChart] = useState(false);
   const [showRunesInfoTabPriceChart, setShowRunesInfoTabPriceChart] = useState(false);
   
   // State for selected assets for each tab
-  const [swapTabSelectedAsset, setSwapTabSelectedAsset] = useState("LIQUIDIUM•TOKEN");
+  const [swapTabSelectedAsset, setSwapTabSelectedAsset] = useState(preSelectedRune || "LIQUIDIUM•TOKEN");
   const [runesInfoTabSelectedAsset, setRunesInfoTabSelectedAsset] = useState("LIQUIDIUM•TOKEN");
+
+  // Update swapTabSelectedAsset when preSelectedRune changes
+  React.useEffect(() => {
+    if (preSelectedRune) {
+      setSwapTabSelectedAsset(preSelectedRune);
+    }
+  }, [preSelectedRune]);
 
   // LaserEyes hook for wallet info and signing
   const { 
@@ -74,29 +86,56 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
     error: popularRunesError
   } = useQuery<Record<string, unknown>[], Error>({
     queryKey: [QUERY_KEYS.POPULAR_RUNES],
-    queryFn: fetchPopularFromApi,
-    staleTime: 5 * 60 * 1000, // Consider data stale after 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes (use gcTime instead of cacheTime)
+    queryFn: () => {
+      console.log('[SwapInterface] Fetching popular runes...');
+      return fetchPopularFromApi();
+    },
+    staleTime: Infinity, // Data never goes stale, so React Query won't refetch
+    gcTime: 365 * 24 * 60 * 60 * 1000, // Keep in cache for a year
+    refetchOnMount: false, // Don't refetch when component mounts
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    refetchOnReconnect: false, // Don't refetch on reconnect
+    retry: false, // Don't retry on failure
   });
 
   // Handler for toggling the price chart based on active tab
-  const togglePriceChart = (assetName?: string, shouldToggle: boolean = true) => {
+  const togglePriceChart = React.useCallback((assetName?: string, shouldToggle: boolean = true) => {
     if (activeTab === 'swap') {
       if (assetName) {
         setSwapTabSelectedAsset(assetName);
       }
       if (shouldToggle) {
-        setShowSwapTabPriceChart(!showSwapTabPriceChart);
+        setShowSwapTabPriceChart(prev => !prev);
       }
     } else if (activeTab === 'runesInfo') {
       if (assetName) {
         setRunesInfoTabSelectedAsset(assetName);
       }
       if (shouldToggle) {
-        setShowRunesInfoTabPriceChart(!showRunesInfoTabPriceChart);
+        setShowRunesInfoTabPriceChart(prev => !prev);
       }
     }
-  };
+  }, [activeTab]);
+
+  // Listen for tabChange events specifically for rune selection
+  React.useEffect(() => {
+    const handleTabChangeEvent = (event: CustomEvent) => {
+      const { tab, rune } = event.detail;
+      
+      if (tab === 'swap' && rune) {
+        // Update the swap tab selected asset directly
+        setSwapTabSelectedAsset(rune);
+        
+        // If price chart is visible, update the selected asset there too
+        if (showSwapTabPriceChart) {
+          togglePriceChart(rune, false);
+        }
+      }
+    };
+
+    window.addEventListener('tabChange', handleTabChangeEvent as EventListener);
+    return () => window.removeEventListener('tabChange', handleTabChangeEvent as EventListener);
+  }, [showSwapTabPriceChart, togglePriceChart]);
 
   // Determine if price chart should be shown based on active tab
   const isPriceChartVisible = activeTab === 'swap' ? showSwapTabPriceChart : 
@@ -127,6 +166,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
             popularRunesError={popularRunesError}
             onShowPriceChart={togglePriceChart}
             showPriceChart={showSwapTabPriceChart}
+            preSelectedRune={preSelectedRune}
           />
         );
       case 'runesInfo':
@@ -141,6 +181,8 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
         );
       case 'yourTxs':
         return <YourTxsTab connected={connected} address={address} />;
+      case 'portfolio':
+        return <PortfolioTab />;
       default:
         return null;
     }

@@ -39,24 +39,9 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
   
   // Debug logging for price history data
   useEffect(() => {
-    console.log(`[PriceChart] Asset: "${assetName}", 
-                Data available: ${priceHistoryData?.available}, 
-                Price points: ${priceHistoryData?.prices?.length || 0}`,
-                priceHistoryData?.prices?.slice(0, 2));
-                
     // Force refresh if we have problems with the data
     if (priceHistoryData?.prices && priceHistoryData.prices.length > 0 && !priceHistoryData.available) {
-      console.log('[PriceChart] Data inconsistency detected - prices exist but available is false');
-    }
-    
-    // Log BTC price for conversion
-    console.log(`[PriceChart] Using BTC price: $${btcPriceUsd} for conversion`);
-    
-    // Log some sample converted prices
-    if (priceHistoryData?.prices && priceHistoryData.prices.length > 0 && btcPriceUsd) {
-      const samplePrice = priceHistoryData.prices[0].price;
-      const convertedUsd = samplePrice * (btcPriceUsd / 100000000);
-      console.log(`[PriceChart] Sample price conversion: ${samplePrice} sats -> $${convertedUsd.toFixed(6)} USD`);
+      // Data inconsistency detected - prices exist but available is false
     }
   }, [priceHistoryData, assetName, btcPriceUsd]);
 

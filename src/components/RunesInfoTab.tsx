@@ -5,12 +5,12 @@ import { useQuery } from '@tanstack/react-query';
 import debounce from 'lodash.debounce';
 import Image from 'next/image';
 import styles from './SwapInterface.module.css'; // Reuse styles for now
-import { 
+import {
   type RuneInfo as OrdiscanRuneInfo,
   type RuneMarketInfo as OrdiscanRuneMarketInfo
 } from '@/types/ordiscan'; // Import types
-import { 
-  fetchRuneInfoFromApi, 
+import {
+  fetchRuneInfoFromApi,
   fetchRuneMarketFromApi,
   fetchRunesFromApi,
   fetchPopularFromApi
@@ -19,6 +19,7 @@ import { formatNumberString, truncateTxid } from '@/utils/formatters'; // Import
 import { FormattedRuneAmount } from './FormattedRuneAmount'; // Import component
 import type { Rune } from '@/types/satsTerminal';
 import { useRunesInfoStore } from '@/store/runesInfoStore'; // Import the store
+import type { RuneData } from '@/lib/runesData';
 
 interface RunesInfoTabProps {
   // Optional props for cached popular runes
@@ -26,11 +27,11 @@ interface RunesInfoTabProps {
   isPopularRunesLoading?: boolean;
   popularRunesError?: Error | null;
   // New props for price chart
-  onShowPriceChart?: (assetName?: string) => void;
+  onShowPriceChart?: (assetName?: string, shouldToggle?: boolean) => void;
   showPriceChart?: boolean;
 }
 
-export function RunesInfoTab({ 
+export function RunesInfoTab({
   cachedPopularRunes = [],
   isPopularRunesLoading = false,
   popularRunesError = null,
@@ -38,23 +39,23 @@ export function RunesInfoTab({
   showPriceChart = false
 }: RunesInfoTabProps) {
   // --- Get state from zustand store ---
-  const { 
-    selectedRuneInfo: persistedSelectedRuneInfo, 
-    runeSearchQuery: persistedRuneSearchQuery, 
-    setSelectedRuneInfo, 
-    setRuneSearchQuery 
+  const {
+    selectedRuneInfo: persistedSelectedRuneInfo,
+    runeSearchQuery: persistedRuneSearchQuery,
+    setSelectedRuneInfo,
+    setRuneSearchQuery
   } = useRunesInfoStore();
-  
+
   // --- Local state and hooks ---
   // Use persisted values for initial state
   const [runeInfoSearchQuery, setLocalRuneInfoSearchQuery] = useState(persistedRuneSearchQuery);
   const [selectedRuneForInfo, setLocalSelectedRuneForInfo] = useState<OrdiscanRuneInfo | null>(persistedSelectedRuneInfo);
-  
+
   // New states for SatsTerminal search
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<Rune[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
-  
+
   // States for popular runes
   const [isPopularLoading, setIsPopularLoading] = useState(isPopularRunesLoading);
   const [popularRunes, setPopularRunes] = useState<Rune[]>([]);
@@ -64,11 +65,11 @@ export function RunesInfoTab({
 
   // Query for Selected Rune Details (for details pane)
   const {
-    data: detailedRuneInfo, 
+    data: detailedRuneInfo,
     isLoading: isDetailedRuneInfoLoading,
     error: detailedRuneInfoError,
-  } = useQuery<OrdiscanRuneInfo | null, Error>({
-    queryKey: ['runeInfoApi', selectedRuneForInfo?.name], 
+  } = useQuery<RuneData | null, Error>({
+    queryKey: ['runeInfoApi', selectedRuneForInfo?.name],
     queryFn: () => selectedRuneForInfo ? fetchRuneInfoFromApi(selectedRuneForInfo.name) : Promise.resolve(null),
     enabled: !!selectedRuneForInfo,
     staleTime: Infinity
@@ -89,7 +90,7 @@ export function RunesInfoTab({
   // Fetch popular runes on mount using SatsTerminal API
   useEffect(() => {
     const fetchPopular = async () => {
-      // If we already have cached popular runes, use them instead of fetching again
+      // If we already have cached popular runes, use them directly and don't fetch
       if (cachedPopularRunes && cachedPopularRunes.length > 0) {
         const liquidiumToken: Rune = {
           id: 'liquidiumtoken',
@@ -111,8 +112,9 @@ export function RunesInfoTab({
         setIsPopularLoading(false);
         return;
       }
-      
-      // If no cached data, fetch from API
+
+      // If no cached data, fetch from API - but we shouldn't get here normally
+      // as the parent component should always provide cached data
       setIsPopularLoading(true);
       setPopularError(null);
       setPopularRunes([]);
@@ -145,7 +147,7 @@ export function RunesInfoTab({
           // Prepend the hardcoded token
           mappedRunes = [liquidiumToken, ...fetchedRunes];
         }
-        
+
         setPopularRunes(mappedRunes);
 
       } catch (error) {
@@ -162,11 +164,14 @@ export function RunesInfoTab({
         setIsPopularLoading(false);
       }
     };
+    
     fetchPopular();
-  }, [cachedPopularRunes]);
+    // Run this effect only once on mount, not when props change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Create a debounced search function - MEMOIZED
-  const debouncedSearch = useMemo(() => 
+  const debouncedSearch = useMemo(() =>
     debounce(async (query: string) => {
       if (!query) {
         setSearchResults([]);
@@ -180,13 +185,12 @@ export function RunesInfoTab({
         const results: Rune[] = await fetchRunesFromApi(query);
         setSearchResults(results);
       } catch (error: unknown) {
-        console.error("[RunesInfoTab] Error searching runes:", error);
         setSearchError(error instanceof Error ? error.message : 'Failed to search');
         setSearchResults([]);
       } finally {
         setIsSearching(false);
       }
-    }, 300), 
+    }, 300),
   []); // <-- Empty dependency array ensures it's created only once
 
   // Clean up the debounced function on component unmount
@@ -213,7 +217,12 @@ export function RunesInfoTab({
   // Update global store when detailed info changes
   useEffect(() => {
     if (detailedRuneInfo) {
-      setSelectedRuneInfo(detailedRuneInfo);
+      // Convert RuneData to OrdiscanRuneInfo for compatibility with existing code
+      const updatedInfo: OrdiscanRuneInfo = {
+        ...detailedRuneInfo,
+        formatted_name: detailedRuneInfo.formatted_name || detailedRuneInfo.name,
+      } as OrdiscanRuneInfo;
+      setSelectedRuneInfo(updatedInfo);
     } else if (detailedRuneInfoError && selectedRuneForInfo) {
       // On error, use the minimal info in the global store
       setSelectedRuneInfo(selectedRuneForInfo);
@@ -228,8 +237,8 @@ export function RunesInfoTab({
       name: rune.name,
       formatted_name: rune.name,
       symbol: rune.name.split('•')[0] || rune.name,
-      decimals: 0, 
-      number: 0, 
+      decimals: 0,
+      number: 0,
       etching_txid: '',
       premined_supply: '0',
       current_supply: '0',
@@ -237,6 +246,11 @@ export function RunesInfoTab({
 
     // Update local state with minimal info
     setLocalSelectedRuneForInfo(minimalRuneInfo);
+
+    // Update price chart if it's visible
+    if (showPriceChart && onShowPriceChart) {
+      onShowPriceChart(rune.name, false); // Update chart without toggling visibility
+    }
   };
 
   return (
@@ -245,8 +259,8 @@ export function RunesInfoTab({
         <div className={styles.searchContainerRunesInfo}>
           <div className={styles.searchWrapper}>
             <Image
-              src="/icons/magnifying_glass-0.png" 
-              alt="Search" 
+              src="/icons/magnifying_glass-0.png"
+              alt="Search"
               className={styles.searchIconEmbedded}
               width={16}
               height={16}
@@ -260,20 +274,20 @@ export function RunesInfoTab({
             />
           </div>
         </div>
-        
+
         <div className={styles.runesListContainer}>
           {isLoadingRunes && (
             <div className={styles.listboxLoadingOrEmpty}>
-              {runeInfoSearchQuery.trim() 
-                ? `Searching for "${runeInfoSearchQuery}"...` 
+              {runeInfoSearchQuery.trim()
+                ? `Searching for "${runeInfoSearchQuery}"...`
                 : 'Loading Latest Runes...'}
             </div>
           )}
           {currentRunesError && (
             <div className={`${styles.listboxError} ${styles.messageWithIcon}`}>
-              <Image 
-                src="/icons/msg_error-0.png" 
-                alt="Error" 
+              <Image
+                src="/icons/msg_error-0.png"
+                alt="Error"
                 className={styles.messageIcon}
                 width={16}
                 height={16}
@@ -283,22 +297,22 @@ export function RunesInfoTab({
           )}
           {!isLoadingRunes && !currentRunesError && availableRunes.length === 0 && (
             <div className={styles.listboxLoadingOrEmpty}>
-              {runeInfoSearchQuery.trim() 
-                ? `Rune "${runeInfoSearchQuery}" not found.` 
+              {runeInfoSearchQuery.trim()
+                ? `Rune "${runeInfoSearchQuery}" not found.`
                 : 'No recent runes found'}
             </div>
           )}
           {!isLoadingRunes && !currentRunesError && availableRunes.map((rune) => (
-            <button 
+            <button
               key={rune.id}
               className={`${styles.runeListItem} ${selectedRuneForInfo?.name === rune.name ? styles.runeListItemSelected : ''}`}
               onClick={() => handleRuneSelect(rune)}
             >
               <div className={styles.runeListItemContent}>
                 {rune.imageURI && (
-                  <Image 
-                    src={rune.imageURI} 
-                    alt="" 
+                  <Image
+                    src={rune.imageURI}
+                    alt=""
                     className={styles.runeImage}
                     width={24}
                     height={24}
@@ -317,7 +331,7 @@ export function RunesInfoTab({
           ))}
         </div>
       </div>
-      
+
       <div className={styles.searchAndResultsContainer}>
         <div className={`${styles.runeDetailsContainer} ${showPriceChart ? styles.narrowRightPanel : ''}`}>
           {isDetailedRuneInfoLoading && selectedRuneForInfo && <p>Loading details for {selectedRuneForInfo.formatted_name}...</p>}
@@ -329,9 +343,9 @@ export function RunesInfoTab({
               <p><strong>Number:</strong> {detailedRuneInfo.number}</p>
               <p><strong>Decimals:</strong> {detailedRuneInfo.decimals}</p>
               <p>
-                <strong>Etching Tx:</strong> {detailedRuneInfo.etching_txid ? 
-                  <a 
-                    href={`https://ordiscan.com/tx/${detailedRuneInfo.etching_txid}`} 
+                <strong>Etching Tx:</strong> {detailedRuneInfo.etching_txid ?
+                  <a
+                    href={`https://ordiscan.com/tx/${detailedRuneInfo.etching_txid}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={styles.etchingTxLink}
@@ -354,24 +368,24 @@ export function RunesInfoTab({
               {runeMarketInfoError && (
                 <p><strong>Price:</strong> <span className={styles.errorText}>Market data unavailable: {runeMarketInfoError.message}</span></p>
               )}
-              <p><strong>Premined Supply:</strong> 
-                <FormattedRuneAmount 
-                  runeName={detailedRuneInfo.name} 
-                  rawAmount={detailedRuneInfo.premined_supply} 
+              <p><strong>Premined Supply:</strong>{' '}
+                <FormattedRuneAmount
+                  runeName={detailedRuneInfo.name}
+                  rawAmount={detailedRuneInfo.premined_supply}
                 />
               </p>
-              <p><strong>Total Supply:</strong> {detailedRuneInfo.current_supply !== undefined ? 
-                <FormattedRuneAmount 
-                  runeName={detailedRuneInfo.name} 
-                  rawAmount={detailedRuneInfo.current_supply} 
+              <p><strong>Total Supply:</strong> {detailedRuneInfo.current_supply !== undefined ?
+                <FormattedRuneAmount
+                  runeName={detailedRuneInfo.name}
+                  rawAmount={detailedRuneInfo.current_supply}
                 />
                 : 'N/A'
               }</p>
               {/* Use FormattedRuneAmount for Amount/Mint */}
-              {detailedRuneInfo.amount_per_mint !== null && detailedRuneInfo.amount_per_mint !== undefined && 
-                <p><strong>Amount/Mint:</strong> 
-                  <FormattedRuneAmount 
-                    runeName={detailedRuneInfo.name} 
+              {detailedRuneInfo.amount_per_mint !== null && detailedRuneInfo.amount_per_mint !== undefined &&
+                <p><strong>Amount/Mint:</strong>{' '}
+                  <FormattedRuneAmount
+                    runeName={detailedRuneInfo.name}
                     rawAmount={detailedRuneInfo.amount_per_mint}
                   />
                 </p>
@@ -380,14 +394,14 @@ export function RunesInfoTab({
               {detailedRuneInfo.mint_count_cap && <p><strong>Mint Cap:</strong> {formatNumberString(detailedRuneInfo.mint_count_cap)}</p>}
               {detailedRuneInfo.mint_start_block !== null && <p><strong>Mint Start Block:</strong> {detailedRuneInfo.mint_start_block}</p>}
               {detailedRuneInfo.mint_end_block !== null && <p><strong>Mint End Block:</strong> {detailedRuneInfo.mint_end_block}</p>}
-              {detailedRuneInfo.current_mint_count !== undefined && <p><strong>Current Mint Count:</strong> {detailedRuneInfo.current_mint_count.toLocaleString()}</p>}
-              
+              {detailedRuneInfo.current_mint_count !== undefined && <p><strong>Current Mint Count:</strong> {detailedRuneInfo.current_mint_count?.toLocaleString() || 'N/A'}</p>}
+
               {/* Add Price Chart Button */}
               {onShowPriceChart && (
                 <div className={styles.showPriceChartButtonContainer}>
-                  <button 
+                  <button
                     className={styles.showPriceChartButton}
-                    onClick={() => onShowPriceChart(detailedRuneInfo.name)}
+                    onClick={() => onShowPriceChart(detailedRuneInfo.name, true)}
                   >
                     {showPriceChart ? 'Hide Price Chart' : 'Show Price Chart'}
                   </button>
