@@ -19,6 +19,7 @@ import { formatNumberString, truncateTxid } from '@/utils/formatters'; // Import
 import { FormattedRuneAmount } from './FormattedRuneAmount'; // Import component
 import type { Rune } from '@/types/satsTerminal';
 import { useRunesInfoStore } from '@/store/runesInfoStore'; // Import the store
+import type { RuneData } from '@/lib/runesData';
 
 interface RunesInfoTabProps {
   // Optional props for cached popular runes
@@ -67,7 +68,7 @@ export function RunesInfoTab({
     data: detailedRuneInfo,
     isLoading: isDetailedRuneInfoLoading,
     error: detailedRuneInfoError,
-  } = useQuery<OrdiscanRuneInfo | null, Error>({
+  } = useQuery<RuneData | null, Error>({
     queryKey: ['runeInfoApi', selectedRuneForInfo?.name],
     queryFn: () => selectedRuneForInfo ? fetchRuneInfoFromApi(selectedRuneForInfo.name) : Promise.resolve(null),
     enabled: !!selectedRuneForInfo,
@@ -89,7 +90,7 @@ export function RunesInfoTab({
   // Fetch popular runes on mount using SatsTerminal API
   useEffect(() => {
     const fetchPopular = async () => {
-      // If we already have cached popular runes, use them instead of fetching again
+      // If we already have cached popular runes, use them directly and don't fetch
       if (cachedPopularRunes && cachedPopularRunes.length > 0) {
         const liquidiumToken: Rune = {
           id: 'liquidiumtoken',
@@ -112,7 +113,8 @@ export function RunesInfoTab({
         return;
       }
 
-      // If no cached data, fetch from API
+      // If no cached data, fetch from API - but we shouldn't get here normally
+      // as the parent component should always provide cached data
       setIsPopularLoading(true);
       setPopularError(null);
       setPopularRunes([]);
@@ -162,8 +164,11 @@ export function RunesInfoTab({
         setIsPopularLoading(false);
       }
     };
+    
     fetchPopular();
-  }, [cachedPopularRunes]);
+    // Run this effect only once on mount, not when props change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Create a debounced search function - MEMOIZED
   const debouncedSearch = useMemo(() =>
@@ -180,7 +185,6 @@ export function RunesInfoTab({
         const results: Rune[] = await fetchRunesFromApi(query);
         setSearchResults(results);
       } catch (error: unknown) {
-        console.error("[RunesInfoTab] Error searching runes:", error);
         setSearchError(error instanceof Error ? error.message : 'Failed to search');
         setSearchResults([]);
       } finally {
@@ -213,7 +217,12 @@ export function RunesInfoTab({
   // Update global store when detailed info changes
   useEffect(() => {
     if (detailedRuneInfo) {
-      setSelectedRuneInfo(detailedRuneInfo);
+      // Convert RuneData to OrdiscanRuneInfo for compatibility with existing code
+      const updatedInfo: OrdiscanRuneInfo = {
+        ...detailedRuneInfo,
+        formatted_name: detailedRuneInfo.formatted_name || detailedRuneInfo.name,
+      } as OrdiscanRuneInfo;
+      setSelectedRuneInfo(updatedInfo);
     } else if (detailedRuneInfoError && selectedRuneForInfo) {
       // On error, use the minimal info in the global store
       setSelectedRuneInfo(selectedRuneForInfo);
@@ -359,7 +368,7 @@ export function RunesInfoTab({
               {runeMarketInfoError && (
                 <p><strong>Price:</strong> <span className={styles.errorText}>Market data unavailable: {runeMarketInfoError.message}</span></p>
               )}
-              <p><strong>Premined Supply:</strong>
+              <p><strong>Premined Supply:</strong>{' '}
                 <FormattedRuneAmount
                   runeName={detailedRuneInfo.name}
                   rawAmount={detailedRuneInfo.premined_supply}
@@ -374,7 +383,7 @@ export function RunesInfoTab({
               }</p>
               {/* Use FormattedRuneAmount for Amount/Mint */}
               {detailedRuneInfo.amount_per_mint !== null && detailedRuneInfo.amount_per_mint !== undefined &&
-                <p><strong>Amount/Mint:</strong>
+                <p><strong>Amount/Mint:</strong>{' '}
                   <FormattedRuneAmount
                     runeName={detailedRuneInfo.name}
                     rawAmount={detailedRuneInfo.amount_per_mint}
@@ -385,7 +394,7 @@ export function RunesInfoTab({
               {detailedRuneInfo.mint_count_cap && <p><strong>Mint Cap:</strong> {formatNumberString(detailedRuneInfo.mint_count_cap)}</p>}
               {detailedRuneInfo.mint_start_block !== null && <p><strong>Mint Start Block:</strong> {detailedRuneInfo.mint_start_block}</p>}
               {detailedRuneInfo.mint_end_block !== null && <p><strong>Mint End Block:</strong> {detailedRuneInfo.mint_end_block}</p>}
-              {detailedRuneInfo.current_mint_count !== undefined && <p><strong>Current Mint Count:</strong> {detailedRuneInfo.current_mint_count.toLocaleString()}</p>}
+              {detailedRuneInfo.current_mint_count !== undefined && <p><strong>Current Mint Count:</strong> {detailedRuneInfo.current_mint_count?.toLocaleString() || 'N/A'}</p>}
 
               {/* Add Price Chart Button */}
               {onShowPriceChart && (

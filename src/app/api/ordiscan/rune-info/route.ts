@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server';
-import { getOrdiscanClient } from '@/lib/serverUtils';
-import { RuneInfo } from '@/types/ordiscan';
 import { createSuccessResponse, createErrorResponse, handleApiError } from '@/lib/apiUtils';
+import { getRuneData } from '@/lib/runesData';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -15,27 +14,17 @@ export async function GET(request: NextRequest) {
   const formattedName = name.replace(/•/g, '');
 
   try {
-    const ordiscan = getOrdiscanClient();
-    const info: RuneInfo = await ordiscan.rune.getInfo({ name: formattedName });
+    const runeInfo = await getRuneData(formattedName);
     
-    // Validate that info is an object and not null
-    if (!info || typeof info !== 'object') {
-      console.warn(`[API Route] Invalid rune info received for ${formattedName}`);
-      return createErrorResponse('Invalid rune info data received', undefined, 500);
-    }
-    
-    return createSuccessResponse(info);
-  } catch (error: unknown) {
-    // Special handling for 404 errors
-    const errorInfo = handleApiError(error, `Failed to fetch info for rune ${formattedName}`);
-    
-    // Return null with 404 status for "not found" errors
-    if (errorInfo.status === 404) {
+    if (!runeInfo) {
       console.warn(`[API Route] Rune info not found for ${formattedName}`);
       // Return null data with success: true for consistent client-side handling
       return createSuccessResponse(null, 404);
     }
     
+    return createSuccessResponse(runeInfo);
+  } catch (error: unknown) {
+    const errorInfo = handleApiError(error, `Failed to fetch info for rune ${formattedName}`);
     return createErrorResponse(errorInfo.message, errorInfo.details, errorInfo.status);
   }
 } 

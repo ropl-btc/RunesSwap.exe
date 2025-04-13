@@ -20,7 +20,8 @@ import {
   fetchRuneInfoFromApi,
   fetchRuneMarketFromApi
 } from '@/lib/apiClient';
-import { type RuneBalance as OrdiscanRuneBalance, type RuneInfo as OrdiscanRuneInfo, type RuneMarketInfo as OrdiscanRuneMarketInfo } from '@/types/ordiscan';
+import { type RuneBalance as OrdiscanRuneBalance, type RuneMarketInfo as OrdiscanRuneMarketInfo } from '@/types/ordiscan';
+import { type RuneData } from '@/lib/runesData';
 
 // Mock address for fetching quotes when disconnected
 const MOCK_ADDRESS = '34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo';
@@ -42,6 +43,7 @@ interface SwapTabProps {
   // New props for price chart
   onShowPriceChart?: (assetName?: string, shouldToggle?: boolean) => void;
   showPriceChart?: boolean;
+  preSelectedRune?: string | null;
 }
 
 export function SwapTab({ 
@@ -58,7 +60,8 @@ export function SwapTab({
   isPopularRunesLoading = false,
   popularRunesError = null,
   onShowPriceChart,
-  showPriceChart = false
+  showPriceChart = false,
+  preSelectedRune = null
 }: SwapTabProps) {
   // State for input/output amounts
   const [inputAmount, setInputAmount] = useState('');
@@ -67,6 +70,9 @@ export function SwapTab({
   // State for selected assets
   const [assetIn, setAssetIn] = useState<Asset>(BTC_ASSET);
   const [assetOut, setAssetOut] = useState<Asset | null>(null);
+
+  // Track if the preselected rune has been loaded
+  const [hasLoadedPreselectedRune, setHasLoadedPreselectedRune] = useState(false);
 
   // State for rune fetching/searching
   const [searchQuery, setSearchQuery] = useState('');
@@ -78,6 +84,216 @@ export function SwapTab({
   const [popularError, setPopularError] = useState<string | null>(
     popularRunesError ? popularRunesError.message : null
   );
+  // Add a loading state specifically for a preselected rune
+  const [isPreselectedRuneLoading, setIsPreselectedRuneLoading] = useState(!!preSelectedRune);
+
+  // Determine which runes to display
+  const availableRunes = searchQuery.trim() ? searchResults : popularRunes;
+  const isLoadingRunes = searchQuery.trim() ? isSearching : isPopularLoading;
+  const currentRunesError = searchQuery.trim() ? searchError : popularError;
+
+  // Handle pre-selected rune
+  useEffect(() => {
+    const findAndSelectRune = async () => {
+      if (preSelectedRune && !hasLoadedPreselectedRune) {
+        // Show loading state while searching
+        setIsPreselectedRuneLoading(true);
+        
+        // Force search for the rune if it changes
+        // Normalize names by removing spacers for comparison
+        const normalizedPreSelected = preSelectedRune.replace(/•/g, '');
+        
+        // Try to find in available runes first
+        const rune = availableRunes.find(r => r.name.replace(/•/g, '') === normalizedPreSelected);
+        
+        if (rune) {
+          // Found in available runes, set it
+          setAssetIn(BTC_ASSET);
+          setAssetOut(rune);
+          setIsPreselectedRuneLoading(false);
+          setHasLoadedPreselectedRune(true);
+          
+          // Clear the URL parameter
+          if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('rune');
+            window.history.replaceState({}, '', url.toString());
+          }
+          
+          // Clear search field after loading
+          setSearchQuery('');
+        } else {
+          // Not found in available runes, search for it
+          try {
+            setIsSearching(true);
+            const searchResults = await fetchRunesFromApi(preSelectedRune);
+            
+            if (searchResults && searchResults.length > 0) {
+              // Find closest match
+              const matchingRune = searchResults.find(r => r.name.replace(/•/g, '') === normalizedPreSelected);
+              
+              // If found a match or just take the first result if no exact match
+              const foundRune = matchingRune || searchResults[0];
+              
+              // Convert to Asset format
+              const foundAsset: Asset = {
+                id: foundRune.id,
+                name: foundRune.name,
+                imageURI: foundRune.imageURI,
+                isBTC: false,
+              };
+              
+              // Add to search results
+              setSearchResults(prev => {
+                // Avoid duplicates
+                if (!prev.some(r => r.id === foundAsset.id)) {
+                  return [...prev, foundAsset];
+                }
+                return prev;
+              });
+              
+              // Set as output asset
+              setAssetIn(BTC_ASSET);
+              setAssetOut(foundAsset);
+              setIsPreselectedRuneLoading(false);
+              setHasLoadedPreselectedRune(true);
+              
+              // Clear the URL parameter
+              if (typeof window !== 'undefined') {
+                const url = new URL(window.location.href);
+                url.searchParams.delete('rune');
+                window.history.replaceState({}, '', url.toString());
+              }
+              
+              // Clear search field
+              setSearchQuery('');
+            }
+          } catch (error) {
+            console.error(`Error searching for pre-selected rune:`, error);
+          } finally {
+            setIsSearching(false);
+            setIsPreselectedRuneLoading(false);
+            setHasLoadedPreselectedRune(true);
+            
+            // Clear the URL parameter even if there was an error
+            if (typeof window !== 'undefined') {
+              const url = new URL(window.location.href);
+              url.searchParams.delete('rune');
+              window.history.replaceState({}, '', url.toString());
+            }
+            
+            // Clear search field
+            setSearchQuery('');
+          }
+        }
+      } else if (!preSelectedRune) {
+        // No preselected rune, ensure loading state is cleared
+        setIsPreselectedRuneLoading(false);
+        setHasLoadedPreselectedRune(false);
+      }
+    };
+    
+    findAndSelectRune();
+  }, [preSelectedRune, availableRunes, hasLoadedPreselectedRune, searchQuery]);
+
+  // Fetch popular runes on mount using API
+  useEffect(() => {
+    const fetchPopular = async () => {
+      // If we already have cached popular runes, use them instead of fetching again
+      if (cachedPopularRunes && cachedPopularRunes.length > 0) {
+        const liquidiumToken: Asset = {
+          id: 'liquidiumtoken',
+          name: 'LIQUIDIUM•TOKEN',
+          imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
+          isBTC: false,
+        };
+
+        // Map the cached data to Asset format
+        const fetchedRunes: Asset[] = cachedPopularRunes
+          .map((collection: Record<string, unknown>) => {
+            const runeName = ((collection?.etching as Record<string, unknown>)?.runeName as string) || collection?.rune as string || 'Unknown';
+            return {
+              id: collection?.rune as string || `unknown_${Math.random()}`,
+              name: runeName,
+              imageURI: collection?.icon_content_url_data as string || collection?.imageURI as string,
+              isBTC: false,
+            };
+          })
+          .filter(rune => rune.id !== liquidiumToken.id && rune.name.replace(/•/g, '') !== liquidiumToken.name.replace(/•/g, ''));
+
+        // Prepend the hardcoded token ONLY if no pre-selected rune
+        const mappedRunes = preSelectedRune ? fetchedRunes : [liquidiumToken, ...fetchedRunes];
+        setPopularRunes(mappedRunes);
+        
+        // Only set default assetOut if there's no pre-selected rune and no current assetOut and no search query
+        if (!preSelectedRune && !assetOut && !searchQuery && mappedRunes.length > 0) {
+          setAssetOut(mappedRunes[0]);
+        }
+        
+        setIsPopularLoading(false);
+        return;
+      }
+      
+      // If no cached data, fetch from API
+      setIsPopularLoading(true);
+      setPopularError(null);
+      setPopularRunes([]);
+      try {
+        // Define the hardcoded asset
+        const liquidiumToken: Asset = {
+          id: 'liquidiumtoken',
+          name: 'LIQUIDIUM•TOKEN',
+          imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
+          isBTC: false,
+        };
+
+        const response = await fetchPopularFromApi();
+        let mappedRunes: Asset[] = [];
+
+        if (!Array.isArray(response)) {
+          mappedRunes = [liquidiumToken];
+        } else {
+          const fetchedRunes: Asset[] = response
+            .map((collection: Record<string, unknown>) => ({
+              id: collection?.rune as string || `unknown_${Math.random()}`,
+              name: ((collection?.etching as Record<string, unknown>)?.runeName as string) || collection?.rune as string || 'Unknown',
+              imageURI: collection?.icon_content_url_data as string || collection?.imageURI as string,
+              isBTC: false,
+            }))
+            .filter(rune => rune.id !== liquidiumToken.id && rune.name.replace(/•/g, '') !== liquidiumToken.name.replace(/•/g, ''));
+
+          mappedRunes = [liquidiumToken, ...fetchedRunes];
+        }
+
+        setPopularRunes(mappedRunes);
+
+        // Only set default assetOut if there's no pre-selected rune and no current assetOut
+        if (!preSelectedRune && !assetOut && mappedRunes.length > 0) {
+          setAssetOut(mappedRunes[0]);
+        }
+
+      } catch (error) {
+        console.error("Error fetching popular runes:", error);
+        setPopularError(error instanceof Error ? error.message : 'Failed to fetch popular runes');
+        const liquidiumTokenOnError: Asset = {
+          id: 'liquidiumtoken',
+          name: 'LIQUIDIUM•TOKEN',
+          imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
+          isBTC: false,
+        };
+        // Only set Liquidium Token if no pre-selected rune
+        setPopularRunes(preSelectedRune ? [] : [liquidiumTokenOnError]);
+        
+        // Only set default assetOut if there's no pre-selected rune and no current assetOut
+        if (!preSelectedRune && !assetOut) {
+          setAssetOut(liquidiumTokenOnError);
+        }
+      } finally {
+        setIsPopularLoading(false);
+      }
+    };
+    fetchPopular();
+  }, [cachedPopularRunes, preSelectedRune, assetOut, searchQuery]);
 
   // State for quote fetching
   const [isQuoteLoading, setIsQuoteLoading] = useState(false);
@@ -124,12 +340,12 @@ export function SwapTab({
     refetchInterval: 60000, // Refetch every 60 seconds
   });
 
-  // Query for Rune Info (for balance)
+  // Query for Input Rune Info (needed for decimals and other info)
   const {
     data: swapRuneInfo, 
     isLoading: isSwapRuneInfoLoading,
     error: swapRuneInfoError,
-  } = useQuery<OrdiscanRuneInfo | null, Error>({
+  } = useQuery<RuneData | null, Error>({
     queryKey: ['runeInfoApi', assetIn?.name?.replace(/•/g, '')],
     queryFn: () => assetIn && !assetIn.isBTC && assetIn.name ? fetchRuneInfoFromApi(assetIn.name) : Promise.resolve(null), // Use API function
     enabled: !!assetIn && !assetIn.isBTC && !!assetIn.name, // Only fetch for non-BTC assets
@@ -174,103 +390,6 @@ export function SwapTab({
       }
     };
   }, [isQuoteLoading, isBtcPriceLoading, isSwapping]); // Added isSwapping
-
-  // Fetch popular runes on mount using API
-  useEffect(() => {
-    const fetchPopular = async () => {
-      // If we already have cached popular runes, use them instead of fetching again
-      if (cachedPopularRunes && cachedPopularRunes.length > 0) {
-        const liquidiumToken: Asset = {
-          id: 'liquidiumtoken',
-          name: 'LIQUIDIUM•TOKEN',
-          imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
-          isBTC: false,
-        };
-
-        // Map the cached data to Asset format
-        const fetchedRunes: Asset[] = cachedPopularRunes
-          .map((collection: Record<string, unknown>) => ({
-            id: collection?.rune as string || `unknown_${Math.random()}`,
-            name: ((collection?.etching as Record<string, unknown>)?.runeName as string) || collection?.rune as string || 'Unknown',
-            imageURI: collection?.icon_content_url_data as string || collection?.imageURI as string,
-            isBTC: false,
-          }))
-          .filter(rune => rune.id !== liquidiumToken.id && rune.name !== liquidiumToken.name);
-
-        // Prepend the hardcoded token
-        const mappedRunes = [liquidiumToken, ...fetchedRunes];
-        setPopularRunes(mappedRunes);
-        
-        // Update default assetOut logic if necessary
-        if (assetIn.isBTC && !assetOut && mappedRunes.length > 0) {
-          setAssetOut(mappedRunes[0]);
-        }
-        
-        setIsPopularLoading(false);
-        return;
-      }
-      
-      // If no cached data, fetch from API
-      setIsPopularLoading(true);
-      setPopularError(null);
-      setPopularRunes([]);
-      try {
-        // Define the hardcoded asset
-        const liquidiumToken: Asset = {
-          id: 'liquidiumtoken', // Use a consistent ID
-          name: 'LIQUIDIUM•TOKEN',
-          imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
-          isBTC: false,
-        };
-
-        // *** Use the new API fetch function ***
-        const response = await fetchPopularFromApi();
-        let mappedRunes: Asset[] = [];
-
-        if (!Array.isArray(response)) {
-          // Even if fetch fails or returns non-array, still show Liquidium
-          mappedRunes = [liquidiumToken];
-        } else {
-          const fetchedRunes: Asset[] = response
-            .map((collection: Record<string, unknown>) => ({
-              id: collection?.rune as string || `unknown_${Math.random()}`,
-              name: ((collection?.etching as Record<string, unknown>)?.runeName as string) || collection?.rune as string || 'Unknown',
-              imageURI: collection?.icon_content_url_data as string || collection?.imageURI as string,
-              isBTC: false,
-            }))
-            // Filter out any existing liquidium token from the API result to avoid duplicates
-            .filter(rune => rune.id !== liquidiumToken.id && rune.name !== liquidiumToken.name);
-
-          // Prepend the hardcoded token
-          mappedRunes = [liquidiumToken, ...fetchedRunes];
-        }
-
-        setPopularRunes(mappedRunes);
-
-        // Update default assetOut logic if necessary
-        if (assetIn.isBTC && !assetOut && mappedRunes.length > 0) {
-          // Ensure it defaults to Liquidium if it's the only one, otherwise the first *after* Liquidium
-          // Or simply default to Liquidium if it's the first element
-          setAssetOut(mappedRunes[0]);
-        }
-
-      } catch (error) {
-        setPopularError(error instanceof Error ? error.message : 'Failed to fetch popular runes');
-        // Still show Liquidium even on error
-         const liquidiumTokenOnError: Asset = {
-          id: 'liquidiumtoken',
-          name: 'LIQUIDIUM•TOKEN',
-          imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
-          isBTC: false,
-        };
-        setPopularRunes([liquidiumTokenOnError]);
-      } finally {
-        setIsPopularLoading(false);
-      }
-    };
-    fetchPopular();
-  // Ensure assetOut is included as a dependency to reset correctly
-  }, [assetIn.isBTC, assetOut, setAssetOut, cachedPopularRunes]);
 
   // Create a debounced search function - MEMOIZED
   const debouncedSearch = useMemo(() => 
@@ -317,13 +436,18 @@ export function SwapTab({
     const query = e.target.value;
     setSearchQuery(query);
     setIsSearching(true); // Indicate searching immediately
+    
+    // If we were using a preselected rune, make sure the URL stays clean
+    if (hasLoadedPreselectedRune && typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has('rune')) {
+        url.searchParams.delete('rune');
+        window.history.replaceState({}, '', url.toString());
+      }
+    }
+    
     debouncedSearch(query);
   };
-
-  // Determine which runes to display (use Asset type)
-  const availableRunes = searchQuery.trim() ? searchResults : popularRunes;
-  const isLoadingRunes = searchQuery.trim() ? isSearching : isPopularLoading;
-  const currentRunesError = searchQuery.trim() ? searchError : popularError;
 
   // Define debounced value for input amount
   // Correctly use the imported useDebounce hook - extract the first element
@@ -805,7 +929,8 @@ export function SwapTab({
       isLoadingRunes: boolean,
       currentRunesError: string | null,
       searchQuery: string,
-      handleSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+      handleSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
+      isPreselectedLoading: boolean = false
   ) => {
     const runesToShow = purpose === 'selectBtcOrRune' ? [BTC_ASSET, ...availableRunes] : availableRunes;
     // Filter out the other selected asset if necessary
@@ -813,27 +938,33 @@ export function SwapTab({
 
     return (
       <div className={styles.listboxContainer}>
-          <Listbox value={value} onChange={onChange} disabled={disabled || isLoadingRunes}>
+          <Listbox value={value} onChange={onChange} disabled={disabled || isLoadingRunes || isPreselectedLoading}>
               <div className={styles.listboxRelative}>
                   <Listbox.Button className={styles.listboxButton}>
                       <span className={styles.listboxButtonText}>
-                          {value?.imageURI && (
-                              <Image
-                                  src={value.imageURI}
-                                  alt={`${value.name} logo`}
-                                  className={styles.assetButtonImage}
-                                  width={24}
-                                  height={24}
-                                  aria-hidden="true"
-                                  onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    if (target) {
-                                      target.style.display = 'none';
-                                    }
-                                  }}
-                              />
+                          {isPreselectedLoading ? (
+                            <span className={styles.loadingText}>Loading Rune{loadingDots}</span>
+                          ) : (
+                            <>
+                              {value?.imageURI && (
+                                  <Image
+                                      src={value.imageURI}
+                                      alt={`${value.name} logo`}
+                                      className={styles.assetButtonImage}
+                                      width={24}
+                                      height={24}
+                                      aria-hidden="true"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        if (target) {
+                                          target.style.display = 'none';
+                                        }
+                                      }}
+                                  />
+                              )}
+                              {isLoadingRunes && purpose === 'selectRune' ? 'Loading...' : value ? value.name : 'Select Asset'}
+                            </>
                           )}
-                          {isLoadingRunes && purpose === 'selectRune' ? 'Loading...' : value ? value.name : 'Select Asset'}
                       </span>
                       <span className={styles.listboxButtonIconContainer}>
                           <ChevronUpDownIcon className={styles.listboxButtonIcon} aria-hidden="true" />
@@ -981,12 +1112,13 @@ export function SwapTab({
 
   // Reset swap state when inputs/wallet change significantly
   useEffect(() => {
-    setIsSwapping(false);
-    setSwapStep('idle');
-    setSwapError(null);
-    setTxId(null);
-    // Don't reset amounts/assets here, handled by selection logic
-  }, [inputAmount, assetIn, assetOut, address, connected]);
+    if (swapStep !== 'idle') {
+      setIsSwapping(false);
+      setSwapStep('idle');
+      setSwapError(null);
+      setTxId(null);
+    }
+  }, [address, connected, swapStep]); // Add swapStep to dependencies
 
   return (
     <div className={styles.runesInfoTabContainer}>
@@ -1057,7 +1189,8 @@ export function SwapTab({
             isLoadingRunes,
             currentRunesError,
             searchQuery,
-            handleSearchChange
+            handleSearchChange,
+            false // Input asset is never preselected
           )}
         </div>
         {inputUsdValue && !isQuoteLoading && (
@@ -1101,7 +1234,8 @@ export function SwapTab({
             isLoadingRunes,
             currentRunesError,
             searchQuery,
-            handleSearchChange
+            handleSearchChange,
+            isPreselectedRuneLoading // Output asset can be preselected from URL
           )}
         </div>
         {outputUsdValue && !isQuoteLoading && (
@@ -1177,7 +1311,7 @@ export function SwapTab({
       {isSwapping && swapStep !== 'error' && swapStep !== 'success' && (
         <div className={`${styles.statusText} ${styles.messageWithIcon}`}>
           <Image 
-            src="/icons/hourglass-0.png" 
+            src="@windows_hourglass.png" 
             alt="Processing" 
             className={styles.messageIcon}
             width={16}

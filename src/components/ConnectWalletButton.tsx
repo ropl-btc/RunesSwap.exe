@@ -163,23 +163,6 @@ export function ConnectWalletButton() {
     } catch (error) {
       // Detailed error logging for debugging
       console.error(`[ConnectWalletButton] Failed to connect ${walletName} wallet:`, error);
-      console.log(`[ConnectWalletButton] Error type:`, typeof error);
-      console.log(`[ConnectWalletButton] Error is instance of Error:`, error instanceof Error);
-      
-      if (error instanceof Error) {
-        console.log(`[ConnectWalletButton] Error message:`, error.message);
-        console.log(`[ConnectWalletButton] Error name:`, error.name);
-        console.log(`[ConnectWalletButton] Error stack:`, error.stack);
-        
-        // Save original error for reference (helpful for identifying new patterns)
-        console.log(`[ConnectWalletButton] **SAVE THIS FOR DEBUGGING**: Wallet: ${walletName}, Error: ${error.message}`);
-      } else if (typeof error === 'string') {
-        console.log(`[ConnectWalletButton] Error string:`, error);
-        console.log(`[ConnectWalletButton] **SAVE THIS FOR DEBUGGING**: Wallet: ${walletName}, String Error: ${error}`);
-      } else {
-        console.log(`[ConnectWalletButton] Stringified error:`, JSON.stringify(error));
-        console.log(`[ConnectWalletButton] **SAVE THIS FOR DEBUGGING**: Wallet: ${walletName}, Unknown Error: ${JSON.stringify(error)}`);
-      }
       
       // Determine if this is a "wallet not installed" error
       let isWalletNotInstalledError = false;
@@ -195,8 +178,6 @@ export function ConnectWalletButton() {
           isWalletNotInstalledError = walletPatterns.notInstalledPatterns.some(pattern => 
             errorString.includes(pattern.toLowerCase())
           );
-          
-          console.log(`[ConnectWalletButton] Wallet-specific pattern match for ${walletName}:`, isWalletNotInstalledError);
         }
         
         // If no wallet-specific match, fall back to common patterns
@@ -204,17 +185,7 @@ export function ConnectWalletButton() {
           isWalletNotInstalledError = COMMON_ERROR_PATTERNS.some(pattern => 
             errorString.includes(pattern.toLowerCase())
           );
-          
-          console.log(`[ConnectWalletButton] Common pattern match:`, isWalletNotInstalledError);
         }
-        
-        // Log the matched patterns for future refinement
-        const matchedPatterns = [
-          ...(walletPatterns?.notInstalledPatterns || []),
-          ...COMMON_ERROR_PATTERNS
-        ].filter(pattern => errorString.includes(pattern.toLowerCase()));
-        
-        console.log(`[ConnectWalletButton] Matched patterns:`, matchedPatterns);
         
         errorMessage = error.message;
       } else {
