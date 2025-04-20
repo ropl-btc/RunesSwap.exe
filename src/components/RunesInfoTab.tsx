@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import debounce from 'lodash.debounce';
 import Image from 'next/image';
-import styles from './SwapInterface.module.css'; // Reuse styles for now
+import styles from './AppInterface.module.css'; // Reuse styles for now
 import {
   type RuneInfo as OrdiscanRuneInfo,
   type RuneMarketInfo as OrdiscanRuneMarketInfo

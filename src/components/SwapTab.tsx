@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Listbox, Transition } from '@headlessui/react';
 import { ChevronUpDownIcon, CheckIcon, ArrowPathIcon } from '@heroicons/react/24/solid';
 import Image from 'next/image';
-import styles from './SwapInterface.module.css';
+import styles from './AppInterface.module.css';
 import debounce from 'lodash.debounce';
 import { useDebounce } from 'use-debounce';
 import { type QuoteResponse, type RuneOrder, type GetPSBTParams, type ConfirmPSBTParams } from 'satsterminal-sdk';
@@ -44,6 +44,12 @@ interface SwapTabProps {
   onShowPriceChart?: (assetName?: string, shouldToggle?: boolean) => void;
   showPriceChart?: boolean;
   preSelectedRune?: string | null;
+}
+
+// Helper to check if a string is a valid image src for Next.js
+function isValidImageSrc(src?: string | null): src is string {
+  if (!src || typeof src !== 'string') return false;
+  return src.startsWith('http') || src.startsWith('/') || src.startsWith('data:');
 }
 
 export function SwapTab({ 
@@ -946,21 +952,23 @@ export function SwapTab({
                             <span className={styles.loadingText}>Loading Rune{loadingDots}</span>
                           ) : (
                             <>
-                              {value?.imageURI && (
-                                  <Image
-                                      src={value.imageURI}
-                                      alt={`${value.name} logo`}
-                                      className={styles.assetButtonImage}
-                                      width={24}
-                                      height={24}
-                                      aria-hidden="true"
-                                      onError={(e) => {
-                                        const target = e.target as HTMLImageElement;
-                                        if (target) {
-                                          target.style.display = 'none';
-                                        }
-                                      }}
-                                  />
+                              {isValidImageSrc(value?.imageURI) ? (
+                                <Image
+                                    src={value.imageURI}
+                                    alt={`${value.name} logo`}
+                                    className={styles.assetButtonImage}
+                                    width={24}
+                                    height={24}
+                                    aria-hidden="true"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      if (target) {
+                                        target.style.display = 'none';
+                                      }
+                                    }}
+                                />
+                              ) : (
+                                <Image src="/icons/token_placeholder.png" alt="Token placeholder" className={styles.assetButtonImage} width={24} height={24} aria-hidden="true" />
                               )}
                               {isLoadingRunes && purpose === 'selectRune' ? 'Loading...' : value ? value.name : 'Select Asset'}
                             </>
@@ -989,7 +997,7 @@ export function SwapTab({
                                   {({ selected }) => (
                                        <>
                                           <span className={styles.runeOptionContent}> {/* Use rune option style */}
-                                              {BTC_ASSET.imageURI && (
+                                              {isValidImageSrc(BTC_ASSET.imageURI) ? (
                                                   <Image 
                                                     src={BTC_ASSET.imageURI} 
                                                     alt="" 
@@ -998,6 +1006,8 @@ export function SwapTab({
                                                     height={24}
                                                     aria-hidden="true" 
                                                   />
+                                              ) : (
+                                                <Image src="/icons/token_placeholder.png" alt="Token placeholder" className={styles.runeImage} width={24} height={24} aria-hidden="true" />
                                               )}
                                               <span className={`${styles.listboxOptionText} ${ selected ? styles.listboxOptionTextSelected : styles.listboxOptionTextUnselected }`}>
                                                   {BTC_ASSET.name}
@@ -1064,7 +1074,7 @@ export function SwapTab({
                                   {({ selected }) => (
                                       <>
                                           <span className={styles.runeOptionContent}> {/* Use rune option style */}
-                                              {rune.imageURI && (
+                                              {isValidImageSrc(rune.imageURI) ? (
                                                   <Image
                                                       src={rune.imageURI}
                                                       alt=""
@@ -1079,6 +1089,8 @@ export function SwapTab({
                                                         }
                                                       }}
                                                   />
+                                              ) : (
+                                                <Image src="/icons/token_placeholder.png" alt="Token placeholder" className={styles.runeImage} width={24} height={24} aria-hidden="true" />
                                               )}
                                               <span className={`${styles.listboxOptionText} ${ selected ? styles.listboxOptionTextSelected : styles.listboxOptionTextUnselected }`}>
                                                   {rune.name}
@@ -1119,6 +1131,16 @@ export function SwapTab({
       setTxId(null);
     }
   }, [address, connected, swapStep]); // Add swapStep to dependencies
+
+  // Add dev log for quoteError and swapError for debugging
+  if (quoteError && !isQuoteLoading) {
+    // eslint-disable-next-line no-console
+    console.error('[SwapTab error: quoteError]', quoteError);
+  }
+  if (swapError) {
+    // eslint-disable-next-line no-console
+    console.error('[SwapTab error: swapError]', swapError);
+  }
 
   return (
     <div className={styles.runesInfoTabContainer}>
@@ -1251,6 +1273,9 @@ export function SwapTab({
               height={16}
             />
             <span>{quoteError}</span>
+            <div className={styles.hintText}>
+              Please retry the swap, reconnect your wallet, or try a different amount.
+            </div>
           </div>
         )}
       </div>
@@ -1311,7 +1336,7 @@ export function SwapTab({
       {isSwapping && swapStep !== 'error' && swapStep !== 'success' && (
         <div className={`${styles.statusText} ${styles.messageWithIcon}`}>
           <Image 
-            src="@windows_hourglass.png" 
+            src="/icons/windows_hourglass.png" 
             alt="Processing" 
             className={styles.messageIcon}
             width={16}
@@ -1337,6 +1362,9 @@ export function SwapTab({
             height={16}
           />
           <span>Error: {swapError}</span>
+          <div className={styles.hintText}>
+            Please retry the swap, reconnect your wallet, or try a different amount.
+          </div>
         </div>
       )}
       {!swapError && swapStep === 'success' && txId && (

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { ConfirmPSBTParams, RuneOrder } from 'satsterminal-sdk';
 import { getSatsTerminalClient } from '@/lib/serverUtils';
 import { z } from 'zod';
+import { handleApiError, createErrorResponse } from '@/lib/apiUtils';
 
 // Create a more comprehensive RuneOrder schema based on observed usage
 const runeOrderSchema = z.object({
@@ -80,17 +81,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(confirmResponse);
 
   } catch (error) {
-    console.error(`Error confirming PSBT on server:`, error);
-    const message = (error instanceof Error) ? error.message : 'Failed to confirm PSBT';
-    // Check for specific API errors if needed, e.g., quote expired
-    let statusCode = 500;
-    if (message.includes("Quote expired") || (error && typeof error === 'object' && (error as { code?: string }).code === 'ERR677K3')) {
-      statusCode = 410; // Gone (or another suitable code like 400 Bad Request)
+    const errorInfo = handleApiError(error, 'Failed to confirm PSBT');
+    // Special handling for quote expired
+    if (errorInfo.message.includes('Quote expired') || (error && typeof error === 'object' && (error as { code?: string }).code === 'ERR677K3')) {
+      return createErrorResponse('Quote expired. Please fetch a new quote.', errorInfo.details, 410);
     }
-    return NextResponse.json({ 
-      error: 'Failed to confirm PSBT', 
-      details: message,
-      code: (error && typeof error === 'object' && (error as { code?: string }).code) || 'UNKNOWN_ERROR'
-    }, { status: statusCode });
+    return createErrorResponse(errorInfo.message, errorInfo.details, errorInfo.status);
   }
 } 

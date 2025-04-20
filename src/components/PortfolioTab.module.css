@@ -208,4 +208,37 @@
   .portfolioTotals > div:first-child {
     grid-column: 1;
   }
+}
+
+.progressContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 2rem 0 1rem 0;
+}
+
+.progressBarOuter {
+  width: 240px;
+  height: 18px;
+  background: var(--win98-surface);
+  border: 2px solid var(--win98-dark-gray);
+  box-shadow: inset 1px 1px 0 var(--win98-light-gray), inset -1px -1px 0 var(--win98-shadow-gray);
+  position: relative;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+}
+
+.progressBarInner {
+  height: 100%;
+  background: var(--win98-blue);
+  border-right: 2px solid var(--win98-light-gray);
+  transition: width 0.15s linear;
+}
+
+.progressStepText {
+  font-size: 13px;
+  color: var(--win98-text);
+  font-family: 'Perfect DOS VGA 437', 'Consolas', monospace;
+  margin-bottom: 0.5rem;
+  text-shadow: 1px 1px 0 var(--win98-light-gray);
 } 

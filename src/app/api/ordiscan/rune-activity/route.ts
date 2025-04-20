@@ -3,6 +3,7 @@ import { getOrdiscanClient } from '@/lib/serverUtils'; // <-- Import client util
 // Import the necessary types from the shared location
 import { RuneActivityEvent } from '@/types/ordiscan';
 import { createSuccessResponse, createErrorResponse, handleApiError } from '@/lib/apiUtils';
+import { z } from 'zod';
 
 // Define local types matching the ones in the lib (or import from shared location)
 // Commented out to avoid linter errors - might use later
@@ -32,9 +33,13 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const address = searchParams.get('address');
 
-  if (!address) {
-    return createErrorResponse('Address parameter is required', undefined, 400);
+  // Zod validation for 'address'
+  const schema = z.object({ address: z.string().min(1) });
+  const validation = schema.safeParse({ address });
+  if (!validation.success) {
+    return createErrorResponse('Invalid query parameter', validation.error.message, 400);
   }
+  const { address: validAddress } = validation.data;
 
   // const apiKey = process.env.ORDISCAN_API_KEY;
   // if (!apiKey) {
@@ -48,7 +53,7 @@ export async function GET(request: NextRequest) {
     const ordiscan = getOrdiscanClient(); // <-- Use utility function
 
     // Use the method suggested by the linter
-    const activity: RuneActivityEvent[] = await ordiscan.address.getRunesActivity({ address }); // <-- Corrected method name
+    const activity: RuneActivityEvent[] = await ordiscan.address.getRunesActivity({ address: validAddress }); // <-- Corrected method name
 
     // Ensure we always return a valid array
     const validActivity = Array.isArray(activity) ? activity : [];
@@ -64,7 +69,7 @@ export async function GET(request: NextRequest) {
     // ... removed response handling and parsing ...
 
   } catch (error) {
-    const errorInfo = handleApiError(error, `Failed to fetch rune activity for address ${address}`);
+    const errorInfo = handleApiError(error, `Failed to fetch rune activity for address ${validAddress}`);
     return createErrorResponse(errorInfo.message, errorInfo.details, errorInfo.status);
   }
 } 

@@ -3,7 +3,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Image from 'next/image';
-import styles from './SwapInterface.module.css'; // Reuse styles for now
+import styles from './AppInterface.module.css'; // Reuse styles for now
 import { 
   RuneActivityEvent
 } from '@/types/ordiscan'; // Import types

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useSharedLaserEyes } from '@/context/LaserEyesContext';
@@ -16,6 +16,8 @@ export default function PortfolioTab() {
   const { address } = useSharedLaserEyes();
   const [sortField, setSortField] = useState<SortField>('value');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [progress, setProgress] = useState(0); // 0 to 1
+  const [stepText, setStepText] = useState('');
 
   // Use the new batch API endpoint
   const { data: portfolioData, isLoading, error } = useQuery({
@@ -46,6 +48,36 @@ export default function PortfolioTab() {
     window.dispatchEvent(new CustomEvent('tabChange', { detail: { tab: 'swap', rune: runeName } }));
   };
 
+  // Simulate progress bar during loading
+  useEffect(() => {
+    if (!isLoading) return;
+    let isMounted = true;
+    let step = 0;
+    const totalSteps = 4; // 1: balances, 2: rune info, 3: market data, 4: finalizing
+    const stepLabels = [
+      'Fetching balances...',
+      'Fetching rune info...',
+      'Fetching market data...',
+      'Finalizing...'
+    ];
+    setProgress(0);
+    setStepText(stepLabels[0]);
+    function nextStep() {
+      if (!isMounted) return;
+      step++;
+      if (step < totalSteps) {
+        setProgress(step / totalSteps);
+        setStepText(stepLabels[step]);
+        setTimeout(nextStep, 400 + Math.random() * 400); // Simulate 400-800ms per step
+      } else {
+        setProgress(1);
+        setStepText('Finalizing...');
+      }
+    }
+    setTimeout(nextStep, 400 + Math.random() * 400);
+    return () => { isMounted = false; };
+  }, [isLoading]);
+
   if (!address) {
     return (
       <div className={styles.container}>
@@ -59,6 +91,15 @@ export default function PortfolioTab() {
   if (isLoading) {
     return (
       <div className={styles.container}>
+        <div className={styles.progressContainer}>
+          <div className={styles.progressBarOuter}>
+            <div
+              className={styles.progressBarInner}
+              style={{ width: `${Math.round(progress * 100)}%` }}
+            />
+          </div>
+          <div className={styles.progressStepText}>{stepText}</div>
+        </div>
         <div className={styles.message}>Loading your portfolio...</div>
       </div>
     );

@@ -1,17 +1,22 @@
 import { NextRequest } from 'next/server';
 import { createSuccessResponse, createErrorResponse, handleApiError } from '@/lib/apiUtils';
 import { getRuneMarketData } from '@/lib/runeMarketData';
+import { z } from 'zod';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const name = searchParams.get('name');
 
-  if (!name || name.trim() === '') {
-    return createErrorResponse('Rune name parameter is required', undefined, 400);
+  // Zod validation for 'name'
+  const schema = z.object({ name: z.string().min(1) });
+  const validation = schema.safeParse({ name });
+  if (!validation.success) {
+    return createErrorResponse('Invalid query parameter', validation.error.message, 400);
   }
+  const { name: validName } = validation.data;
 
   // Ensure name doesn't have spacers for the API call
-  const formattedName = name.replace(/•/g, '');
+  const formattedName = validName.replace(/•/g, '');
 
   try {
     const marketInfo = await getRuneMarketData(formattedName);

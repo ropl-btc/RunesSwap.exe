@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { ConnectWalletButton } from '@/components/ConnectWalletButton';
-import { SwapInterface } from '@/components/SwapInterface';
+import { AppInterface } from '@/components/AppInterface';
 import styles from './page.module.css';
 
 // Define the tab type
@@ -97,7 +97,7 @@ export default function Home() {
       </div>
 
       {/* Pass activeTab as a prop */}
-      <SwapInterface activeTab={activeTab} />
+      <AppInterface activeTab={activeTab} />
 
       {/* Optional: Add other content/components below */}
       {/* <p className="pt-4 text-xs">Status: Ready</p> */}

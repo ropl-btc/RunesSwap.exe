@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import styles from './SwapInterface.module.css';
+import styles from './AppInterface.module.css';
 
 interface FooterComponentProps {
   btcPriceUsd: number | undefined;

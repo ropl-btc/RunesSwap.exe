@@ -4,19 +4,24 @@ import { supabase } from '@/lib/supabase';
 import { createSuccessResponse, createErrorResponse, handleApiError } from '@/lib/apiUtils';
 import { RuneBalance, RuneMarketInfo } from '@/types/ordiscan';
 import { RuneData } from '@/lib/runesData';
+import { z } from 'zod';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const address = searchParams.get('address');
 
-  if (!address) {
-    return createErrorResponse('Address parameter is required', undefined, 400);
+  // Zod validation for 'address'
+  const schema = z.object({ address: z.string().min(1) });
+  const validation = schema.safeParse({ address });
+  if (!validation.success) {
+    return createErrorResponse('Invalid query parameter', validation.error.message, 400);
   }
+  const { address: validAddress } = validation.data;
 
   try {
     // Fetch balances from Ordiscan (always fresh)
     const ordiscan = getOrdiscanClient();
-    const balancesPromise = ordiscan.address.getRunes({ address });
+    const balancesPromise = ordiscan.address.getRunes({ address: validAddress });
 
     // Wait for balances first since we need the rune names for subsequent queries
     const balances: RuneBalance[] = await balancesPromise;
@@ -156,7 +161,7 @@ export async function GET(request: NextRequest) {
       marketData: marketDataMap
     });
   } catch (error) {
-    const errorInfo = handleApiError(error, `Failed to fetch portfolio data for ${address}`);
+    const errorInfo = handleApiError(error, `Failed to fetch portfolio data for ${validAddress}`);
     return createErrorResponse(errorInfo.message, errorInfo.details, errorInfo.status);
   }
 } 

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchRunePriceHistoryFromApi, QUERY_KEYS } from '@/lib/apiClient';
-import styles from './SwapInterface.module.css';
+import styles from './AppInterface.module.css';
 
 interface PriceChartProps {
   assetName: string;

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSharedLaserEyes } from '@/context/LaserEyesContext';
-import styles from './SwapInterface.module.css';
+import styles from './AppInterface.module.css';
 import { fetchPopularFromApi, QUERY_KEYS } from '@/lib/apiClient';
 
 // Import the tab components
@@ -31,13 +31,13 @@ const getBtcPrice = async (): Promise<number> => {
 };
 
 // --- Props Interface ---
-interface SwapInterfaceProps {
+interface AppInterfaceProps {
   activeTab: 'swap' | 'runesInfo' | 'yourTxs' | 'portfolio';
 }
 // --- End Props --- 
 
 // --- Component ---
-export function SwapInterface({ activeTab }: SwapInterfaceProps) {
+export function AppInterface({ activeTab }: AppInterfaceProps) {
   // Get URL parameters
   const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
   const preSelectedRune = searchParams.get('rune');
@@ -87,7 +87,7 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
   } = useQuery<Record<string, unknown>[], Error>({
     queryKey: [QUERY_KEYS.POPULAR_RUNES],
     queryFn: () => {
-      console.log('[SwapInterface] Fetching popular runes...');
+      console.log('[AppInterface] Fetching popular runes...');
       return fetchPopularFromApi();
     },
     staleTime: Infinity, // Data never goes stale, so React Query won't refetch
@@ -219,4 +219,4 @@ export function SwapInterface({ activeTab }: SwapInterfaceProps) {
   );
 }
 
-export default SwapInterface;
+export default AppInterface;
