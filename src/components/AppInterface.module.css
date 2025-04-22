@@ -1146,4 +1146,41 @@
   margin-top: 0;
   white-space: normal;
   word-break: break-word;
+}
+
+.infoIconContainer {
+  cursor: help;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.infoIcon {
+  color: #000080;
+  transition: color 0.2s ease;
+}
+
+.infoIconContainer:hover .infoIcon {
+  color: #0000b3;
+}
+
+.tooltipBox {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 200px;
+  padding: 8px;
+  margin-top: 5px;
+  background-color: var(--win98-gray);
+  border: 2px solid;
+  border-top-color: var(--win98-light-gray);
+  border-left-color: var(--win98-light-gray);
+  border-bottom-color: var(--win98-dark-gray);
+  border-right-color: var(--win98-dark-gray);
+  font-size: 0.75rem;
+  color: #000;
+  z-index: 100;
+  line-height: 1.2;
+  text-align: left;
 } 
