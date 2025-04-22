@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { getOrdiscanClient } from './serverUtils'
 
 export interface RuneMarketData {
   price_in_sats: number
@@ -35,19 +36,8 @@ export async function getRuneMarketData(runeName: string): Promise<RuneMarketDat
     }
 
     // If not in DB or data is stale, fetch from Ordiscan
-    const response = await fetch(`${process.env.NEXT_PUBLIC_ORDISCAN_API_URL}/v1/rune/${normalizedName}/market`, {
-      headers: {
-        'Authorization': `Bearer ${process.env.ORDISCAN_API_KEY || ''}`,
-      }
-    })
-
-    if (!response.ok) {
-      console.error('[DEBUG] Ordiscan API error:', response.status, response.statusText)
-      throw new Error(`Ordiscan API error: ${response.statusText}`)
-    }
-
-    const responseData = await response.json()
-    const { data: marketData } = responseData
+    const ordiscan = getOrdiscanClient();
+    const marketData = await ordiscan.rune.getMarketInfo({ name: normalizedName });
 
     if (!marketData) {
       return null

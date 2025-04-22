@@ -1,20 +1,20 @@
 import { NextRequest } from 'next/server';
 import { getOrdiscanClient } from '@/lib/serverUtils';
 import { supabase } from '@/lib/supabase';
-import { createSuccessResponse, createErrorResponse, handleApiError } from '@/lib/apiUtils';
+import { createSuccessResponse, createErrorResponse, handleApiError, validateRequest } from '@/lib/apiUtils';
 import { RuneBalance, RuneMarketInfo } from '@/types/ordiscan';
 import { RuneData } from '@/lib/runesData';
 import { z } from 'zod';
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const address = searchParams.get('address');
+  // const { searchParams } = new URL(request.url);
+  // const address = searchParams.get('address');
 
   // Zod validation for 'address'
   const schema = z.object({ address: z.string().min(1) });
-  const validation = schema.safeParse({ address });
+  const validation = await validateRequest(request, schema, 'query');
   if (!validation.success) {
-    return createErrorResponse('Invalid query parameter', validation.error.message, 400);
+    return validation.errorResponse;
   }
   const { address: validAddress } = validation.data;
 
@@ -83,77 +83,33 @@ export async function GET(request: NextRequest) {
     // Prepare arrays for missing data
     const missingRuneNames = runeNames.filter(name => !runeInfoMap[name]);
     const missingMarketDataNames = runeNames.filter(name => !marketDataMap[name]);
-    
-    // Create promise arrays for missing data
-    const missingRuneInfoPromises = missingRuneNames.map(runeName => 
-      fetch(`${process.env.NEXT_PUBLIC_ORDISCAN_API_URL}/v1/rune/${runeName}`, {
-        headers: { 'Authorization': `Bearer ${process.env.ORDISCAN_API_KEY || ''}` }
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data?.data) {
-          // Store in Supabase for future use
-          const runeData = {
-            ...data.data,
-            last_updated_at: new Date().toISOString()
-          };
-          
-          runeInfoMap[runeName] = runeData as RuneData;
-          
-          // Don't await this, just fire and forget
-          supabase.from('runes').insert([runeData]);
-        }
-        return data?.data;
-      })
-      .catch(err => {
-        console.error(`Error fetching rune info for ${runeName}:`, err);
-        return null;
-      })
+
+    // Use lib functions for missing data
+    const { getRuneData } = await import('@/lib/runesData');
+    const { getRuneMarketData } = await import('@/lib/runeMarketData');
+
+    // Fetch missing rune info
+    const missingRuneInfoResults = await Promise.all(
+      missingRuneNames.map(runeName => getRuneData(runeName))
     );
-    
-    const missingMarketDataPromises = missingMarketDataNames.map(runeName =>
-      fetch(`${process.env.NEXT_PUBLIC_ORDISCAN_API_URL}/v1/rune/${runeName}/market`, {
-        headers: { 'Authorization': `Bearer ${process.env.ORDISCAN_API_KEY || ''}` }
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data?.data) {
-          // Store in Supabase for future use
-          const marketInfo = {
-            rune_name: runeName,
-            price_in_sats: data.data.price_in_sats,
-            price_in_usd: data.data.price_in_usd,
-            market_cap_in_btc: data.data.market_cap_in_btc,
-            market_cap_in_usd: data.data.market_cap_in_usd,
-            last_updated_at: new Date().toISOString()
-          };
-          
-          marketDataMap[runeName] = {
-            price_in_sats: data.data.price_in_sats,
-            price_in_usd: data.data.price_in_usd,
-            market_cap_in_btc: data.data.market_cap_in_btc,
-            market_cap_in_usd: data.data.market_cap_in_usd
-          };
-          
-          // Don't await this, just fire and forget
-          supabase.from('rune_market_data').upsert(marketInfo);
-        }
-        return data?.data;
-      })
-      .catch(err => {
-        console.error(`Error fetching market data for ${runeName}:`, err);
-        return null;
-      })
+    missingRuneNames.forEach((runeName, idx) => {
+      const data = missingRuneInfoResults[idx];
+      if (data) {
+        runeInfoMap[runeName] = data;
+      }
+    });
+
+    // Fetch missing market data
+    const missingMarketDataResults = await Promise.all(
+      missingMarketDataNames.map(runeName => getRuneMarketData(runeName))
     );
-    
-    // Wait for all missing data to be fetched in parallel
-    if (missingRuneInfoPromises.length > 0 || missingMarketDataPromises.length > 0) {
-      await Promise.all([
-        Promise.all(missingRuneInfoPromises),
-        Promise.all(missingMarketDataPromises)
-      ]);
-    }
-    
+    missingMarketDataNames.forEach((runeName, idx) => {
+      const data = missingMarketDataResults[idx];
+      if (data) {
+        marketDataMap[runeName] = data;
+      }
+    });
+
     // Return the combined data
     return createSuccessResponse({
       balances: validBalances,

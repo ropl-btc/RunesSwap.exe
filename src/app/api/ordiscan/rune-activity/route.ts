@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getOrdiscanClient } from '@/lib/serverUtils'; // <-- Import client utility
 // Import the necessary types from the shared location
 import { RuneActivityEvent } from '@/types/ordiscan';
-import { createSuccessResponse, createErrorResponse, handleApiError } from '@/lib/apiUtils';
+import { createSuccessResponse, createErrorResponse, handleApiError, validateRequest } from '@/lib/apiUtils';
 import { z } from 'zod';
 
 // Define local types matching the ones in the lib (or import from shared location)
@@ -30,14 +30,14 @@ import { z } from 'zod';
 // const ORDISCAN_API_BASE = 'https://api.ordiscan.com';
 
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const address = searchParams.get('address');
+  // const searchParams = request.nextUrl.searchParams;
+  // const address = searchParams.get('address');
 
   // Zod validation for 'address'
   const schema = z.object({ address: z.string().min(1) });
-  const validation = schema.safeParse({ address });
+  const validation = await validateRequest(request, schema, 'query');
   if (!validation.success) {
-    return createErrorResponse('Invalid query parameter', validation.error.message, 400);
+    return validation.errorResponse;
   }
   const { address: validAddress } = validation.data;
 

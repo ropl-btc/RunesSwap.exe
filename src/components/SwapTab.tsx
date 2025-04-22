@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Fragment, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, Fragment, useCallback, useMemo, useReducer } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Listbox, Transition } from '@headlessui/react';
 import { ChevronUpDownIcon, CheckIcon, ArrowPathIcon } from '@heroicons/react/24/solid';
@@ -52,6 +52,66 @@ function isValidImageSrc(src?: string | null): src is string {
   return src.startsWith('http') || src.startsWith('/') || src.startsWith('data:');
 }
 
+// --- Swap Process State Management (Reducer) ---
+type SwapProcessState = {
+  isSwapping: boolean;
+  swapStep: 'idle' | 'fetching_quote' | 'quote_ready' | 'getting_psbt' | 'signing' | 'confirming' | 'success' | 'error';
+  swapError: string | null;
+  txId: string | null;
+  quoteExpired: boolean;
+  isQuoteLoading: boolean;
+  quoteError: string | null;
+};
+
+type SwapProcessAction =
+  | { type: 'RESET_SWAP' }
+  | { type: 'FETCH_QUOTE_START' }
+  | { type: 'FETCH_QUOTE_SUCCESS' }
+  | { type: 'FETCH_QUOTE_ERROR'; error: string }
+  | { type: 'QUOTE_EXPIRED' }
+  | { type: 'SWAP_START' }
+  | { type: 'SWAP_STEP'; step: SwapProcessState['swapStep'] }
+  | { type: 'SWAP_ERROR'; error: string }
+  | { type: 'SWAP_SUCCESS'; txId: string }
+  | { type: 'SET_GENERIC_ERROR'; error: string };
+
+const initialSwapProcessState: SwapProcessState = {
+  isSwapping: false,
+  swapStep: 'idle',
+  swapError: null,
+  txId: null,
+  quoteExpired: false,
+  isQuoteLoading: false,
+  quoteError: null,
+};
+
+function swapProcessReducer(state: SwapProcessState, action: SwapProcessAction): SwapProcessState {
+  switch (action.type) {
+    case 'RESET_SWAP':
+      return { ...initialSwapProcessState };
+    case 'FETCH_QUOTE_START':
+      return { ...state, isQuoteLoading: true, quoteError: null, quoteExpired: false, swapStep: 'fetching_quote' };
+    case 'FETCH_QUOTE_SUCCESS':
+      return { ...state, isQuoteLoading: false, quoteError: null, quoteExpired: false, swapStep: 'quote_ready' };
+    case 'FETCH_QUOTE_ERROR':
+      return { ...state, isQuoteLoading: false, quoteError: action.error, swapStep: 'idle' };
+    case 'QUOTE_EXPIRED':
+      return { ...state, quoteExpired: true, swapStep: 'idle', isSwapping: false };
+    case 'SWAP_START':
+      return { ...state, isSwapping: true, swapError: null, txId: null, quoteExpired: false };
+    case 'SWAP_STEP':
+      return { ...state, swapStep: action.step };
+    case 'SWAP_ERROR':
+      return { ...state, isSwapping: false, swapError: action.error, swapStep: 'error' };
+    case 'SWAP_SUCCESS':
+      return { ...state, isSwapping: false, swapStep: 'success', txId: action.txId };
+    case 'SET_GENERIC_ERROR':
+      return { ...state, swapError: action.error };
+    default:
+      return state;
+  }
+}
+
 export function SwapTab({ 
   connected, 
   address, 
@@ -97,6 +157,16 @@ export function SwapTab({
   const availableRunes = searchQuery.trim() ? searchResults : popularRunes;
   const isLoadingRunes = searchQuery.trim() ? isSearching : isPopularLoading;
   const currentRunesError = searchQuery.trim() ? searchError : popularError;
+
+  // Add back loadingDots state for animation
+  const [loadingDots, setLoadingDots] = useState('.');
+  // Add back quote, quoteError, quoteExpired for quote data and error
+  const [quote, setQuote] = useState<QuoteResponse | null>(null);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [quoteExpired, setQuoteExpired] = useState(false);
+
+  // --- Swap process state (reducer) ---
+  const [swapState, dispatchSwap] = useReducer(swapProcessReducer, initialSwapProcessState);
 
   // Handle pre-selected rune
   useEffect(() => {
@@ -301,25 +371,10 @@ export function SwapTab({
     fetchPopular();
   }, [cachedPopularRunes, preSelectedRune, assetOut, searchQuery]);
 
-  // State for quote fetching
-  const [isQuoteLoading, setIsQuoteLoading] = useState(false);
-  const [quote, setQuote] = useState<QuoteResponse | null>(null);
-  const [quoteError, setQuoteError] = useState<string | null>(null);
-  const [quoteExpired, setQuoteExpired] = useState(false);
-
   // State for calculated prices
   const [exchangeRate, setExchangeRate] = useState<string | null>(null);
   const [inputUsdValue, setInputUsdValue] = useState<string | null>(null);
   const [outputUsdValue, setOutputUsdValue] = useState<string | null>(null);
-
-  // State for swap process
-  const [isSwapping, setIsSwapping] = useState(false);
-  const [swapStep, setSwapStep] = useState<'idle' | 'getting_psbt' | 'signing' | 'confirming' | 'success' | 'error'>('idle');
-  const [swapError, setSwapError] = useState<string | null>(null);
-  const [txId, setTxId] = useState<string | null>(null); // Store final transaction ID
-
-  // State for loading dots animation
-  const [loadingDots, setLoadingDots] = useState('.');
 
   // Ordiscan Balance Queries 
   const {
@@ -381,7 +436,7 @@ export function SwapTab({
   // Effect for loading dots animation
   useEffect(() => {
     let intervalId: NodeJS.Timeout | null = null;
-    if (isQuoteLoading || isBtcPriceLoading || isSwapping) { // Added isSwapping
+    if (isBtcPriceLoading || isSearching) { // Added isSearching
       intervalId = setInterval(() => {
         setLoadingDots(dots => dots.length < 3 ? dots + '.' : '.');
       }, 500); // Update every 500ms
@@ -395,7 +450,7 @@ export function SwapTab({
         clearInterval(intervalId);
       }
     };
-  }, [isQuoteLoading, isBtcPriceLoading, isSwapping]); // Added isSwapping
+  }, [isBtcPriceLoading, isSearching]); // Added isSearching
 
   // Create a debounced search function - MEMOIZED
   const debouncedSearch = useMemo(() => 
@@ -551,10 +606,7 @@ export function SwapTab({
     setInputUsdValue(null);
     setOutputUsdValue(null);
     // Reset swap process state
-    setIsSwapping(false);
-    setSwapStep('idle');
-    setSwapError(null);
-    setTxId(null);
+    dispatchSwap({ type: 'RESET_SWAP' });
     setQuoteExpired(false); // Reset quote expired state
   };
 
@@ -569,7 +621,7 @@ export function SwapTab({
 
       if (!assetIn || !assetOut || !runeAsset || runeAsset.isBTC || currentInputAmount <= 0) return;
       
-      setIsQuoteLoading(true);
+      dispatchSwap({ type: 'FETCH_QUOTE_START' });
       setQuote(null); // Clear previous quote
       setQuoteError(null);
       setExchangeRate(null); // Clear previous rate
@@ -578,7 +630,7 @@ export function SwapTab({
       const effectiveAddress = address || MOCK_ADDRESS;
       if (!effectiveAddress) { // Should theoretically never happen with MOCK_ADDRESS fallback
            setQuoteError("Internal error: Missing address for quote.");
-           setIsQuoteLoading(false);
+           dispatchSwap({ type: 'FETCH_QUOTE_ERROR', error: "Internal error: Missing address for quote." });
            return;
       }
 
@@ -648,12 +700,12 @@ export function SwapTab({
         setOutputAmount('');
         setExchangeRate(null);
       } finally {
-        setIsQuoteLoading(false);
+        dispatchSwap({ type: 'FETCH_QUOTE_SUCCESS' });
       }
     };
     fetchQuoteAsync();
   }, [assetIn, assetOut, inputAmount, address, btcPriceUsd,
-      setIsQuoteLoading, setQuote, setQuoteError, setExchangeRate, setOutputAmount, setQuoteExpired
+      dispatchSwap, setQuote, setQuoteError, setExchangeRate, setOutputAmount, setQuoteExpired
   ]);
 
   // Effect to call the memoized fetchQuote when debounced amount or assets change
@@ -699,7 +751,7 @@ export function SwapTab({
       } else if (!assetIn.isBTC && inputRuneMarketInfo) {
           // Input is Rune, use market info
           inputUsdVal = amountNum * inputRuneMarketInfo.price_in_usd;
-      } else if (!assetIn.isBTC && quote && quote.totalPrice && btcPriceUsd && !isQuoteLoading) {
+      } else if (!assetIn.isBTC && quote && quote.totalPrice && btcPriceUsd && !quoteError) {
           // Fallback to quote calculation if market info not available
           const btcPerRune = (quote.totalPrice && quote.totalFormattedAmount && parseFloat(quote.totalFormattedAmount) > 0)
               ? parseFloat(quote.totalPrice) / parseFloat(quote.totalFormattedAmount)
@@ -724,7 +776,7 @@ export function SwapTab({
           } else if (!assetOut.isBTC && outputRuneMarketInfo) {
             // Output is Rune, use market info
             outputUsdVal = outputAmountNum * outputRuneMarketInfo.price_in_usd;
-          } else if (!assetOut.isBTC && quote && quote.totalPrice && btcPriceUsd && !isQuoteLoading) {
+          } else if (!assetOut.isBTC && quote && quote.totalPrice && btcPriceUsd && !quoteError) {
             // Fallback to quote calculation if market info not available
             const btcPerRune = (quote.totalPrice && quote.totalFormattedAmount && parseFloat(quote.totalFormattedAmount) > 0)
                 ? parseFloat(quote.totalPrice) / parseFloat(quote.totalFormattedAmount)
@@ -766,7 +818,7 @@ export function SwapTab({
       setOutputUsdValue(null);
     }
   }, [inputAmount, outputAmount, assetIn, assetOut, btcPriceUsd, isBtcPriceLoading, btcPriceError, 
-      quote, isQuoteLoading, inputRuneMarketInfo, outputRuneMarketInfo]);
+      quote, quoteError, inputRuneMarketInfo, outputRuneMarketInfo]);
 
   // Function to handle the entire swap process using API
   const handleSwap = async () => {
@@ -775,19 +827,18 @@ export function SwapTab({
 
     // Double-check required data
     if (!connected || !address || !publicKey || !paymentAddress || !paymentPublicKey || !quote || !assetIn || !assetOut || !runeAsset || runeAsset.isBTC) {
-      setSwapError("Missing connection details, assets, or quote. Please connect wallet and ensure quote is fetched.");
-      setSwapStep('error');
+      dispatchSwap({ type: 'SET_GENERIC_ERROR', error: "Missing connection details, assets, or quote. Please connect wallet and ensure quote is fetched." });
+      dispatchSwap({ type: 'SWAP_ERROR', error: "Missing connection details, assets, or quote. Please connect wallet and ensure quote is fetched." });
       return;
     }
 
-    setIsSwapping(true);
-    setSwapError(null);
-    setTxId(null);
+    dispatchSwap({ type: 'SWAP_START' });
+    dispatchSwap({ type: 'FETCH_QUOTE_START' });
     setQuoteExpired(false); // Ensure reset before attempting swap
 
     try {
       // 1. Get PSBT via API
-      setSwapStep('getting_psbt');
+      dispatchSwap({ type: 'SWAP_STEP', step: 'getting_psbt' });
       const orders: RuneOrder[] = quote.selectedOrders || [];
       const psbtParams: GetPSBTParams = {
         orders: orders, 
@@ -812,7 +863,7 @@ export function SwapTab({
       }
 
       // 2. Sign PSBT(s) - Remains client-side via LaserEyes
-      setSwapStep('signing');
+      dispatchSwap({ type: 'SWAP_STEP', step: 'signing' });
       const mainSigningResult = await signPsbt(mainPsbtBase64);
       const signedMainPsbt = mainSigningResult?.signedPsbtBase64;
       if (!signedMainPsbt) {
@@ -829,7 +880,7 @@ export function SwapTab({
       }
 
       // 3. Confirm PSBT via API
-      setSwapStep('confirming');
+      dispatchSwap({ type: 'SWAP_STEP', step: 'confirming' });
       const confirmParams: ConfirmPSBTParams = {
         orders: orders,
         address: address,
@@ -860,8 +911,7 @@ export function SwapTab({
       if (!finalTxId) {
           throw new Error(`Confirmation failed or transaction ID missing. Response: ${JSON.stringify(confirmResult)}`);
       }
-      setTxId(finalTxId);
-      setSwapStep('success');
+      dispatchSwap({ type: 'SWAP_SUCCESS', txId: finalTxId });
 
     } catch (error: unknown) {
       console.error("Swap failed:", error);
@@ -872,28 +922,27 @@ export function SwapTab({
           (error && typeof error === 'object' && 'code' in error && 
            (error as { code?: string }).code === 'QUOTE_EXPIRED')) {
         // Quote expired error
-        setQuoteExpired(true);
-        setSwapError("Quote expired. Please fetch a new one."); // Set error message
-        setSwapStep('idle'); // Reset step to allow button click for re-fetch
+        dispatchSwap({ type: 'QUOTE_EXPIRED' });
+        dispatchSwap({ type: 'SET_GENERIC_ERROR', error: "Quote expired. Please fetch a new one." });
+        dispatchSwap({ type: 'SWAP_ERROR', error: "Quote expired. Please fetch a new one." });
       } else if (errorMessage.includes("User canceled the request")) {
         // User cancelled signing
-        setSwapError(errorMessage); // Keep the error message
-        setSwapStep('idle'); // Reset step to allow retry, button remains active
+        dispatchSwap({ type: 'SET_GENERIC_ERROR', error: errorMessage });
+        dispatchSwap({ type: 'SWAP_ERROR', error: errorMessage });
       } else {
         // Other swap errors
-        setQuoteExpired(false); // Ensure quote expired state is reset
-        setSwapError(errorMessage);
-        setSwapStep('error'); // Set to error state, button might disable
+        dispatchSwap({ type: 'SET_GENERIC_ERROR', error: errorMessage });
+        dispatchSwap({ type: 'SWAP_ERROR', error: errorMessage });
       }
     } finally {
       // Setting isSwapping false ONLY if not in a state that requires user action (like quote expired)
       // This ensures the button text/state reflects the quoteExpired status correctly.
       if (!quoteExpired) {
-         setIsSwapping(false); // Only set isSwapping false if it wasn't a quote expiry error
+         dispatchSwap({ type: 'SWAP_STEP', step: 'idle' });
       }
       // If quoteExpired is true, isSwapping should remain false anyway because we didn't set it true
       // or we exited the try block before confirming. Let's ensure it's false in finally.
-       setIsSwapping(false); // Ensure isSwapping is always false after attempt
+       dispatchSwap({ type: 'SWAP_STEP', step: 'idle' });
     }
   };
 
@@ -901,7 +950,7 @@ export function SwapTab({
   const getSwapButtonText = () => {
     if (quoteExpired) return 'Fetch New Quote'; // Check first
     if (!connected) return 'Connect Wallet';
-    if (isQuoteLoading) return `Fetching Quote${loadingDots}`;
+    if (swapState.isQuoteLoading) return `Fetching Quote${loadingDots}`;
     if (!assetIn || !assetOut) return 'Select Assets';
     if (!inputAmount || parseFloat(inputAmount) <= 0) return 'Enter Amount';
     // If quote expired, we already returned. If quoteError exists BUT it wasn't expiry, show error.
@@ -909,17 +958,17 @@ export function SwapTab({
     // Show loading quote only if not expired and amount > 0
     if (!quote && !quoteError && !quoteExpired && debouncedInputAmount > 0) return `Getting Quote${loadingDots}`;
     if (!quote && !quoteExpired) return 'Get Quote'; // Before debounce or if amount is 0
-    if (isSwapping) { // isSwapping is false if quoteExpired is true due to finally block logic
-      switch (swapStep) {
+    if (swapState.isSwapping) { // isSwapping is false if quoteExpired is true due to finally block logic
+      switch (swapState.swapStep) {
         case 'getting_psbt': return `Generating Transaction${loadingDots}`;
         case 'signing': return `Waiting for Signature${loadingDots}`;
         case 'confirming': return `Confirming Swap${loadingDots}`;
         default: return `Processing Swap${loadingDots}`;
       }
     }
-    if (swapStep === 'success' && txId) return 'Swap Successful!';
+    if (swapState.swapStep === 'success' && swapState.txId) return 'Swap Successful!';
     // Show 'Swap Failed' only if it's an error state AND not a quote expiry requiring action
-    if (swapStep === 'error' && !quoteExpired) return 'Swap Failed';
+    if (swapState.swapStep === 'error' && !quoteExpired) return 'Swap Failed';
     // If idle after cancellation, show Swap. If idle after quote expiry, show Fetch New Quote (handled above)
     return 'Swap';
   };
@@ -968,7 +1017,7 @@ export function SwapTab({
                                     }}
                                 />
                               ) : (
-                                <Image src="/icons/token_placeholder.png" alt="Token placeholder" className={styles.assetButtonImage} width={24} height={24} aria-hidden="true" />
+                                null
                               )}
                               {isLoadingRunes && purpose === 'selectRune' ? 'Loading...' : value ? value.name : 'Select Asset'}
                             </>
@@ -1007,7 +1056,7 @@ export function SwapTab({
                                                     aria-hidden="true" 
                                                   />
                                               ) : (
-                                                <Image src="/icons/token_placeholder.png" alt="Token placeholder" className={styles.runeImage} width={24} height={24} aria-hidden="true" />
+                                                null
                                               )}
                                               <span className={`${styles.listboxOptionText} ${ selected ? styles.listboxOptionTextSelected : styles.listboxOptionTextUnselected }`}>
                                                   {BTC_ASSET.name}
@@ -1090,7 +1139,7 @@ export function SwapTab({
                                                       }}
                                                   />
                                               ) : (
-                                                <Image src="/icons/token_placeholder.png" alt="Token placeholder" className={styles.runeImage} width={24} height={24} aria-hidden="true" />
+                                                null
                                               )}
                                               <span className={`${styles.listboxOptionText} ${ selected ? styles.listboxOptionTextSelected : styles.listboxOptionTextUnselected }`}>
                                                   {rune.name}
@@ -1124,22 +1173,17 @@ export function SwapTab({
 
   // Reset swap state when inputs/wallet change significantly
   useEffect(() => {
-    if (swapStep !== 'idle') {
-      setIsSwapping(false);
-      setSwapStep('idle');
-      setSwapError(null);
-      setTxId(null);
+    if (swapState.swapStep !== 'idle') {
+      dispatchSwap({ type: 'RESET_SWAP' });
     }
-  }, [address, connected, swapStep]); // Add swapStep to dependencies
+  }, [address, connected, swapState.swapStep]); // Add swapStep to dependencies
 
   // Add dev log for quoteError and swapError for debugging
-  if (quoteError && !isQuoteLoading) {
-    // eslint-disable-next-line no-console
+  if (quoteError && !swapState.isQuoteLoading) {
     console.error('[SwapTab error: quoteError]', quoteError);
   }
-  if (swapError) {
-    // eslint-disable-next-line no-console
-    console.error('[SwapTab error: swapError]', swapError);
+  if (swapState.swapError) {
+    console.error('[SwapTab error: swapError]', swapState.swapError);
   }
 
   return (
@@ -1215,7 +1259,7 @@ export function SwapTab({
             false // Input asset is never preselected
           )}
         </div>
-        {inputUsdValue && !isQuoteLoading && (
+        {inputUsdValue && !swapState.isQuoteLoading && (
           <div className={styles.usdValueText}>≈ {inputUsdValue}</div>
         )}
       </div>
@@ -1226,7 +1270,7 @@ export function SwapTab({
           onClick={handleSwapDirection}
           className={styles.swapIconButton}
           aria-label="Swap direction"
-          disabled={!assetIn || !assetOut || isSwapping || isQuoteLoading}
+          disabled={!assetIn || !assetOut || swapState.isSwapping || swapState.isQuoteLoading}
         >
           <ArrowPathIcon className={styles.swapIcon} />
         </button>
@@ -1242,7 +1286,7 @@ export function SwapTab({
             type="text"
             id="output-amount"
             placeholder="0.0"
-            value={isQuoteLoading ? `Loading${loadingDots}` : outputAmount}
+            value={swapState.isQuoteLoading ? `Loading${loadingDots}` : outputAmount}
             readOnly
             className={styles.amountInputReadOnly}
           />
@@ -1260,10 +1304,10 @@ export function SwapTab({
             isPreselectedRuneLoading // Output asset can be preselected from URL
           )}
         </div>
-        {outputUsdValue && !isQuoteLoading && (
+        {outputUsdValue && !swapState.isQuoteLoading && (
           <div className={styles.usdValueText}>≈ {outputUsdValue}</div>
         )}
-        {quoteError && !isQuoteLoading && (
+        {quoteError && !swapState.isQuoteLoading && (
           <div className={`${styles.quoteErrorText} ${styles.messageWithIcon}`}>
             <Image 
               src="/icons/msg_error-0.png" 
@@ -1297,7 +1341,7 @@ export function SwapTab({
             <span>Price:</span>
             <span>
               {(() => {
-                if (isQuoteLoading) return loadingDots;
+                if (swapState.isQuoteLoading) return loadingDots;
                 if (exchangeRate) return exchangeRate;
                 // Show N/A only if amount entered, but no quote/rate yet and no specific quote error
                 if (debouncedInputAmount > 0 && !quoteError) return 'N/A'; 
@@ -1313,19 +1357,19 @@ export function SwapTab({
         className={styles.swapButton}
         onClick={quoteExpired ? handleFetchQuote : handleSwap} 
         disabled={
-          (quoteExpired && isQuoteLoading) ||
+          (quoteExpired && swapState.isQuoteLoading) ||
           (!quoteExpired && (
             !connected ||
             !inputAmount ||
             parseFloat(inputAmount) <= 0 ||
             !assetIn ||
             !assetOut ||
-            isQuoteLoading || 
+            swapState.isQuoteLoading || 
             !!quoteError || 
             !quote || 
-            isSwapping ||
-            swapStep === 'success' ||
-            (swapStep === 'error' && !quoteExpired)
+            swapState.isSwapping ||
+            swapState.swapStep === 'success' ||
+            (swapState.swapStep === 'error' && !quoteExpired)
           ))
         }
       >
@@ -1333,7 +1377,7 @@ export function SwapTab({
       </button>
 
       {/* Display Swap Process Status */}
-      {isSwapping && swapStep !== 'error' && swapStep !== 'success' && (
+      {swapState.isSwapping && swapState.swapStep !== 'error' && swapState.swapStep !== 'success' && (
         <div className={`${styles.statusText} ${styles.messageWithIcon}`}>
           <Image 
             src="/icons/windows_hourglass.png" 
@@ -1343,16 +1387,16 @@ export function SwapTab({
             height={16}
           />
           <span>
-            {swapStep === 'getting_psbt' && 'Preparing transaction...'}
-            {swapStep === 'signing' && 'Waiting for wallet signature...'}
-            {swapStep === 'confirming' && 'Broadcasting transaction...'}
-            {swapStep === 'idle' && 'Processing...'}
+            {swapState.swapStep === 'getting_psbt' && 'Preparing transaction...'}
+            {swapState.swapStep === 'signing' && 'Waiting for wallet signature...'}
+            {swapState.swapStep === 'confirming' && 'Broadcasting transaction...'}
+            {swapState.swapStep === 'idle' && 'Processing...'}
           </span>
         </div>
       )}
 
       {/* Display Swap Error/Success Messages */}
-      {swapError && (
+      {swapState.swapError && (
         <div className={`${styles.errorText} ${styles.messageWithIcon}`}>
           <Image 
             src="/icons/msg_error-0.png" 
@@ -1361,13 +1405,13 @@ export function SwapTab({
             width={16}
             height={16}
           />
-          <span>Error: {swapError}</span>
+          <span>Error: {swapState.swapError}</span>
           <div className={styles.hintText}>
             Please retry the swap, reconnect your wallet, or try a different amount.
           </div>
         </div>
       )}
-      {!swapError && swapStep === 'success' && txId && (
+      {!swapState.swapError && swapState.swapStep === 'success' && swapState.txId && (
         <div className={`${styles.successText} ${styles.messageWithIcon}`}>
           <Image 
             src="/icons/check-0.png" 
@@ -1379,7 +1423,7 @@ export function SwapTab({
           <span>
             Swap successful!
             <a
-              href={`https://ordiscan.com/tx/${txId}`}
+              href={`https://ordiscan.com/tx/${swapState.txId}`}
               target="_blank"
               rel="noopener noreferrer"
               className={styles.txLink}

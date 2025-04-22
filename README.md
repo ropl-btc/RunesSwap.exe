@@ -1,83 +1,99 @@
 # RunesSwap.app
 
-A Bitcoin Runes swap platform built with Next.js, TypeScript, and SatsTerminal SDK. RunesSwap.app provides a Uniswap-like experience for the Bitcoin ecosystem, featuring a strict minimal Windows 98 UI theme.
+A Uniswap‑style swap interface for Bitcoin Runes, built with Next.js, TypeScript, and the SatsTerminal SDK, styled in a classic Windows 98 UI theme.
 
 ## Features
-
-- Swap Bitcoin Runes seamlessly.
-- Connect your wallet using Laser Eyes.
-- View balances and UTXOs via Ordiscan integration.
-- Responsive design for mobile devices.
-- Lightweight and performant.
-- Minimalist Windows 98 UI theme.
+- Seamless on‑chain swapping of Bitcoin Runes via SatsTerminal SDK.
+- Wallet connection and transaction signing with Laser Eyes (non‑custodial).
+- UTXO and Rune balance data fetched securely via Ordiscan.
+- Responsive design with dynamic imports, caching, and optimized bundle splitting.
+- Windows 98–style UI using CSS Modules and global CSS variables.
+- Strict TypeScript safety, ESLint/Prettier formatting, and Git hooks for code quality.
 
 ## Tech Stack
-
-- **Framework:** [Next.js](https://nextjs.org/)
-- **Language:** [TypeScript](https://www.typescriptlang.org/)
-- **Styling:** Regular CSS
-- **Swap Logic:** [SatsTerminal SDK](https://www.npmjs.com/package/satsterminal-sdk?activeTab=readme)
-- **Wallet Connection:** [Laser Eyes](https://lasereyes.build/)
-- **Data Fetching & State:** [React Query (TanStack Query)](https://tanstack.com/query/latest) & [Zustand](https://github.com/pmndrs/zustand)
-- **Balance/UTXO Info:** [Ordiscan](https://ordiscan.com/docs)
+- Next.js (App Router)
+- TypeScript (strict mode)
+- CSS Modules & global CSS variables (Windows 98 theme)
+- SatsTerminal SDK (`satsterminal-sdk`)
+- Laser Eyes wallet connector (`@omnisat/lasereyes`)
+- React Query (TanStack Query) & Zustand for data/state
+- Supabase (public & session management)
+- Ordiscan SDK for on‑chain data
+- ESLint, Prettier, Husky + lint‑staged for linting & formatting
 
 ## Getting Started
-
 ### Prerequisites
+- Node.js v18+ (LTS recommended)
+- pnpm, npm, or yarn
 
-- Node.js (v18 or later recommended)
-- npm, yarn, pnpm, or bun
-
-### Installation
-
-1.  Clone the repository:
-    ```bash
-    git clone https://github.com/your-username/runesswap.app.git
-    cd runesswap.app
-    ```
-2.  Install dependencies:
-    ```bash
-    npm install
-    # or
-    yarn install
-    # or
-    pnpm install
-    # or
-    bun install
-    ```
-
-### Running the Development Server
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### Environment Variables
+Create a `.env.local` file in the project root with:
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=<your-supabase-url>
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-supabase-anon-key>
+ORDISCAN_API_KEY=<your-ordiscan-api-key>
+SATS_TERMINAL_API_KEY=<your-satsterminal-api-key>
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
-
-## Building for Production
-
+### Installation & Development
 ```bash
-npm run build
+# Clone repository
+git clone https://github.com/your-username/runesswap.app.git
+cd runesswap.app
+
+# Install dependencies
+pnpm install   # or npm install / yarn install
+
+# Start development server
+pnpm dev       # or npm run dev / yarn dev
 ```
 
-This command builds the application for production usage.
+Visit http://localhost:3000 to explore the app.
 
-## Deployment
+## Building & Deployment
+```bash
+# Build for production
+pnpm build     # or npm run build / yarn build
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Start the production server
+pnpm start     # or npm start / yarn start
+```
 
-Check out the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details on other deployment options.
+Deploy on Vercel or any Node.js‑capable host and configure the same environment variables.
+
+## How to Use
+1. **Connect Your Wallet**  
+   Click **Connect Wallet** and authorize via Laser Eyes. Your Bitcoin address and signature interface will be loaded.
+2. **Select Runes to Swap**  
+   Choose input and output Runes from the dropdowns, and enter the amount to trade.
+3. **Review Swap Details**  
+   Confirm rates, fees, and expected output. Adjust slippage tolerance if needed.
+4. **Confirm & Approve**  
+   Submit the transaction and approve it in your wallet. The swap executes on Bitcoin’s blockchain using inscriptions.
+5. **Track Your Transactions**  
+   View your swap history under **Your TXs**, including pending and completed transactions.
+
+## FAQ
+**What are Bitcoin Runes?**  
+Bitcoin Runes is a token standard on Bitcoin enabling transfer of fungible assets via inscriptions. Runes maximize efficiency while leveraging Bitcoin’s security and decentralization.
+
+**How are Runes different from Ordinals?**  
+Ordinals inscribe arbitrary data onto sats, whereas Runes specifically encode fungible token transfers, reducing on‑chain data bloat.
+
+**Are swaps instant?**  
+Swaps depend on Bitcoin network confirmations (typically 10 minutes–1 hour). Your wallet will show transaction status once broadcast.
+
+**What fees apply?**  
+RunesSwap.app charges no additional fees beyond SatsTerminal network fees and standard Bitcoin miner fees. You receive near‑optimal rates directly on‑chain.
+
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a pull request or open an issue.
+Contributions are welcome via pull requests. Please ensure:
+- Code builds successfully (`pnpm build`).
+- Linting & formatting pass (`pnpm lint`).
+- New features include tests and documentation updates.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details (if one exists) or visit [https://opensource.org/licenses/MIT](https://opensource.org/licenses/MIT).
+MIT © RunesSwap.app

@@ -2,25 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { ConfirmPSBTParams, RuneOrder } from 'satsterminal-sdk';
 import { getSatsTerminalClient } from '@/lib/serverUtils';
 import { z } from 'zod';
-import { handleApiError, createErrorResponse } from '@/lib/apiUtils';
-
-// Create a more comprehensive RuneOrder schema based on observed usage
-const runeOrderSchema = z.object({
-  id: z.string().min(1, "Order ID is required"),
-  market: z.string().min(1, "Market is required"),
-  price: z.number().optional(),
-  quantity: z.number().optional(),
-  maker: z.string().optional(),
-  side: z.enum(["BUY", "SELL"]).optional(),
-  txid: z.string().optional(),
-  vout: z.number().optional(),
-  runeName: z.string().optional(),
-  runeAmount: z.number().optional(),
-  btcAmount: z.number().optional(),
-  satPrice: z.number().optional(),
-  status: z.string().optional(),
-  timestamp: z.number().optional(),
-}).passthrough(); // Use passthrough to allow additional fields expected by the SDK
+import { handleApiError, createErrorResponse, validateRequest } from '@/lib/apiUtils';
+import { runeOrderSchema } from '@/types/satsTerminal';
 
 const confirmPsbtParamsSchema = z.object({
   orders: z.array(runeOrderSchema),
@@ -46,25 +29,9 @@ const confirmPsbtParamsSchema = z.object({
   });
 
 export async function POST(request: NextRequest) {
-  let params;
-  try {
-    params = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body', details: 'The request body could not be parsed as JSON' }, { status: 400 });
-  }
-
-  const validationResult = confirmPsbtParamsSchema.safeParse(params);
-
-  if (!validationResult.success) {
-    console.error("Confirm PSBT API Validation Error:", validationResult.error.flatten()); // Log detailed error server-side
-    return NextResponse.json({
-        error: 'Invalid request body for PSBT confirmation.',
-        details: validationResult.error.flatten().fieldErrors
-    }, { status: 400 });
-  }
-
-  // Use the validated and typed data from now on
-  const validatedParams = validationResult.data;
+  const validation = await validateRequest(request, confirmPsbtParamsSchema, 'body');
+  if (!validation.success) return validation.errorResponse;
+  const validatedParams = validation.data;
 
   try {
     const terminal = getSatsTerminalClient();

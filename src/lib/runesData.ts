@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { getOrdiscanClient } from './serverUtils'
 
 export interface RuneData {
   id: string
@@ -38,19 +39,8 @@ export async function getRuneData(runeName: string): Promise<RuneData | null> {
     }
 
     // If not in DB, fetch from Ordiscan
-    const response = await fetch(`${process.env.NEXT_PUBLIC_ORDISCAN_API_URL}/v1/rune/${runeName}`, {
-      headers: {
-        'Authorization': `Bearer ${process.env.ORDISCAN_API_KEY || ''}`,
-      }
-    })
-
-    if (!response.ok) {
-      console.error('[DEBUG] Ordiscan API error:', response.status, response.statusText)
-      throw new Error(`Ordiscan API error: ${response.statusText}`)
-    }
-
-    const responseData = await response.json()
-    const { data: runeData } = responseData
+    const ordiscan = getOrdiscanClient();
+    const runeData = await ordiscan.rune.getInfo({ name: runeName });
 
     if (!runeData) {
       return null

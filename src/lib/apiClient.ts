@@ -79,21 +79,6 @@ export const fetchPopularFromApi = async (): Promise<Record<string, unknown>[]> 
   return handleApiResponse<Record<string, unknown>[]>(data, true);
 };
 
-// Direct access to SatsTerminal popular collections (if needed)
-export const fetchSatsTerminalPopularFromApi = async (): Promise<Record<string, unknown>[]> => {
-  const response = await fetch('/api/sats-terminal/popular');
-  let data;
-  try {
-      data = await response.json();
-  } catch {
-      throw new Error('Failed to parse popular collections');
-  }
-  if (!response.ok) {
-      throw new Error(data?.error?.message || data?.error || `Failed to fetch popular collections: ${response.statusText}`);
-  }
-  return handleApiResponse<Record<string, unknown>[]>(data, true);
-};
-
 // Fetch Quote from API
 export const fetchQuoteFromApi = async (params: Record<string, unknown>): Promise<QuoteResponse> => {
   const response = await fetch('/api/sats-terminal/quote', {

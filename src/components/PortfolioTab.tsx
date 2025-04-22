@@ -209,19 +209,21 @@ export default function PortfolioTab() {
               <div key={rune.name} className={styles.listItem}>
                 <div className={styles.runeName}>
                   <div className={styles.runeNameContent}>
-                    <Image
-                      src={rune.imageURI}
-                      alt=""
-                      className={styles.runeImage}
-                      width={24}
-                      height={24}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        if (target) {
-                          target.style.display = 'none';
-                        }
-                      }}
-                    />
+                    {rune.imageURI && (
+                      <Image
+                        src={rune.imageURI}
+                        alt=""
+                        className={styles.runeImage}
+                        width={24}
+                        height={24}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          if (target) {
+                            target.style.display = 'none';
+                          }
+                        }}
+                      />
+                    )}
                     <div className={styles.runeNameText}>
                       <div className={styles.runeFullName}>{rune.formattedName}</div>
                     </div>

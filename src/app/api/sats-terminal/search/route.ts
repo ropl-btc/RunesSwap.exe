@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { getSatsTerminalClient } from '@/lib/serverUtils';
 import type { Rune } from '@/types/satsTerminal';
-import { createSuccessResponse, createErrorResponse, handleApiError } from '@/lib/apiUtils';
+import { createSuccessResponse, createErrorResponse, handleApiError, validateRequest } from '@/lib/apiUtils';
 import { z } from 'zod';
 
 // Define types for rune responses locally or import if shared
@@ -27,15 +27,13 @@ interface SearchOrder {
 }
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const query = searchParams.get('query');
+  // const { searchParams } = new URL(request.url);
+  // const query = searchParams.get('query');
 
   // Zod validation for 'query'
   const schema = z.object({ query: z.string().min(1) });
-  const validation = schema.safeParse({ query });
-  if (!validation.success) {
-    return createErrorResponse('Invalid query parameter', validation.error.message, 400);
-  }
+  const validation = await validateRequest(request, schema, 'query');
+  if (!validation.success) return validation.errorResponse;
   const { query: validQuery } = validation.data;
 
   try {

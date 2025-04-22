@@ -31,6 +31,13 @@ export function FooterComponent({ btcPriceUsd, isBtcPriceLoading, btcPriceError 
         >
           Docs
         </Link>
+        <Link
+          href="/legal"
+          className={styles.docsButton}
+          title="Legal"
+        >
+          Legal
+        </Link>
         <a
           href="https://github.com/ropl-btc/RunesSwap.app"
           target="_blank"

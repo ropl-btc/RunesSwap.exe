@@ -1,18 +1,16 @@
 import { NextRequest } from 'next/server';
-import { createSuccessResponse, createErrorResponse, handleApiError } from '@/lib/apiUtils';
+import { createSuccessResponse, createErrorResponse, handleApiError, validateRequest } from '@/lib/apiUtils';
 import { getRuneData } from '@/lib/runesData';
 import { z } from 'zod';
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const name = searchParams.get('name');
+  // const { searchParams } = new URL(request.url);
+  // const name = searchParams.get('name');
 
   // Zod validation for 'name'
   const schema = z.object({ name: z.string().min(1) });
-  const validation = schema.safeParse({ name });
-  if (!validation.success) {
-    return createErrorResponse('Invalid query parameter', validation.error.message, 400);
-  }
+  const validation = await validateRequest(request, schema, 'query');
+  if (!validation.success) return validation.errorResponse;
   const { name: validName } = validation.data;
 
   // Ensure name doesn't have spacers for the API call

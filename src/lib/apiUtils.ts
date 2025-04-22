@@ -93,4 +93,53 @@ export function handleApiError(error: unknown, defaultMessage = 'An error occurr
     status: 500,
     details: typeof error === 'string' ? error : JSON.stringify(error)
   };
+}
+
+/**
+ * Validates request data (body or query) using a Zod schema.
+ * Returns { success: true, data } or { success: false, errorResponse }.
+ *
+ * @param request - NextRequest object
+ * @param schema - Zod schema to validate against
+ * @param source - 'body' (default) or 'query'
+ */
+export async function validateRequest<T>(
+  request: Request,
+  schema: import('zod').ZodSchema<T>,
+  source: 'body' | 'query' = 'body'
+): Promise<
+  | { success: true; data: T }
+  | { success: false; errorResponse: import('next/server').NextResponse }
+> {
+  let rawData: unknown;
+  try {
+    if (source === 'body') {
+      rawData = await request.json();
+    } else if (source === 'query') {
+      const url = new URL(request.url);
+      rawData = Object.fromEntries(url.searchParams.entries());
+    }
+  } catch {
+    return {
+      success: false,
+      errorResponse: createErrorResponse(
+        'Invalid request',
+        source === 'body' ? 'The request body could not be parsed as JSON' : 'Invalid query parameters',
+        400
+      ),
+    };
+  }
+
+  const validation = schema.safeParse(rawData);
+  if (!validation.success) {
+    return {
+      success: false,
+      errorResponse: createErrorResponse(
+        'Invalid request parameters',
+        JSON.stringify(validation.error.flatten().fieldErrors),
+        400
+      ),
+    };
+  }
+  return { success: true, data: validation.data };
 } 
