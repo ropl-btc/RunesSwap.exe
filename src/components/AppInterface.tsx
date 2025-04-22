@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSharedLaserEyes } from '@/context/LaserEyesContext';
 import styles from './AppInterface.module.css';
 import { fetchPopularFromApi, QUERY_KEYS } from '@/lib/apiClient';
+import { useSearchParams } from 'next/navigation';
 
 // Import the tab components
 import SwapTab from './SwapTab';
@@ -38,8 +39,8 @@ interface AppInterfaceProps {
 
 // --- Component ---
 export function AppInterface({ activeTab }: AppInterfaceProps) {
-  // Get URL parameters
-  const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+  // Get URL parameters using Next.js hook
+  const searchParams = useSearchParams();
   const preSelectedRune = searchParams.get('rune');
 
   // Separate state for showing/hiding price chart for each tab

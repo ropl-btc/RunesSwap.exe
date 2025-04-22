@@ -31,16 +31,19 @@ export async function GET(request: NextRequest) {
   // const query = searchParams.get('query');
 
   // Zod validation for 'query'
-  const schema = z.object({ query: z.string().min(1) });
+  const schema = z.object({ 
+    query: z.string().min(1),
+    sell: z.boolean().optional().default(false) 
+  });
   const validation = await validateRequest(request, schema, 'query');
   if (!validation.success) return validation.errorResponse;
-  const { query: validQuery } = validation.data;
+  const { query: validQuery, sell } = validation.data;
 
   try {
     const terminal = getSatsTerminalClient();
     const searchResults = await terminal.search({
       rune_name: validQuery,
-      sell: false // Or get from query params if needed
+      sell
     });
 
     // Map the response with improved type checking

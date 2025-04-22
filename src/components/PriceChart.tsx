@@ -11,6 +11,8 @@ import {
   Tooltip,
   CartesianGrid
 } from 'recharts';
+import hourglassIcon from '/public/icons/windows_hourglass.png';
+import Image from 'next/image';
 
 interface PriceChartProps {
   assetName: string;
@@ -55,13 +57,10 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
     // Current time to calculate exact time ranges
     const now = new Date();
     
-    // If BTC price is not available, use 1 as a fallback for display purposes
-    const btcPrice = btcPriceUsd || 1;
-    
     // Convert price data from sats to USD
     const convertedPriceData = priceHistoryData.prices.map(point => {
       // Convert sats to USD: sats_per_token * (btc_price_usd / 100_000_000)
-      const priceInUsd = point.price * (btcPrice / 100000000);
+      const priceInUsd = point.price * (btcPriceUsd! / 100000000);
       
       return {
         ...point,
@@ -92,10 +91,10 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
         periodLabel = '30 days';
         break;
       case 'all':
-      default:
         // For "all" (90 days), calculate exact 90 days ago
         targetStartTime = now.getTime() - (90 * 24 * 60 * 60 * 1000);
         periodLabel = '90 days';
+        break;
     }
     
     // Find closest data points to our target times
@@ -210,7 +209,6 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
         return ticks;
       }
       case 'all': // 90 days
-      default: {
         // Create approximately 6 evenly spaced ticks
         const tickCount = 6;
         const ticks: number[] = [];
@@ -218,9 +216,18 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
           ticks.push(startMs + (i * (duration / tickCount)));
         }
         return ticks;
-      }
     }
   }, [startTime, endTime, filteredPriceData, selectedTimeframe]);
+
+  // If BTC price is not available, show loading spinner
+  if (btcPriceUsd === undefined) {
+    return (
+      <div className={styles.priceChartInner} style={{ position: 'relative', width: '100%', height: 320, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Image src={hourglassIcon.src || '/icons/windows_hourglass.png'} alt="Loading..." width={48} height={48} style={{ marginRight: 12 }} />
+        <span style={{ fontSize: '1.2rem', color: '#000080', fontWeight: 'bold' }}>Loading BTC price...</span>
+      </div>
+    );
+  }
 
   // Render the chart
   return (

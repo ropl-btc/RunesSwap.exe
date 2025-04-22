@@ -54,7 +54,7 @@ export async function getRuneData(runeName: string): Promise<RuneData | null> {
 
     const { error: insertError } = await supabase
       .from('runes')
-      .insert([dataToInsert])
+      .upsert([dataToInsert])
       .select()
 
     if (insertError) {
@@ -74,21 +74,12 @@ export async function getRuneData(runeName: string): Promise<RuneData | null> {
   }
 }
 
+// This function is now only used server-side by the API route
+// The client should use the updateRuneDataViaApi function from apiClient.ts
 export async function updateRuneData(runeName: string): Promise<RuneData | null> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_ORDISCAN_API_URL}/v1/rune/${runeName}`, {
-      headers: {
-        'Authorization': `Bearer ${process.env.ORDISCAN_API_KEY || ''}`,
-      }
-    })
-
-    if (!response.ok) {
-      console.error('[DEBUG] Ordiscan API error:', response.status, response.statusText)
-      throw new Error(`Ordiscan API error: ${response.statusText}`)
-    }
-
-    const responseData = await response.json()
-    const { data: runeData } = responseData
+    const ordiscan = getOrdiscanClient();
+    const runeData = await ordiscan.rune.getInfo({ name: runeName });
 
     if (!runeData) {
       return null
@@ -102,7 +93,7 @@ export async function updateRuneData(runeName: string): Promise<RuneData | null>
 
     const { error: updateError } = await supabase
       .from('runes')
-      .update(dataToUpdate)
+      .upsert(dataToUpdate)
       .eq('name', runeName)
       .select()
 

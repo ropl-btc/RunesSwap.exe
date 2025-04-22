@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { GetPSBTParams, RuneOrder } from 'satsterminal-sdk';
+import type { GetPSBTParams } from 'satsterminal-sdk';
 import { getSatsTerminalClient } from '@/lib/serverUtils';
 import { z } from 'zod';
 import { handleApiError, createErrorResponse, validateRequest } from '@/lib/apiUtils';
 import { runeOrderSchema } from '@/types/satsTerminal';
+
+type RuneOrder = z.infer<typeof runeOrderSchema>;
 
 const getPsbtParamsSchema = z.object({
   orders: z.array(runeOrderSchema),
@@ -25,10 +27,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const terminal = getSatsTerminalClient();
-    // Need to cast orders to RuneOrder[] since Zod validation may not fully match SDK type
-    const psbtParams: GetPSBTParams = {
+    const psbtParams: Omit<GetPSBTParams, 'orders'> & { orders: RuneOrder[] } = {
       ...validatedParams,
-      orders: validatedParams.orders as unknown as RuneOrder[],
+      orders: validatedParams.orders,
     };
 
     const psbtResponse = await terminal.getPSBT(psbtParams);

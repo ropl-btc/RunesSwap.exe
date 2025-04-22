@@ -688,7 +688,7 @@ export function SwapTab({
           }
         }
         setOutputAmount(calculatedOutputAmount);
-
+        dispatchSwap({ type: 'FETCH_QUOTE_SUCCESS' });
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to fetch quote';
         if (errorMessage.includes('Insufficient liquidity') || errorMessage.includes('not found')) {
@@ -699,8 +699,7 @@ export function SwapTab({
         setQuote(null);
         setOutputAmount('');
         setExchangeRate(null);
-      } finally {
-        dispatchSwap({ type: 'FETCH_QUOTE_SUCCESS' });
+        dispatchSwap({ type: 'FETCH_QUOTE_ERROR', error: errorMessage });
       }
     };
     fetchQuoteAsync();
@@ -839,7 +838,21 @@ export function SwapTab({
     try {
       // 1. Get PSBT via API
       dispatchSwap({ type: 'SWAP_STEP', step: 'getting_psbt' });
-      const orders: RuneOrder[] = quote.selectedOrders || [];
+      // Patch orders: ensure numeric fields are numbers and side is uppercase if present
+      const orders: RuneOrder[] = (quote.selectedOrders || []).map(order => {
+        const patchedOrder: Partial<RuneOrder> = {
+          ...order,
+          price: typeof order.price === 'string' ? Number(order.price) : order.price,
+          formattedAmount: typeof order.formattedAmount === 'string' ? Number(order.formattedAmount) : order.formattedAmount,
+          slippage: order.slippage !== undefined && typeof order.slippage === 'string' ? Number(order.slippage) : order.slippage,
+        };
+        if ('side' in order && order.side) (patchedOrder as Record<string, unknown>)['side'] = String(order.side).toUpperCase() as 'BUY' | 'SELL';
+        return patchedOrder as RuneOrder;
+      });
+      
+      console.log("[DEBUG] Quote orders:", orders);
+      console.log("[DEBUG] Rune asset:", runeAsset);
+      
       const psbtParams: GetPSBTParams = {
         orders: orders, 
         address: address, 
@@ -850,71 +863,88 @@ export function SwapTab({
         sell: !isBtcToRune,
         // TODO: Add feeRate, slippage, rbfProtection from UI state later
       };
+      
+      // Debug log for PSBT params
+      console.log("[DEBUG] PSBT params:", JSON.stringify(psbtParams, null, 2));
+      
       // *** Use API client function ***
-      const psbtResult = await getPsbtFromApi(psbtParams); 
+      try {
+        const psbtResult = await getPsbtFromApi(psbtParams);
+        console.log("[DEBUG] PSBT result:", psbtResult);
+        
+        const mainPsbtBase64 = (psbtResult as unknown as { psbtBase64?: string, psbt?: string })?.psbtBase64 
+                             || (psbtResult as unknown as { psbtBase64?: string, psbt?: string })?.psbt;
+        const swapId = (psbtResult as unknown as { swapId?: string })?.swapId;
+        const rbfPsbtBase64 = (psbtResult as unknown as { rbfProtected?: { base64?: string } })?.rbfProtected?.base64;
 
-      const mainPsbtBase64 = (psbtResult as unknown as { psbtBase64?: string, psbt?: string })?.psbtBase64 
-                           || (psbtResult as unknown as { psbtBase64?: string, psbt?: string })?.psbt;
-      const swapId = (psbtResult as unknown as { swapId?: string })?.swapId;
-      const rbfPsbtBase64 = (psbtResult as unknown as { rbfProtected?: { base64?: string } })?.rbfProtected?.base64;
+        if (!mainPsbtBase64 || !swapId) {
+          throw new Error(`Invalid PSBT data received from API: ${JSON.stringify(psbtResult)}`);
+        }
 
-      if (!mainPsbtBase64 || !swapId) {
-        throw new Error(`Invalid PSBT data received from API: ${JSON.stringify(psbtResult)}`);
-      }
+        // 2. Sign PSBT(s) - Remains client-side via LaserEyes
+        dispatchSwap({ type: 'SWAP_STEP', step: 'signing' });
+        const mainSigningResult = await signPsbt(mainPsbtBase64);
+        const signedMainPsbt = mainSigningResult?.signedPsbtBase64;
+        if (!signedMainPsbt) {
+            throw new Error("Main PSBT signing cancelled or failed.");
+        }
 
-      // 2. Sign PSBT(s) - Remains client-side via LaserEyes
-      dispatchSwap({ type: 'SWAP_STEP', step: 'signing' });
-      const mainSigningResult = await signPsbt(mainPsbtBase64);
-      const signedMainPsbt = mainSigningResult?.signedPsbtBase64;
-      if (!signedMainPsbt) {
-          throw new Error("Main PSBT signing cancelled or failed.");
-      }
+        let signedRbfPsbt: string | null = null;
+        if (rbfPsbtBase64) {
+            const rbfSigningResult = await signPsbt(rbfPsbtBase64);
+            signedRbfPsbt = rbfSigningResult?.signedPsbtBase64 ?? null;
+            if (!signedRbfPsbt) {
+                console.warn("RBF PSBT signing cancelled or failed. Proceeding without RBF confirmation might be possible depending on API.");
+            }
+        }
 
-      let signedRbfPsbt: string | null = null;
-      if (rbfPsbtBase64) {
-          const rbfSigningResult = await signPsbt(rbfPsbtBase64);
-          signedRbfPsbt = rbfSigningResult?.signedPsbtBase64 ?? null;
-          if (!signedRbfPsbt) {
-              console.warn("RBF PSBT signing cancelled or failed. Proceeding without RBF confirmation might be possible depending on API.");
-          }
-      }
-
-      // 3. Confirm PSBT via API
-      dispatchSwap({ type: 'SWAP_STEP', step: 'confirming' });
-      const confirmParams: ConfirmPSBTParams = {
-        orders: orders,
-        address: address,
-        publicKey: publicKey,
-        paymentAddress: paymentAddress,
-        paymentPublicKey: paymentPublicKey,
-        signedPsbtBase64: signedMainPsbt,
-        swapId: swapId,
-        runeName: runeAsset.name,
-        sell: !isBtcToRune,
-        signedRbfPsbtBase64: signedRbfPsbt ?? undefined,
-        rbfProtection: !!signedRbfPsbt,
-      };
-      // *** Use API client function ***
-      const confirmResult = await confirmPsbtViaApi(confirmParams); 
-
-      // Define a basic interface for expected response structure
-      interface SwapConfirmationResult {
-        txid?: string;
-        rbfProtection?: {
-          fundsPreparationTxId?: string;
+        // 3. Confirm PSBT via API
+        dispatchSwap({ type: 'SWAP_STEP', step: 'confirming' });
+        const confirmParams: ConfirmPSBTParams = {
+          orders: orders,
+          address: address,
+          publicKey: publicKey,
+          paymentAddress: paymentAddress,
+          paymentPublicKey: paymentPublicKey,
+          signedPsbtBase64: signedMainPsbt,
+          swapId: swapId,
+          runeName: runeAsset.name,
+          sell: !isBtcToRune,
+          signedRbfPsbtBase64: signedRbfPsbt ?? undefined,
+          rbfProtection: !!signedRbfPsbt,
         };
-      }
+        // *** Use API client function ***
+        const confirmResult = await confirmPsbtViaApi(confirmParams); 
 
-      // Use proper typing instead of 'any'
-      const finalTxId = (confirmResult as SwapConfirmationResult)?.txid || 
-                        (confirmResult as SwapConfirmationResult)?.rbfProtection?.fundsPreparationTxId;
-      if (!finalTxId) {
-          throw new Error(`Confirmation failed or transaction ID missing. Response: ${JSON.stringify(confirmResult)}`);
-      }
-      dispatchSwap({ type: 'SWAP_SUCCESS', txId: finalTxId });
+        // Define a basic interface for expected response structure
+        interface SwapConfirmationResult {
+          txid?: string;
+          rbfProtection?: {
+            fundsPreparationTxId?: string;
+          };
+        }
 
+        // Use proper typing instead of 'any'
+        const finalTxId = (confirmResult as SwapConfirmationResult)?.txid || 
+                          (confirmResult as SwapConfirmationResult)?.rbfProtection?.fundsPreparationTxId;
+        if (!finalTxId) {
+            throw new Error(`Confirmation failed or transaction ID missing. Response: ${JSON.stringify(confirmResult)}`);
+        }
+        dispatchSwap({ type: 'SWAP_SUCCESS', txId: finalTxId });
+      } catch (psbtError) {
+        console.error("[DEBUG] PSBT creation error:", psbtError);
+        // Re-throw to be caught by the outer catch block
+        throw psbtError;
+      }
     } catch (error: unknown) {
-      console.error("Swap failed:", error);
+      console.error("[DEBUG] Swap failed with error:", error);
+      if (error instanceof Error) {
+        console.error("[DEBUG] Error message:", error.message);
+        console.error("[DEBUG] Error stack:", error.stack);
+      } else {
+        console.error("[DEBUG] Non-Error object thrown:", error);
+      }
+      
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred during the swap.";
 
       // Check for specific errors

@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { ConfirmPSBTParams, RuneOrder } from 'satsterminal-sdk';
+import type { ConfirmPSBTParams } from 'satsterminal-sdk';
 import { getSatsTerminalClient } from '@/lib/serverUtils';
 import { z } from 'zod';
 import { handleApiError, createErrorResponse, validateRequest } from '@/lib/apiUtils';
 import { runeOrderSchema } from '@/types/satsTerminal';
 
+type ConfirmParams = z.infer<typeof confirmPsbtParamsSchema>;
+
 const confirmPsbtParamsSchema = z.object({
   orders: z.array(runeOrderSchema),
-  address: z.string().min(1, "Bitcoin address is required"),
+  // TODO: Use a Bitcoin address validation library for full validation (e.g., bitcoinjs-lib)
+  address: z.string().regex(
+    /^(bc1[qpzry9x8gf2tvdw0s3jn54khce6mua7l]{11,71}|[13][a-km-zA-HJ-NP-Z1-9]{25,34})$/,
+    'Invalid Bitcoin address'
+  ),
   publicKey: z.string().min(1, "Public key is required"),
   paymentAddress: z.string().min(1, "Payment address is required"),
   paymentPublicKey: z.string().min(1, "Payment public key is required"),
@@ -29,18 +35,15 @@ const confirmPsbtParamsSchema = z.object({
   });
 
 export async function POST(request: NextRequest) {
-  const validation = await validateRequest(request, confirmPsbtParamsSchema, 'body');
+  const validation = await validateRequest<ConfirmParams>(request, confirmPsbtParamsSchema, 'body');
   if (!validation.success) return validation.errorResponse;
   const validatedParams = validation.data;
 
   try {
     const terminal = getSatsTerminalClient();
-    // No need for type casting since validatedParams is already properly typed
-    const confirmParams: ConfirmPSBTParams = {
+    const confirmParams: Omit<ConfirmPSBTParams, 'orders'> & { orders: ConfirmParams['orders'] } = {
       ...validatedParams,
-      // Need to cast orders to RuneOrder[] since Zod validation may not fully match SDK type
-      orders: validatedParams.orders as unknown as RuneOrder[],
-      // Ensure optional signedRbfPsbtBase64 is undefined if not provided, matching SDK type
+      orders: validatedParams.orders,
       signedRbfPsbtBase64: validatedParams.signedRbfPsbtBase64 || undefined,
     };
 

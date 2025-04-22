@@ -21,7 +21,10 @@ export interface Rune {
 export const runeOrderSchema = z.object({
   id: z.string().min(1, "Order ID is required"),
   market: z.string().min(1, "Market is required"),
-  price: z.number().optional(),
+  price: z.number(),
+  formattedAmount: z.number(),
+  fromTokenAmount: z.string().optional(),
+  slippage: z.number().optional(),
   quantity: z.number().optional(),
   maker: z.string().optional(),
   side: z.enum(["BUY", "SELL"]).optional(),

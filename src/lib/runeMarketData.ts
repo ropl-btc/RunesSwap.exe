@@ -68,8 +68,18 @@ export async function getRuneMarketData(runeName: string): Promise<RuneMarketDat
     }
 
     return marketData as RuneMarketData
-  } catch (error) {
-    console.error('[DEBUG] Error in getRuneMarketData:', error)
-    return null
+  } catch (error: unknown) {
+    if (error instanceof TypeError) {
+      console.error('[ERROR] Type error in getRuneMarketData:', error);
+      return null;
+    }
+    if (typeof error === 'object' && error !== null && 'code' in error) {
+      const errObj = error as { code?: string; message?: string };
+      console.error('[ERROR] API error in getRuneMarketData:', { code: errObj.code, message: errObj.message });
+      return null;
+    }
+    // Default case
+    console.error('[ERROR] Unexpected error in getRuneMarketData:', error);
+    return null;
   }
 } 

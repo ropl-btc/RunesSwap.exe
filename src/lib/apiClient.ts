@@ -187,6 +187,30 @@ export const fetchRuneInfoFromApi = async (name: string): Promise<RuneData | nul
   return handleApiResponse<RuneData | null>(data, false);
 };
 
+// Update Rune Data via API
+export const updateRuneDataViaApi = async (name: string): Promise<RuneData | null> => {
+  const normalizedName = name.replace(/•/g, '')
+  const response = await fetch('/api/ordiscan/rune-update', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: normalizedName })
+  });
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error(`Failed to parse update response for ${name}`);
+  }
+  if (!response.ok) {
+    throw new Error(data?.error?.message || data?.error || `Failed to update rune data: ${response.statusText}`);
+  }
+  // Handle 404 (null) responses
+  if (response.status === 404) {
+    return null;
+  }
+  return handleApiResponse<RuneData | null>(data, false);
+};
+
 // Fetch Rune Market Info from API
 export const fetchRuneMarketFromApi = async (name: string): Promise<OrdiscanRuneMarketInfo | null> => {
   const normalizedName = name.replace(/•/g, '')
