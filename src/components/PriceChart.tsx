@@ -9,8 +9,7 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  CartesianGrid,
-  ReferenceLine
+  CartesianGrid
 } from 'recharts';
 
 interface PriceChartProps {
@@ -60,7 +59,7 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
     const btcPrice = btcPriceUsd || 1;
     
     // Convert price data from sats to USD
-    let convertedPriceData = priceHistoryData.prices.map(point => {
+    const convertedPriceData = priceHistoryData.prices.map(point => {
       // Convert sats to USD: sats_per_token * (btc_price_usd / 100_000_000)
       const priceInUsd = point.price * (btcPrice / 100000000);
       
@@ -71,11 +70,6 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
       };
     }).sort((a, b) => a.timestamp - b.timestamp); // Ensure data is sorted by timestamp
 
-    // Get latest data point time - in case the data doesn't have a point for the exact current time
-    const latestDataPointTime = convertedPriceData.length > 0 
-      ? new Date(convertedPriceData[convertedPriceData.length - 1].timestamp)
-      : now;
-    
     // Calculate the exact target end time (current time) and start time (24h/7d/30d ago)
     const targetEndTime = now.getTime();
     let targetStartTime: number;
@@ -108,10 +102,10 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
     const closestEndPoint = findClosestTimestamp(convertedPriceData, targetEndTime);
     const closestStartPoint = findClosestTimestamp(convertedPriceData, targetStartTime);
     
-    let startTimestamp = closestStartPoint?.timestamp || targetStartTime;
+    const startTimestamp = closestStartPoint?.timestamp || targetStartTime;
     
     // Always use the current time as the end time for consistent display
-    let endTimestamp = targetEndTime;
+    const endTimestamp = targetEndTime;
     
     // Safety check - if no close data points found, use actual targets
     if (!closestStartPoint || !closestEndPoint) {
