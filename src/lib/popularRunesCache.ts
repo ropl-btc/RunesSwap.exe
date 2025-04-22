@@ -24,8 +24,7 @@ export async function getCachedPopularRunes(): Promise<Record<string, unknown>[]
       .select('*')
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
-
+      .maybeSingle();
     if (error) {
       console.error('[popularRunesCache] Error fetching from cache:', error);
       return null;
