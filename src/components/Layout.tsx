@@ -46,8 +46,8 @@ export function Layout({ children }: LayoutProps) {
       <div className={styles.window}>
         {/* Optional Title Bar */}
         <div className={styles.titleBar}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-  <Image src="/icons/runesswap_logo.png" alt="RunesSwap Logo" width={18} height={18} style={{ imageRendering: 'pixelated' }} priority />
+          <span className={styles.titleBarRow}>
+  <Image src="/icons/runesswap_logo.png" alt="RunesSwap.app Logo" aria-hidden="true" width={18} height={18} style={{ imageRendering: 'pixelated' }} priority />
   RunesSwap.app
 </span>
           {/* Placeholder for window controls maybe? */}

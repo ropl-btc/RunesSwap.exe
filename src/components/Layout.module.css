@@ -1,5 +1,11 @@
 /* src/components/Layout.module.css */
 
+.titleBarRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .container {
   display: flex;
   flex-direction: column;

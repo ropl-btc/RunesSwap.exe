@@ -38,10 +38,10 @@ yarn-error.log*
 .env.production.local
 
 # vercel
-
-#windsurf
-.windsurfrules
 .vercel
+
+# windsurf
+.windsurfrules
 
 # typescript
 *.tsbuildinfo
