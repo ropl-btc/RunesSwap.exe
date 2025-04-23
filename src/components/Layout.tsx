@@ -1,6 +1,7 @@
 'use client'; // Required for hooks
 
 import React from 'react'; // Only import React
+import Image from 'next/image';
 import styles from './Layout.module.css'; // Import the CSS module
 import FooterComponent from './FooterComponent';
 import { useQuery } from '@tanstack/react-query';
@@ -45,7 +46,10 @@ export function Layout({ children }: LayoutProps) {
       <div className={styles.window}>
         {/* Optional Title Bar */}
         <div className={styles.titleBar}>
-          <span>RunesSwap.app</span>
+          <span className={styles.titleBarRow}>
+  <Image src="/icons/runesswap_logo.png" alt="RunesSwap.app Logo" aria-hidden="true" width={18} height={18} style={{ imageRendering: 'pixelated' }} priority />
+  RunesSwap.app
+</span>
           {/* Placeholder for window controls maybe? */}
         </div>
         {/* Window Content Area */}

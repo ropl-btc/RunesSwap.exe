@@ -40,9 +40,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# windsurf
+.windsurfrules
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-# Cursor Rules
-.cursor-rules/

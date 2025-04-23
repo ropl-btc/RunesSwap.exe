@@ -44,26 +44,23 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
   // This helper forward-fills missing hourly data points so the chart is visually continuous.
   // Ideally, the API should provide a complete time series and this workaround can be removed.
   function fillMissingHours(
-    sortedData: { timestamp: number; price: number; originalPriceInSats: number }[],
+    sortedData: { timestamp: number; price: number }[],
     hours: number,
     endTimestamp: number
   ) {
-    const filled: { timestamp: number; price: number; originalPriceInSats: number }[] = [];
+    const filled: { timestamp: number; price: number }[] = [];
     let lastPrice = sortedData.length ? sortedData[0].price : undefined;
-    let lastOriginal = sortedData.length ? sortedData[0].originalPriceInSats : undefined;
     let dataIdx = 0;
     for (let i = hours - 1; i >= 0; i--) {
       const ts = endTimestamp - i * 60 * 60 * 1000;
       while (dataIdx < sortedData.length && sortedData[dataIdx].timestamp <= ts) {
         lastPrice = sortedData[dataIdx].price;
-        lastOriginal = sortedData[dataIdx].originalPriceInSats;
         dataIdx++;
       }
-      if (typeof lastPrice === 'number' && typeof lastOriginal === 'number') {
+      if (typeof lastPrice === 'number') {
         filled.push({
           timestamp: ts,
-          price: lastPrice,
-          originalPriceInSats: lastOriginal
+          price: lastPrice
         });
       }
     }
@@ -76,14 +73,13 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
       return { filteredPriceData: [], startTime: null, endTime: null };
     }
 
-    // Sort data by timestamp ascending
+    // Sort data by timestamp ascending (keep price in sats)
     const sortedData = priceHistoryData.prices
       .map(point => ({
         ...point,
-        price: btcPriceUsd !== undefined ? point.price * (btcPriceUsd / 100000000) : null,
-        originalPriceInSats: point.price
+        price: point.price, // price is in sats
       }))
-      .filter((point): point is { timestamp: number; price: number; originalPriceInSats: number } => typeof point.price === 'number')
+      .filter((point): point is { timestamp: number; price: number } => typeof point.price === 'number')
       .sort((a, b) => a.timestamp - b.timestamp);
 
     // Determine time window
@@ -121,7 +117,7 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
       startTime: filtered.length > 0 ? new Date(filtered[0].timestamp) : null,
       endTime: filtered.length > 0 ? new Date(filtered[filtered.length - 1].timestamp) : null
     };
-  }, [priceHistoryData, selectedTimeframe, btcPriceUsd]);
+  }, [priceHistoryData, selectedTimeframe]);
 
   // Debug logging for price history data
   useEffect(() => {
@@ -252,31 +248,31 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
               />
               <YAxis
                 dataKey="price"
-                tickFormatter={v => {
-                  // Format based on value range, preserving readability without exponential notation
-                  if (v < 0.0001) return v.toFixed(8);
-                  if (v < 0.001) return v.toFixed(6);
-                  if (v < 0.01) return v.toFixed(5);
-                  if (v < 0.1) return v.toFixed(4);
-                  if (v < 1) return v.toFixed(3);
-                  return v.toFixed(2);
-                }}
+                tickFormatter={v => v.toLocaleString('en-US') + ' sats'}
                 tick={{ fill: '#000', fontSize: 10 }}
                 axisLine={{ stroke: '#000' }}
                 tickLine={{ stroke: '#000' }}
-                width={50}
+                width={80}
                 domain={['dataMin', 'dataMax']}
               />
               <Tooltip
                 contentStyle={{ background: '#fff', border: '1px solid #000080', fontSize: 12 }}
                 labelFormatter={ts => {
                   const date = new Date(ts as number);
-                  return date.toLocaleString();
+                  // Snap to last full hour
+                  date.setMinutes(0, 0, 0);
+                  const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+                  const day = date.toLocaleDateString();
+                  return `${time} · ${day}`;
                 }}
-                formatter={(value: number) => [
-                  value < 0.0001 ? `$${value.toExponential(4)}` : `$${value.toFixed(6)}`,
-                  'Price (USD)'
-                ]}
+                formatter={(value: number) => {
+                  // value is sats
+                  const usd = btcPriceUsd ? (value / 1e8) * btcPriceUsd : null;
+                  return [
+                    `${value.toLocaleString('en-US')} sats`,
+                    usd !== null ? `≈ $${usd.toLocaleString('en-US', { maximumFractionDigits: 6 })}` : ''
+                  ];
+                }}
               />
               <Line
                 type="monotone"
