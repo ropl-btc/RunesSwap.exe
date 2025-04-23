@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { createSuccessResponse, createErrorResponse } from '@/lib/apiUtils';
+import { createSuccessResponse, createErrorResponse, validateRequest } from '@/lib/apiUtils';
 import { z } from 'zod';
 
 // Define the schema for the query parameters
@@ -28,18 +28,17 @@ interface PriceDataPoint {
 export async function GET(request: NextRequest) {
   try {
     // Extract and validate the query parameters
-    const { searchParams } = new URL(request.url);
-    const slug = searchParams.get('slug');
-    
-    const validation = QuerySchema.safeParse({ slug });
-    
+    // const { searchParams } = new URL(request.url);
+    // const slug = searchParams.get('slug');
+    const validation = await validateRequest(request, QuerySchema, 'query');
     if (!validation.success) {
-      return createErrorResponse('Invalid query parameters', validation.error.message, 400);
+      return validation.errorResponse;
     }
-
+    // Use the validated slug
+    const { slug: originalSlug } = validation.data;
+    
     // Format the rune name for the API call
     // Try with different formats to ensure we get data
-    const originalSlug = slug!;
     const formattedSlug = originalSlug.replace(/[•.]/g, '').toUpperCase();
     
     // Define a mapping for known runes that might have formatting issues

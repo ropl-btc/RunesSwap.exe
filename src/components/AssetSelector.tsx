@@ -3,7 +3,7 @@ import { Listbox, Transition } from '@headlessui/react';
 import { ChevronUpDownIcon, CheckIcon } from '@heroicons/react/24/solid';
 import Image from 'next/image';
 import { Asset, BTC_ASSET } from '@/types/common';
-import styles from './SwapInterface.module.css'; // Use correct CSS module
+import styles from './AppInterface.module.css'; // Use correct CSS module
 
 interface AssetSelectorProps {
   value: Asset | null;

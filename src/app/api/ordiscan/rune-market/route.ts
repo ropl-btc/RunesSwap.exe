@@ -1,41 +1,33 @@
 import { NextRequest } from 'next/server';
-import { getOrdiscanClient } from '@/lib/serverUtils';
-import { RuneMarketInfo } from '@/types/ordiscan';
-import { createSuccessResponse, createErrorResponse, handleApiError } from '@/lib/apiUtils';
+import { createSuccessResponse, createErrorResponse, handleApiError, validateRequest } from '@/lib/apiUtils';
+import { getRuneMarketData } from '@/lib/runeMarketData';
+import { z } from 'zod';
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const name = searchParams.get('name');
+  // const { searchParams } = new URL(request.url);
+  // const name = searchParams.get('name');
 
-  if (!name || name.trim() === '') {
-    return createErrorResponse('Rune name parameter is required', undefined, 400);
-  }
+  // Zod validation for 'name'
+  const schema = z.object({ name: z.string().min(1) });
+  const validation = await validateRequest(request, schema, 'query');
+  if (!validation.success) return validation.errorResponse;
+  const { name: validName } = validation.data;
 
   // Ensure name doesn't have spacers for the API call
-  const formattedName = name.replace(/•/g, '');
+  const formattedName = validName.replace(/•/g, '');
 
   try {
-    const ordiscan = getOrdiscanClient();
-    const marketInfo: RuneMarketInfo = await ordiscan.rune.getMarketInfo({ name: formattedName });
+    const marketInfo = await getRuneMarketData(formattedName);
     
-    // Validate that marketInfo is an object and not null
-    if (!marketInfo || typeof marketInfo !== 'object') {
-      console.warn(`[API Route] Invalid market info received for ${formattedName}`);
-      return createErrorResponse('Invalid market info data received', undefined, 500);
-    }
-    
-    return createSuccessResponse(marketInfo);
-  } catch (error: unknown) {
-    // Special handling for 404 errors
-    const errorInfo = handleApiError(error, `Failed to fetch market info for rune ${formattedName}`);
-    
-    // Return null with 404 status for "not found" errors
-    if (errorInfo.status === 404) {
+    if (!marketInfo) {
       console.warn(`[API Route] Rune market info not found for ${formattedName}`);
       // Return null data with success: true for consistent client-side handling
       return createSuccessResponse(null, 404);
     }
     
+    return createSuccessResponse(marketInfo);
+  } catch (error: unknown) {
+    const errorInfo = handleApiError(error, `Failed to fetch market info for rune ${formattedName}`);
     return createErrorResponse(errorInfo.message, errorInfo.details, errorInfo.status);
   }
 } 

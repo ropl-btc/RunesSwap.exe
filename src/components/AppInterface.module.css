@@ -1,26 +1,29 @@
-/* src/components/SwapInterface.module.css */
-
 .container {
-  padding-top: 0; /* Explicitly remove top padding */
-  padding-bottom: 1rem; /* Keep bottom padding */
-  padding-left: 1rem;   /* Keep left padding */
-  padding-right: 1rem;  /* Keep right padding */
-  /* Add padding-top back dynamically if needed, or handle spacing differently */
-  max-width: 500px; /* Increased from 400px for desktop */
-  margin-left: auto; /* Center the container */
-  margin-right: auto; /* Center the container */
+  padding: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1rem; /* space-y-4 */
-  min-height: 450px; /* Add minimum height */
-  width: 100%; /* Ensure container takes available width */
+  gap: 1rem;
+  min-height: 450px;
+}
+
+.appLayout {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  width: 100%;
+  padding: 0;
 }
 
 /* Container with price chart visible takes up more space */
 .containerWithChart {
-  max-width: 100%; /* Full width when chart is visible */
-  padding-left: 0;   /* Remove side padding */
-  padding-right: 0;  /* Remove side padding */
+  padding: 0;
+}
+
+.containerWithChart .appLayout {
+  padding: 0;
+  max-width: 100%;
+  margin: 0;
 }
 
 .title {
@@ -248,7 +251,7 @@
 .messageWithIcon {
   display: flex;
   align-items: center;
-  gap: 0.5rem; /* space-x-2 */
+  gap: 0.5rem;
 }
 
 /* Style for message icons (error, warning, etc.) */
@@ -530,44 +533,64 @@
 }
 
 /* Mobile Responsiveness */
-@media (max-width: 640px) { /* Adjust breakpoint as needed (sm: 640px) */
+@media (max-width: 768px) {
+  .appLayout {
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+  }
+
+  .container {
+    width: 100%;
+    padding: 0;
+  }
+
+  .containerWithChart .runesInfoContainer,
+  .containerWithChart .swapContainer,
+  .swapContainer,
+  .runesInfoContainer,
+  .priceChartContainer {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .priceChartContainer {
+    position: static;
+    height: auto;
+    margin-top: 1rem;
+  }
+
+  .narrowSwapContainer,
+  .narrowRightPanel {
+    width: 100%;
+    max-width: 100%;
+  }
+
   .inputRow {
-    flex-direction: column; /* Stack input and selector vertically */
-    align-items: stretch; /* Make children take full width */
-    gap: 0.5rem; /* Add space between input and selector */
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
   }
 
   .amountInput,
   .amountInputReadOnly {
-    font-size: 1.125rem; /* text-lg - Slightly smaller font on mobile */
-    text-align: left; /* Ensure text starts left */
+    font-size: 1.125rem;
+    text-align: left;
   }
 
-  .listboxContainer {
-    width: 100%; /* Make selector take full width */
-  }
-
+  .listboxContainer,
   .listboxButton {
-    width: 100%; /* Ensure button takes full width */
-  }
-
-  .container {
-    padding: 0.5rem; /* Reduce padding on smaller screens */
-    max-width: 100%; /* Allow container to take full width on mobile */
     width: 100%;
-    margin-left: 0; /* Remove auto margins on mobile */
-    margin-right: 0;
   }
 
   .title {
-    font-size: 1rem; /* text-base */
+    font-size: 1rem;
   }
-  
+
   .inputArea {
-    min-width: 100%; /* Override desktop min-width for mobile */
-    width: 100%; /* Ensure the input area takes full width on mobile */
-    margin-left: 0;
-    margin-right: 0;
+    min-width: 100%;
+    width: 100%;
+    margin: 0;
   }
 }
 
@@ -659,10 +682,11 @@
 
 .hintText {
   color: var(--win98-dark-gray);
-  font-style: italic;
-  font-size: 0.875rem;
-  text-align: center;
-  padding: 1rem;
+  white-space: normal;
+  word-break: break-word;
+  font-size: inherit;
+  margin-top: 0;
+  padding: 0;
 }
 
 .loadingText {
@@ -809,24 +833,9 @@
 }
 
 /* Price Chart Styles */
-.appLayout {
-  display: flex;
-  flex-direction: row;
-  gap: 1rem;
-  width: 100%;
-  max-width: 1000px;
-  margin: 0 auto;
-}
-
-/* When chart is visible, app layout should use full width without additional margins */
-.containerWithChart .appLayout {
-  max-width: 100%;
-  margin: 0;
-  padding: 0;
-}
-
 .swapContainer {
   flex: 1;
+  width: 100%;
   transition: all 0.3s ease;
 }
 
@@ -947,52 +956,6 @@
   border-bottom-color: var(--win98-light-gray);
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .appLayout {
-    flex-direction: column;
-    width: 100%;
-    max-width: 100%;
-  }
-  
-  .priceChartContainer {
-    position: static;
-    width: 100%;
-    max-width: 100%;
-    height: auto;
-    margin-top: 1rem;
-  }
-  
-  .swapContainer,
-  .narrowSwapContainer {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .containerWithChart {
-    max-width: 100%;
-    width: 100%;
-  }
-
-  .containerWithChart .runesInfoContainer {
-    max-width: 100%;
-    width: 100%;
-  }
-
-  .narrowRightPanel {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  /* Ensure container takes full width in mobile */
-  .container {
-    width: 100%;
-    max-width: 100%;
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-}
-
 /* ... Rest of CSS ... */
 
 .collapseChartButton {
@@ -1103,24 +1066,43 @@
 
 .runesInfoContainer {
   width: 100%;
-  max-width: 500px;
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
 /* When the price chart is visible */
-.containerWithChart .runesInfoContainer {
+.containerWithChart .runesInfoContainer,
+.containerWithChart .swapContainer {
   max-width: calc(50% - 0.5rem);
   width: calc(50% - 0.5rem);
-  margin: 0;
 }
 
 @media (max-width: 768px) {
-  .containerWithChart .runesInfoContainer {
+  .container {
+    width: 100%;
+    padding: 0;
+  }
+
+  .containerWithChart .runesInfoContainer,
+  .containerWithChart .swapContainer,
+  .swapContainer,
+  .runesInfoContainer,
+  .priceChartContainer {
     max-width: 100%;
     width: 100%;
+  }
+
+  .priceChartContainer {
+    position: static;
+    height: auto;
+    margin-top: 1rem;
+  }
+
+  .narrowSwapContainer,
+  .narrowRightPanel {
+    width: 100%;
+    max-width: 100%;
   }
 }
 
@@ -1159,9 +1141,46 @@
 }
 
 .hintText {
+  font-size: 0.75rem;
   color: var(--win98-dark-gray);
-  font-style: italic;
-  font-size: 0.875rem;
-  text-align: center;
-  padding: 1rem;
+  margin-top: 0;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.infoIconContainer {
+  cursor: help;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.infoIcon {
+  color: #000080;
+  transition: color 0.2s ease;
+}
+
+.infoIconContainer:hover .infoIcon {
+  color: #0000b3;
+}
+
+.tooltipBox {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 200px;
+  padding: 8px;
+  margin-top: 5px;
+  background-color: var(--win98-gray);
+  border: 2px solid;
+  border-top-color: var(--win98-light-gray);
+  border-left-color: var(--win98-light-gray);
+  border-bottom-color: var(--win98-dark-gray);
+  border-right-color: var(--win98-dark-gray);
+  font-size: 0.75rem;
+  color: #000;
+  z-index: 100;
+  line-height: 1.2;
+  text-align: left;
 } 

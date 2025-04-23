@@ -1,25 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { GetPSBTParams, RuneOrder } from 'satsterminal-sdk';
+import type { GetPSBTParams } from 'satsterminal-sdk';
 import { getSatsTerminalClient } from '@/lib/serverUtils';
 import { z } from 'zod';
+import { handleApiError, createErrorResponse, validateRequest } from '@/lib/apiUtils';
+import { runeOrderSchema } from '@/types/satsTerminal';
 
-// Create a comprehensive RuneOrder schema based on the SDK requirements
-const runeOrderSchema = z.object({
-  id: z.string().min(1, "Order ID is required"),
-  market: z.string().min(1, "Market is required"),
-  price: z.number().optional(),
-  quantity: z.number().optional(),
-  maker: z.string().optional(),
-  side: z.enum(["BUY", "SELL"]).optional(),
-  txid: z.string().optional(),
-  vout: z.number().optional(),
-  runeName: z.string().optional(),
-  runeAmount: z.number().optional(),
-  btcAmount: z.number().optional(),
-  satPrice: z.number().optional(),
-  status: z.string().optional(),
-  timestamp: z.number().optional(),
-}).passthrough(); // Use passthrough to allow additional fields expected by the SDK
+type RuneOrder = z.infer<typeof runeOrderSchema>;
 
 const getPsbtParamsSchema = z.object({
   orders: z.array(runeOrderSchema),
@@ -35,54 +21,26 @@ const getPsbtParamsSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  let params;
-  try {
-    params = await request.json();
-  } catch {
-    return NextResponse.json({ 
-      error: 'Invalid JSON body', 
-      details: 'The request body could not be parsed as JSON' 
-    }, { status: 400 });
-  }
-
-  const validationResult = getPsbtParamsSchema.safeParse(params);
-
-  if (!validationResult.success) {
-    console.error("PSBT API Validation Error:", validationResult.error.flatten()); // Log detailed error server-side
-    return NextResponse.json({
-        error: 'Invalid request body for PSBT creation.',
-        details: validationResult.error.flatten().fieldErrors
-    }, { status: 400 });
-  }
-
-  // Use the validated and typed data from now on
-  const validatedParams = validationResult.data;
+  const validation = await validateRequest(request, getPsbtParamsSchema, 'body');
+  if (!validation.success) return validation.errorResponse;
+  const validatedParams = validation.data;
 
   try {
     const terminal = getSatsTerminalClient();
-    // Need to cast orders to RuneOrder[] since Zod validation may not fully match SDK type
-    const psbtParams: GetPSBTParams = {
+    const psbtParams: Omit<GetPSBTParams, 'orders'> & { orders: RuneOrder[] } = {
       ...validatedParams,
-      orders: validatedParams.orders as unknown as RuneOrder[],
+      orders: validatedParams.orders,
     };
 
     const psbtResponse = await terminal.getPSBT(psbtParams);
     return NextResponse.json(psbtResponse);
 
   } catch (error) {
-    console.error(`Error getting PSBT on server:`, error);
-    const message = (error instanceof Error) ? error.message : 'Failed to generate PSBT';
-    
-    // Check for specific API errors 
-    let statusCode = 500;
-    if (message.includes("Quote expired") || (error && typeof error === 'object' && (error as { code?: string }).code === 'ERR677K3')) {
-      statusCode = 410; // Gone (or another suitable code for expired quotes)
+    const errorInfo = handleApiError(error, 'Failed to generate PSBT');
+    // Special handling for quote expired
+    if (errorInfo.message.includes('Quote expired') || (error && typeof error === 'object' && (error as { code?: string }).code === 'ERR677K3')) {
+      return createErrorResponse('Quote expired. Please fetch a new quote.', errorInfo.details, 410);
     }
-    
-    return NextResponse.json({ 
-      error: 'Failed to generate PSBT', 
-      details: message,
-      code: (error && typeof error === 'object' && (error as { code?: string }).code) || 'UNKNOWN_ERROR'
-    }, { status: statusCode });
+    return createErrorResponse(errorInfo.message, errorInfo.details, errorInfo.status);
   }
 } 

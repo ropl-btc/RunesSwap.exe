@@ -6,6 +6,7 @@ import {
 } from '@/types/ordiscan';
 import type { Rune } from '@/types/satsTerminal';
 import { type QuoteResponse, type GetPSBTParams, type ConfirmPSBTParams } from 'satsterminal-sdk';
+import { type RuneData } from './runesData';
 
 // API Query Keys for React Query caching
 export const QUERY_KEYS = {
@@ -16,7 +17,8 @@ export const QUERY_KEYS = {
   BTC_BALANCE: 'btcBalance',
   RUNE_BALANCES: 'runeBalances',
   RUNE_LIST: 'runesList',
-  RUNE_ACTIVITY: 'runeActivity'
+  RUNE_ACTIVITY: 'runeActivity',
+  PORTFOLIO_DATA: 'portfolioData'
 };
 
 // Standard API response handler
@@ -62,9 +64,9 @@ export const fetchRunesFromApi = async (query: string): Promise<Rune[]> => {
   return handleApiResponse<Rune[]>(data, true);
 };
 
-// Fetch Popular Collections from API
+// Fetch Popular Collections from API (cached version)
 export const fetchPopularFromApi = async (): Promise<Record<string, unknown>[]> => {
-  const response = await fetch('/api/sats-terminal/popular');
+  const response = await fetch('/api/cached-popular-runes');
   let data;
   try {
       data = await response.json();
@@ -166,8 +168,9 @@ export const fetchRuneBalancesFromApi = async (address: string): Promise<Ordisca
 };
 
 // Fetch Rune Info from API
-export const fetchRuneInfoFromApi = async (name: string): Promise<OrdiscanRuneInfo | null> => {
-  const response = await fetch(`/api/ordiscan/rune-info?name=${encodeURIComponent(name)}`);
+export const fetchRuneInfoFromApi = async (name: string): Promise<RuneData | null> => {
+  const normalizedName = name.replace(/•/g, '')
+  const response = await fetch(`/api/ordiscan/rune-info?name=${encodeURIComponent(normalizedName)}`);
   let data;
   try {
       data = await response.json();
@@ -181,12 +184,37 @@ export const fetchRuneInfoFromApi = async (name: string): Promise<OrdiscanRuneIn
   if (response.status === 404) {
       return null;
   }
-  return handleApiResponse<OrdiscanRuneInfo | null>(data, false);
+  return handleApiResponse<RuneData | null>(data, false);
+};
+
+// Update Rune Data via API
+export const updateRuneDataViaApi = async (name: string): Promise<RuneData | null> => {
+  const normalizedName = name.replace(/•/g, '')
+  const response = await fetch('/api/ordiscan/rune-update', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: normalizedName })
+  });
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error(`Failed to parse update response for ${name}`);
+  }
+  if (!response.ok) {
+    throw new Error(data?.error?.message || data?.error || `Failed to update rune data: ${response.statusText}`);
+  }
+  // Handle 404 (null) responses
+  if (response.status === 404) {
+    return null;
+  }
+  return handleApiResponse<RuneData | null>(data, false);
 };
 
 // Fetch Rune Market Info from API
 export const fetchRuneMarketFromApi = async (name: string): Promise<OrdiscanRuneMarketInfo | null> => {
-  const response = await fetch(`/api/ordiscan/rune-market?name=${encodeURIComponent(name)}`);
+  const normalizedName = name.replace(/•/g, '')
+  const response = await fetch(`/api/ordiscan/rune-market?name=${encodeURIComponent(normalizedName)}`);
   let data;
   try {
       data = await response.json();
@@ -266,11 +294,8 @@ export const fetchRunePriceHistoryFromApi = async (runeName: string): Promise<Pr
   // Apply direct formatting to specific runes
   let querySlug = runeName;
   
-  console.log(`[Client] Fetching price history for rune: "${runeName}"`);
-  
   // Special case for LIQUIDIUM•TOKEN
   if (runeName.includes('LIQUIDIUM')) {
-    console.log(`[Client] Using special case for LIQUIDIUM`);
     querySlug = 'LIQUIDIUMTOKEN';
   }
 
@@ -290,4 +315,31 @@ export const fetchRunePriceHistoryFromApi = async (runeName: string): Promise<Pr
   }
 
   return handleApiResponse<PriceHistoryResponse>(data, false);
+};
+
+// Fetch Portfolio Data from API (optimized batch request)
+export const fetchPortfolioDataFromApi = async (address: string): Promise<{
+  balances: OrdiscanRuneBalance[];
+  runeInfos: Record<string, RuneData>;
+  marketData: Record<string, OrdiscanRuneMarketInfo>;
+}> => {
+  if (!address) {
+    return { balances: [], runeInfos: {}, marketData: {} };
+  }
+  
+  const response = await fetch(`/api/portfolio-data?address=${encodeURIComponent(address)}`);
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error(`Failed to parse portfolio data for ${address}`);
+  }
+  if (!response.ok) {
+    throw new Error(data?.error?.message || data?.error || `Failed to fetch portfolio data: ${response.statusText}`);
+  }
+  return handleApiResponse<{
+    balances: OrdiscanRuneBalance[];
+    runeInfos: Record<string, RuneData>;
+    marketData: Record<string, OrdiscanRuneMarketInfo>;
+  }>(data, false);
 }; 

@@ -1,0 +1,244 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  padding: 0;
+}
+
+.message {
+  text-align: center;
+  padding: 2rem;
+}
+
+.listContainer {
+  background: var(--win98-surface);
+  border: var(--win98-border-raised-outer);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 100%;
+}
+
+.listHeader {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 80px;
+  padding: 0.5rem;
+  background: var(--win98-surface);
+  border-bottom: var(--win98-border-sunken-outer);
+  font-weight: bold;
+}
+
+.sortable {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.sortable:hover {
+  text-decoration: underline;
+}
+
+.listContent {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.listItem {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 80px;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--win98-border-raised-outer);
+}
+
+.listItem:last-child {
+  border-bottom: none;
+}
+
+.runeNameContent {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.runeImage {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+.runeNameText {
+  display: flex;
+  flex-direction: column;
+}
+
+.runeFullName {
+  font-weight: 500;
+}
+
+.runeTicker {
+  font-size: 0.875rem;
+  color: var(--win98-text-muted);
+}
+
+.portfolioTotals {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 80px;
+  padding: 0.75rem 0.5rem;
+  background: var(--win98-surface);
+  border-top: var(--win98-border-sunken-outer);
+  font-weight: bold;
+}
+
+.swapButton {
+  padding: 2px 8px;
+  background: var(--win98-surface);
+  border: 2px solid;
+  border-top-color: var(--win98-light-gray);
+  border-left-color: var(--win98-light-gray);
+  border-right-color: var(--win98-dark-gray);
+  border-bottom-color: var(--win98-dark-gray);
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+}
+
+.swapButton:hover {
+  background: var(--win98-surface-hover);
+}
+
+.swapButton:active {
+  border-top-color: var(--win98-dark-gray);
+  border-left-color: var(--win98-dark-gray);
+  border-right-color: var(--win98-light-gray);
+  border-bottom-color: var(--win98-light-gray);
+  padding: 3px 7px 1px 9px;
+}
+
+.sortArrow {
+  font-family: monospace;
+  font-size: 12px;
+  font-weight: bold;
+  display: inline-block;
+  margin-left: 2px;
+  line-height: 1;
+  position: relative;
+  top: -1px;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 640px) {
+  .listHeader,
+  .listItem,
+  .portfolioTotals {
+    grid-template-columns: 2fr 1fr;
+    gap: 0.5rem;
+  }
+
+  /* Hide all header items except USD Value */
+  .listHeader > div {
+    display: none;
+  }
+
+  /* Only show and style USD Value header */
+  .listHeader > div:nth-child(3) {
+    display: block;
+    grid-column: 2;
+    text-align: right;
+  }
+
+  .listHeader > div:nth-child(3).sortable {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  /* Show balance in the first column and USD value in the second */
+  .listItem > div:nth-child(1) {
+    grid-column: 1;
+  }
+  
+  .listItem > div:nth-child(2) {
+    display: none;
+  }
+  
+  .listItem > div:nth-child(3) {
+    grid-column: 2;
+    display: block;
+    text-align: right;
+  }
+
+  /* Hide portfolio total's BTC value on mobile */
+  .portfolioTotals > div:nth-child(2) {
+    display: none;
+  }
+  
+  .portfolioTotals > div:nth-child(3) {
+    grid-column: 2;
+    display: block;
+    text-align: right;
+  }
+
+  /* Move swap button below */
+  .swapButton {
+    grid-column: span 2;
+    margin-top: 0.5rem;
+    width: 100%;
+  }
+
+  .listItem {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .runeNameContent {
+    gap: 0.75rem;
+  }
+
+  /* Style for USD value in mobile */
+  .runeValue {
+    font-size: 0.875rem;
+  }
+
+  /* Adjust portfolio totals for mobile */
+  .portfolioTotals > div:first-child {
+    grid-column: 1;
+  }
+}
+
+.progressContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 2rem 0 1rem 0;
+}
+
+.progressBarOuter {
+  width: 240px;
+  height: 18px;
+  background: var(--win98-surface);
+  border: 2px solid var(--win98-dark-gray);
+  box-shadow: inset 1px 1px 0 var(--win98-light-gray), inset -1px -1px 0 var(--win98-shadow-gray);
+  position: relative;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+}
+
+.progressBarInner {
+  height: 100%;
+  background: var(--win98-blue);
+  border-right: 2px solid var(--win98-light-gray);
+  transition: width 0.15s linear;
+}
+
+.progressStepText {
+  font-size: 13px;
+  color: var(--win98-text);
+  font-family: 'Perfect DOS VGA 437', 'Consolas', monospace;
+  margin-bottom: 0.5rem;
+  text-shadow: 1px 1px 0 var(--win98-light-gray);
+} 

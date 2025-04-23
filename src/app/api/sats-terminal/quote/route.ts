@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import type { QuoteParams } from 'satsterminal-sdk';
 import { getSatsTerminalClient } from '@/lib/serverUtils';
 import { z } from 'zod';
-import { createSuccessResponse, createErrorResponse, handleApiError } from '@/lib/apiUtils';
+import { createSuccessResponse, createErrorResponse, handleApiError, validateRequest } from '@/lib/apiUtils';
 
 const quoteParamsSchema = z.object({
   btcAmount: z.union([z.string().min(1), z.number().positive()]).transform(val => String(val)), // Require non-empty string or positive number, always transform to string
@@ -15,26 +15,11 @@ const quoteParamsSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  let params;
-  try {
-    params = await request.json();
-  } catch {
-    return createErrorResponse('Invalid JSON body', 'Request body could not be parsed as JSON', 400);
-  }
-
-  const validationResult = quoteParamsSchema.safeParse(params);
-
-  if (!validationResult.success) {
-    const fieldErrors = validationResult.error.flatten().fieldErrors;
-    return createErrorResponse(
-      'Invalid request body for quote',
-      JSON.stringify(fieldErrors),
-      400
-    );
-  }
-
-  // Use the validated and typed data from now on
-  const validatedParams = validationResult.data;
+  const validation = await validateRequest(request, quoteParamsSchema, 'body');
+  if (!validation.success) return validation.errorResponse;
+  const validatedParams = validation.data;
+  // Ensure btcAmount is a string for the SDK
+  validatedParams.btcAmount = String(validatedParams.btcAmount);
 
   try {
     const terminal = getSatsTerminalClient();

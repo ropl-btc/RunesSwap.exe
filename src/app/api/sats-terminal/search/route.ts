@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server';
 import { getSatsTerminalClient } from '@/lib/serverUtils';
 import type { Rune } from '@/types/satsTerminal';
-import { createSuccessResponse, createErrorResponse, handleApiError } from '@/lib/apiUtils';
+import { createSuccessResponse, createErrorResponse, handleApiError, validateRequest } from '@/lib/apiUtils';
+import { z } from 'zod';
 
 // Define types for rune responses locally or import if shared
 // interface Rune {
@@ -26,18 +27,23 @@ interface SearchOrder {
 }
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const query = searchParams.get('query');
+  // const { searchParams } = new URL(request.url);
+  // const query = searchParams.get('query');
 
-  if (!query || query.trim() === '') {
-    return createErrorResponse('Search query is required', undefined, 400);
-  }
+  // Zod validation for 'query'
+  const schema = z.object({ 
+    query: z.string().min(1),
+    sell: z.boolean().optional().default(false) 
+  });
+  const validation = await validateRequest(request, schema, 'query');
+  if (!validation.success) return validation.errorResponse;
+  const { query: validQuery, sell } = validation.data;
 
   try {
     const terminal = getSatsTerminalClient();
     const searchResults = await terminal.search({
-      rune_name: query,
-      sell: false // Or get from query params if needed
+      rune_name: validQuery,
+      sell
     });
 
     // Map the response with improved type checking
@@ -65,7 +71,7 @@ export async function GET(request: NextRequest) {
 
     return createSuccessResponse(runes);
   } catch (error) {
-    const errorInfo = handleApiError(error, `Failed to search for runes with query "${query}"`);
+    const errorInfo = handleApiError(error, `Failed to search for runes with query "${validQuery}"`);
     return createErrorResponse(errorInfo.message, errorInfo.details, errorInfo.status);
   }
 } 

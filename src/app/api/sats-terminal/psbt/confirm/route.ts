@@ -1,29 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { ConfirmPSBTParams, RuneOrder } from 'satsterminal-sdk';
+import type { ConfirmPSBTParams } from 'satsterminal-sdk';
 import { getSatsTerminalClient } from '@/lib/serverUtils';
 import { z } from 'zod';
+import { handleApiError, createErrorResponse, validateRequest } from '@/lib/apiUtils';
+import { runeOrderSchema } from '@/types/satsTerminal';
 
-// Create a more comprehensive RuneOrder schema based on observed usage
-const runeOrderSchema = z.object({
-  id: z.string().min(1, "Order ID is required"),
-  market: z.string().min(1, "Market is required"),
-  price: z.number().optional(),
-  quantity: z.number().optional(),
-  maker: z.string().optional(),
-  side: z.enum(["BUY", "SELL"]).optional(),
-  txid: z.string().optional(),
-  vout: z.number().optional(),
-  runeName: z.string().optional(),
-  runeAmount: z.number().optional(),
-  btcAmount: z.number().optional(),
-  satPrice: z.number().optional(),
-  status: z.string().optional(),
-  timestamp: z.number().optional(),
-}).passthrough(); // Use passthrough to allow additional fields expected by the SDK
+type ConfirmParams = z.infer<typeof confirmPsbtParamsSchema>;
 
 const confirmPsbtParamsSchema = z.object({
   orders: z.array(runeOrderSchema),
-  address: z.string().min(1, "Bitcoin address is required"),
+  // TODO: Use a Bitcoin address validation library for full validation (e.g., bitcoinjs-lib)
+  address: z.string().regex(
+    /^(bc1[qpzry9x8gf2tvdw0s3jn54khce6mua7l]{11,71}|[13][a-km-zA-HJ-NP-Z1-9]{25,34})$/,
+    'Invalid Bitcoin address'
+  ),
   publicKey: z.string().min(1, "Public key is required"),
   paymentAddress: z.string().min(1, "Payment address is required"),
   paymentPublicKey: z.string().min(1, "Payment public key is required"),
@@ -45,34 +35,15 @@ const confirmPsbtParamsSchema = z.object({
   });
 
 export async function POST(request: NextRequest) {
-  let params;
-  try {
-    params = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body', details: 'The request body could not be parsed as JSON' }, { status: 400 });
-  }
-
-  const validationResult = confirmPsbtParamsSchema.safeParse(params);
-
-  if (!validationResult.success) {
-    console.error("Confirm PSBT API Validation Error:", validationResult.error.flatten()); // Log detailed error server-side
-    return NextResponse.json({
-        error: 'Invalid request body for PSBT confirmation.',
-        details: validationResult.error.flatten().fieldErrors
-    }, { status: 400 });
-  }
-
-  // Use the validated and typed data from now on
-  const validatedParams = validationResult.data;
+  const validation = await validateRequest<ConfirmParams>(request, confirmPsbtParamsSchema, 'body');
+  if (!validation.success) return validation.errorResponse;
+  const validatedParams = validation.data;
 
   try {
     const terminal = getSatsTerminalClient();
-    // No need for type casting since validatedParams is already properly typed
-    const confirmParams: ConfirmPSBTParams = {
+    const confirmParams: Omit<ConfirmPSBTParams, 'orders'> & { orders: ConfirmParams['orders'] } = {
       ...validatedParams,
-      // Need to cast orders to RuneOrder[] since Zod validation may not fully match SDK type
-      orders: validatedParams.orders as unknown as RuneOrder[],
-      // Ensure optional signedRbfPsbtBase64 is undefined if not provided, matching SDK type
+      orders: validatedParams.orders,
       signedRbfPsbtBase64: validatedParams.signedRbfPsbtBase64 || undefined,
     };
 
@@ -80,17 +51,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(confirmResponse);
 
   } catch (error) {
-    console.error(`Error confirming PSBT on server:`, error);
-    const message = (error instanceof Error) ? error.message : 'Failed to confirm PSBT';
-    // Check for specific API errors if needed, e.g., quote expired
-    let statusCode = 500;
-    if (message.includes("Quote expired") || (error && typeof error === 'object' && (error as { code?: string }).code === 'ERR677K3')) {
-      statusCode = 410; // Gone (or another suitable code like 400 Bad Request)
+    const errorInfo = handleApiError(error, 'Failed to confirm PSBT');
+    // Special handling for quote expired
+    if (errorInfo.message.includes('Quote expired') || (error && typeof error === 'object' && (error as { code?: string }).code === 'ERR677K3')) {
+      return createErrorResponse('Quote expired. Please fetch a new quote.', errorInfo.details, 410);
     }
-    return NextResponse.json({ 
-      error: 'Failed to confirm PSBT', 
-      details: message,
-      code: (error && typeof error === 'object' && (error as { code?: string }).code) || 'UNKNOWN_ERROR'
-    }, { status: statusCode });
+    return createErrorResponse(errorInfo.message, errorInfo.details, errorInfo.status);
   }
 } 

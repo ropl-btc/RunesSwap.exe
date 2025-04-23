@@ -1,7 +1,18 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchRunePriceHistoryFromApi, QUERY_KEYS } from '@/lib/apiClient';
-import styles from './SwapInterface.module.css';
+import styles from './AppInterface.module.css';
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid
+} from 'recharts';
+import hourglassIcon from '/public/icons/windows_hourglass.png';
+import Image from 'next/image';
 
 interface PriceChartProps {
   assetName: string;
@@ -10,18 +21,19 @@ interface PriceChartProps {
   btcPriceUsd?: number; // BTC price in USD
 }
 
-interface ChartDataPoint {
-  x: number;
-  y: number;
-  price: number;
-  timestamp: number;
-}
+// Find the closest timestamp to a target timestamp from an array of data points
+const findClosestTimestamp = (data: Array<{timestamp: number}>, targetTimestamp: number) => {
+  if (!data || data.length === 0) return null;
+  
+  return data.reduce((prev, curr) => {
+    return Math.abs(curr.timestamp - targetTimestamp) < Math.abs(prev.timestamp - targetTimestamp) ? curr : prev;
+  });
+};
 
 const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', onClose, btcPriceUsd }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [selectedTimeframe, setSelectedTimeframe] = useState<'24h' | '7d' | '30d' | 'all'>(timeFrame);
-  const [hoverInfo, setHoverInfo] = useState<{ price: string; time: string; x: number; y: number } | null>(null);
-  const chartPointsRef = useRef<ChartDataPoint[]>([]);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [btcPriceLoadingTimeout, setBtcPriceLoadingTimeout] = useState(false);
   
   // Fetch price history data using React Query
   const {
@@ -37,459 +49,203 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
     retry: 2, // Retry failed requests twice
   });
   
-  // Debug logging for price history data
-  useEffect(() => {
-    console.log(`[PriceChart] Asset: "${assetName}", 
-                Data available: ${priceHistoryData?.available}, 
-                Price points: ${priceHistoryData?.prices?.length || 0}`,
-                priceHistoryData?.prices?.slice(0, 2));
-                
-    // Force refresh if we have problems with the data
-    if (priceHistoryData?.prices && priceHistoryData.prices.length > 0 && !priceHistoryData.available) {
-      console.log('[PriceChart] Data inconsistency detected - prices exist but available is false');
-    }
-    
-    // Log BTC price for conversion
-    console.log(`[PriceChart] Using BTC price: $${btcPriceUsd} for conversion`);
-    
-    // Log some sample converted prices
-    if (priceHistoryData?.prices && priceHistoryData.prices.length > 0 && btcPriceUsd) {
-      const samplePrice = priceHistoryData.prices[0].price;
-      const convertedUsd = samplePrice * (btcPriceUsd / 100000000);
-      console.log(`[PriceChart] Sample price conversion: ${samplePrice} sats -> $${convertedUsd.toFixed(6)} USD`);
-    }
-  }, [priceHistoryData, assetName, btcPriceUsd]);
-
   // Convert sats to USD and filter by timeframe
-  const filteredPriceData = React.useMemo(() => {
+  const { filteredPriceData, startTime, endTime } = React.useMemo(() => {
     if (!priceHistoryData?.prices || priceHistoryData.prices.length === 0) {
-      return [];
+      return { filteredPriceData: [], startTime: null, endTime: null };
     }
 
-    // If BTC price is not available, use 1 as a fallback for display purposes
-    const btcPrice = btcPriceUsd || 1;
+    // Current time to calculate exact time ranges
+    const now = new Date();
     
     // Convert price data from sats to USD
     const convertedPriceData = priceHistoryData.prices.map(point => {
-      // Convert sats to USD: sats_per_token * (btc_price_usd / 100_000_000)
-      // floor_value is in sats per token
-      const priceInUsd = point.price * (btcPrice / 100000000);
-      
+      // Safely convert to USD or return null if BTC price isn't available
+      const priceInUsd = btcPriceUsd !== undefined 
+        ? point.price * (btcPriceUsd / 100000000)
+        : null;
       return {
         ...point,
         price: priceInUsd,
         originalPriceInSats: point.price // Keep the original price for reference
       };
-    });
+    })
+    // Filter out points where price is null
+    .filter(point => point.price !== null)
+    .sort((a, b) => a.timestamp - b.timestamp); // Ensure data is sorted by timestamp
 
-    const now = Date.now();
-    let timeframeMs: number;
-    
-    // Log the date range of the data
-    if (convertedPriceData.length > 0) {
-      const timestamps = convertedPriceData.map(item => item.timestamp);
-      const earliest = new Date(Math.min(...timestamps));
-      const latest = new Date(Math.max(...timestamps));
-      const daysDiff = Math.floor((latest.getTime() - earliest.getTime()) / (1000 * 60 * 60 * 24));
-      
-      console.log(`[PriceChart] Data date range: ${daysDiff} days (${earliest.toLocaleDateString()} to ${latest.toLocaleDateString()})`);
-    }
+    // Calculate the exact target end time (current time) and start time (24h/7d/30d ago)
+    const targetEndTime = now.getTime();
+    let targetStartTime: number;
+    let periodLabel: string;
     
     switch(selectedTimeframe) {
       case '24h':
-        timeframeMs = 24 * 60 * 60 * 1000; // 24 hours in ms
+        // Exactly 24 hours ago from current time
+        targetStartTime = now.getTime() - (24 * 60 * 60 * 1000);
+        periodLabel = '24 hours';
         break;
       case '7d':
-        timeframeMs = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
+        // Exactly 7 days ago from current time
+        targetStartTime = now.getTime() - (7 * 24 * 60 * 60 * 1000);
+        periodLabel = '7 days';
         break;
       case '30d':
-        timeframeMs = 30 * 24 * 60 * 60 * 1000; // 30 days in ms
+        // Exactly 30 days ago from current time
+        targetStartTime = now.getTime() - (30 * 24 * 60 * 60 * 1000);
+        periodLabel = '30 days';
         break;
       case 'all':
-      default:
-        // For "all", return all available data points without filtering
-        console.log(`[PriceChart] Returning all ${convertedPriceData.length} data points`);
-        return convertedPriceData.sort((a, b) => a.timestamp - b.timestamp); // Return all data, sorted by timestamp
+        // For "all" (90 days), calculate exact 90 days ago
+        targetStartTime = now.getTime() - (90 * 24 * 60 * 60 * 1000);
+        periodLabel = '90 days';
+        break;
     }
     
-    // Filter data points within the selected timeframe
+    // Find closest data points to our target times
+    const closestEndPoint = findClosestTimestamp(convertedPriceData, targetEndTime);
+    const closestStartPoint = findClosestTimestamp(convertedPriceData, targetStartTime);
+    
+    const startTimestamp = closestStartPoint?.timestamp || targetStartTime;
+    
+    // Always use the current time as the end time for consistent display
+    const endTimestamp = targetEndTime;
+    
+    // Safety check - if no close data points found, use actual targets
+    if (!closestStartPoint || !closestEndPoint) {
+      console.log(`[PriceChart] Warning: Missing data points near target times for ${periodLabel} period`);
+    }
+    
+    // Filter data to include points between start and end times
     const filtered = convertedPriceData.filter(point => {
-      return point.timestamp >= (now - timeframeMs);
+      return point.timestamp >= startTimestamp && point.timestamp <= endTimestamp;
     });
     
-    // Always sort by timestamp to ensure the chart draws correctly
-    return filtered.sort((a, b) => a.timestamp - b.timestamp);
+    return { 
+      filteredPriceData: filtered,
+      startTime: new Date(startTimestamp),
+      endTime: now // Use the actual current time for end boundary
+    };
   }, [priceHistoryData, selectedTimeframe, btcPriceUsd]);
 
-  // Draw the chart
+  // Debug logging for price history data
   useEffect(() => {
-    if (!canvasRef.current || filteredPriceData.length === 0) return;
-    
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Set canvas size
-    canvas.width = canvas.clientWidth;
-    canvas.height = canvas.clientHeight;
-    
-    // Extract price values
-    const prices = filteredPriceData.map(d => d.price);
-    const minPrice = Math.min(...prices);
-    const maxPrice = Math.max(...prices);
-    
-    // Calculate price difference
-    const priceDiff = maxPrice - minPrice;
-    
-    // Simplified approach for y-axis scaling:
-    // 1. Use actual min and max with small padding (never start at 0)
-    // 2. Use nice round numbers for the y-axis
-    console.log(`[PriceChart] Price range - Min: ${minPrice}, Max: ${maxPrice}, Diff: ${priceDiff}`);
-    
-    // Calculate a nice round interval for the y-axis
-    // Based on the price difference (priceDiff)
-    const magnitude = Math.floor(Math.log10(priceDiff));
-    const normalizedDiff = priceDiff / Math.pow(10, magnitude);
-    
-    // Choose a nice interval based on the normalized difference
-    let interval: number;
-    if (normalizedDiff <= 1.5) {
-      interval = 0.2 * Math.pow(10, magnitude); // Use 0.2, 2, 20, etc.
-    } else if (normalizedDiff <= 3) {
-      interval = 0.5 * Math.pow(10, magnitude); // Use 0.5, 5, 50, etc.
-    } else if (normalizedDiff <= 7) {
-      interval = 1 * Math.pow(10, magnitude); // Use 1, 10, 100, etc.
-    } else {
-      interval = 2 * Math.pow(10, magnitude); // Use 2, 20, 200, etc.
+    if (filteredPriceData.length > 0 && startTime && endTime) {
+      console.log(`[PriceChart] ${selectedTimeframe} data range: ${startTime.toLocaleString()} to ${endTime.toLocaleString()}`);
+      console.log(`[PriceChart] Number of data points: ${filteredPriceData.length}`);
     }
+  }, [filteredPriceData, startTime, endTime, selectedTimeframe]);
+
+  // Get ticks for the x-axis based on timeframe
+  const getCustomTicks = React.useMemo(() => {
+    if (!startTime || !endTime || filteredPriceData.length === 0) return [];
     
-    // For very small values, make sure the interval is not too small
-    if (maxPrice < 0.01) {
-      interval = Math.max(interval, Math.pow(10, Math.floor(Math.log10(minPrice)) - 1));
-    }
+    const startMs = startTime.getTime();
+    const endMs = endTime.getTime();
+    const duration = endMs - startMs;
     
-    console.log(`[PriceChart] Using interval: ${interval}`);
-    
-    // Add padding (10% of the price range)
-    const axisPadding = priceDiff * 0.1;
-    
-    // Calculate min/max values for y-axis
-    // Round down for min, round up for max
-    let yMin = Math.floor((minPrice - axisPadding) / interval) * interval;
-    let yMax = Math.ceil((maxPrice + axisPadding) / interval) * interval;
-    
-    // If min is very close to 0, just use 0
-    if (yMin < interval * 0.1) {
-      yMin = 0;
-    }
-    
-    // Make sure we have a positive range
-    if (yMin >= yMax) {
-      yMax = yMin + interval;
-    }
-    
-    // Calculate the range
-    const yRange = yMax - yMin;
-    
-    console.log(`[PriceChart] Final Y-axis range: ${yMin} to ${yMax} (${yRange})`);
-    
-    // Make sure we have a reasonable number of steps (5-7)
-    const numberOfSteps = Math.round(yRange / interval);
-    if (numberOfSteps < 3 || numberOfSteps > 8) {
-      console.log(`[PriceChart] Adjusting steps: ${numberOfSteps} is outside ideal range`);
-      // Adjust the interval if needed
-      if (numberOfSteps < 3) {
-        // If too few steps, use a smaller interval
-        const newInterval = yRange / 5;
-        yMin = Math.floor(minPrice / newInterval) * newInterval;
-        yMax = Math.ceil(maxPrice / newInterval) * newInterval;
-        console.log(`[PriceChart] Adjusted to smaller interval: ${newInterval}`);
-      } else if (numberOfSteps > 8) {
-        // If too many steps, use a larger interval
-        const newInterval = yRange / 5;
-        yMin = Math.floor(minPrice / newInterval) * newInterval;
-        yMax = Math.ceil(maxPrice / newInterval) * newInterval;
-        console.log(`[PriceChart] Adjusted to larger interval: ${newInterval}`);
-      }
-    }
-    
-    // Calculate chart area with padding
-    const padding = {
-      left: 40,
-      right: 20,
-      top: 30,
-      bottom: 25
-    };
-    
-    const chartWidth = canvas.width - padding.left - padding.right;
-    const chartHeight = canvas.height - padding.top - padding.bottom;
-    
-    // Draw background grid
-    ctx.beginPath();
-    ctx.strokeStyle = '#C0C0C0';
-    ctx.lineWidth = 1;
-    
-    // Calculate how many horizontal grid lines we need based on the interval
-    // We want to include both min and max values, so we add 1 to include both ends
-    const gridLines = Math.round((yMax - yMin) / interval) + 1;
-    
-    // Draw horizontal grid lines and y-axis labels
-    for (let i = 0; i <= gridLines - 1; i++) {
-      const yValue = yMin + i * interval;
-      // Calculate relative position of value in the range
-      const relativePos = (yValue - yMin) / yRange;
-      const y = padding.top + chartHeight - (relativePos * chartHeight);
-      
-      // Grid line
-      ctx.moveTo(padding.left, y);
-      ctx.lineTo(padding.left + chartWidth, y);
-      
-      // Y-axis label with appropriate decimal places based on value size
-      ctx.fillStyle = '#000';
-      ctx.font = '10px Arial';
-      ctx.textAlign = 'right';
-      
-      // Format with more decimal places for small values
-      let formattedValue: string;
-      if (yValue < 0.0001) {
-        formattedValue = yValue.toExponential(2); // Use scientific notation for very small values
-      } else if (yValue < 0.001) {
-        formattedValue = yValue.toFixed(6);
-      } else if (yValue < 0.01) {
-        formattedValue = yValue.toFixed(5);
-      } else if (yValue < 0.1) {
-        formattedValue = yValue.toFixed(4);
-      } else if (yValue < 1) {
-        formattedValue = yValue.toFixed(3);
-      } else if (yValue < 10) {
-        formattedValue = yValue.toFixed(2);
-      } else {
-        formattedValue = yValue.toFixed(2);
-      }
-      
-      ctx.fillText(formattedValue, padding.left - 5, y + 4);
-    }
-    
-    // Vertical grid lines and x-axis labels - show nice time intervals
-    const xAxisSteps = 4; // Show 5 intervals
-    
-    for (let i = 0; i <= xAxisSteps; i++) {
-      const x = padding.left + (i / xAxisSteps) * chartWidth;
-      
-      // Grid line
-      ctx.moveTo(x, padding.top);
-      ctx.lineTo(x, padding.top + chartHeight);
-      
-      // Calculate nice time interval
-      const dataIndex = Math.floor((i / xAxisSteps) * (filteredPriceData.length - 1));
-      if (dataIndex >= 0 && dataIndex < filteredPriceData.length) {
-        const date = new Date(filteredPriceData[dataIndex].timestamp);
-        let timeLabel = '';
+    // Generate appropriate number of ticks based on timeframe
+    switch(selectedTimeframe) {
+      case '24h': {
+        // For 24h view, create hour-based ticks
+        const startDate = new Date(startMs);
+        const endDate = new Date(endMs);
         
-        switch (selectedTimeframe) {
-          case '24h':
-            // Round to nearest hour
-            const roundedHour = date.getHours();
-            const amPm = roundedHour >= 12 ? 'PM' : 'AM';
-            const hour12 = roundedHour % 12 || 12; // Convert to 12h format
-            timeLabel = `${hour12} ${amPm}`;
-            break;
-          case '7d':
-            timeLabel = date.toLocaleDateString([], { weekday: 'short' });
-            break;
-          case '30d':
-          case 'all':
-            timeLabel = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-            break;
+        // Get the current hour to make sure we include it
+        const currentHour = endDate.getHours();
+        
+        // Create a tick for each 3-hour interval, ensuring we include the current hour
+        const hours: number[] = [];
+        for (let h = 0; h <= 24; h += 3) {
+          // Create a new date at start time and set the hour based on our interval
+          const tickDate = new Date(startDate);
+          tickDate.setHours(startDate.getHours() + h);
+          
+          // Only add if within our range
+          if (tickDate.getTime() <= endMs) {
+            hours.push(tickDate.getTime());
+          }
         }
         
-        ctx.fillStyle = '#000';
-        ctx.font = '10px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(timeLabel, x, padding.top + chartHeight + 15);
+        // Make sure we include the current hour if it's not already included
+        const lastTickHour = new Date(hours[hours.length - 1]).getHours();
+        if (lastTickHour !== currentHour && currentHour % 3 !== 0) {
+          const currentHourDate = new Date(endDate);
+          currentHourDate.setMinutes(0, 0, 0); // Set minutes, seconds, ms to 0
+          hours.push(currentHourDate.getTime());
+        }
+        
+        return hours;
+      }
+      case '7d': {
+        // For 7d view, create day-based ticks
+        const startDate = new Date(startMs);
+        const endDate = new Date(endMs);
+        
+        // Create a tick for each day
+        const days: number[] = [];
+        for (let d = 0; d <= 7; d++) {
+          const tickDate = new Date(startDate);
+          tickDate.setDate(startDate.getDate() + d);
+          
+          // Only add if within our range
+          if (tickDate.getTime() <= endMs) {
+            days.push(tickDate.getTime());
+          }
+        }
+        
+        // Make sure we include the current day
+        const lastTickDay = new Date(days[days.length - 1]).getDate();
+        if (lastTickDay !== endDate.getDate()) {
+          const currentDayDate = new Date(endDate);
+          currentDayDate.setHours(0, 0, 0, 0); // Set time to start of day
+          days.push(currentDayDate.getTime());
+        }
+        
+        return days;
+      }
+      case '30d': {
+        // Create approximately 6 evenly spaced ticks, plus start and end dates
+        const tickCount = 6;
+        const ticks: number[] = [];
+        for (let i = 0; i <= tickCount; i++) {
+          ticks.push(startMs + (i * (duration / tickCount)));
+        }
+        return ticks;
+      }
+      case 'all': { // 90 days
+        // Create approximately 6 evenly spaced ticks
+        const tickCount = 6;
+        const ticks: number[] = [];
+        for (let i = 0; i <= tickCount; i++) {
+          ticks.push(startMs + (i * (duration / tickCount)));
+        }
+        return ticks;
       }
     }
-    
-    ctx.stroke();
-    
-    // Draw price line
-    ctx.beginPath();
-    ctx.strokeStyle = '#000080'; // Navy blue
-    ctx.lineWidth = 2;
-    
-    // Store data points for hover detection
-    const points: ChartDataPoint[] = [];
-    
-    // Sort the data by timestamp to ensure the line is drawn correctly
-    const sortedData = [...filteredPriceData].sort((a, b) => a.timestamp - b.timestamp);
-    
-    sortedData.forEach((data, index) => {
-      const x = padding.left + (index / (sortedData.length - 1)) * chartWidth;
-      const normalizedPrice = (data.price - yMin) / yRange;
-      const y = padding.top + chartHeight - (normalizedPrice * chartHeight);
-      
-      points.push({
-        x,
-        y,
-        price: data.price,
-        timestamp: data.timestamp
-      });
-      
-      if (index === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
-      }
-    });
-    
-    // Update the ref with the current points
-    chartPointsRef.current = points;
-    
-    ctx.stroke();
-    
-    // Draw latest price
-    if (sortedData.length > 0) {
-      const latestPrice = sortedData[sortedData.length - 1].price;
-      
-      // Format price in USD
-      const formattedPrice = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 4,
-        maximumFractionDigits: 4
-      }).format(latestPrice);
-      
-      ctx.fillStyle = '#000';
-      ctx.font = '12px Arial';
-      ctx.textAlign = 'right';
-      ctx.fillText(`${formattedPrice}`, canvas.width - padding.right, padding.top - 10);
-    }
-    
-    // If there's hover info, draw the indicator
-    if (hoverInfo) {
-      // Draw the hover indicator
-      ctx.beginPath();
-      ctx.arc(hoverInfo.x, hoverInfo.y, 5, 0, 2 * Math.PI);
-      ctx.fillStyle = '#FF0000';
-      ctx.fill();
-      
-      // Draw hover info box - make it wider for small values that need more digits
-      const priceValue = parseFloat(hoverInfo.price.replace(/[^0-9.-]+/g, ''));
-      const needsWiderBox = priceValue < 0.01 || hoverInfo.price.length > 10;
-      
-      const boxWidth = needsWiderBox ? 150 : 120;
-      const boxHeight = 50;
-      const boxX = Math.min(Math.max(hoverInfo.x - boxWidth / 2, 10), canvas.width - boxWidth - 10);
-      const boxY = 10;
-      
-      // Draw box background
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-      ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
-      
-      // Draw box border
-      ctx.strokeStyle = '#000080';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
-      
-      // Draw hover info text
-      ctx.fillStyle = '#000';
-      ctx.font = '12px Arial';
-      ctx.textAlign = 'left';
-      ctx.fillText(`Price: ${hoverInfo.price}`, boxX + 10, boxY + 20); // The price already has a $ symbol
-      ctx.fillText(`Time: ${hoverInfo.time}`, boxX + 10, boxY + 40);
-    }
-    
-  }, [filteredPriceData, canvasRef, selectedTimeframe, hoverInfo]);
-  
-  // Handle mouse events for hover functionality
+  }, [startTime, endTime, filteredPriceData, selectedTimeframe]);
+
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const handleMouseMove = (e: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      
-      // Use the data points from our ref
-      const dataPoints = chartPointsRef.current;
-      
-      // Find closest data point
-      let closestPoint = null;
-      let closestDistance = Number.MAX_VALUE;
-      
-      for (const point of dataPoints) {
-        const distance = Math.sqrt(Math.pow(point.x - x, 2) + Math.pow(point.y - y, 2));
-        if (distance < closestDistance && distance < 30) { // 30px threshold for "closeness"
-          closestDistance = distance;
-          closestPoint = point;
-        }
-      }
-      
-      if (closestPoint) {
-        const date = new Date(closestPoint.timestamp);
-        let timeLabel = '';
-        
-        switch (selectedTimeframe) {
-          case '24h':
-            timeLabel = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            break;
-          case '7d':
-            timeLabel = date.toLocaleDateString([], { weekday: 'short' }) + ' ' + 
-                      date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            break;
-          case '30d':
-          case 'all':
-            timeLabel = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-            break;
-        }
-        
-        // Format price in USD with appropriate decimal places based on value size
-        let formattedPrice;
-        if (closestPoint.price < 0.0001) {
-          // For extremely small values, use scientific notation with currency
-          formattedPrice = `$${closestPoint.price.toExponential(4)}`;
-        } else {
-          // Use Intl formatter with adaptive decimal places
-          const decimalPlaces = closestPoint.price < 0.01 ? 6 : 
-                               closestPoint.price < 0.1 ? 5 : 
-                               closestPoint.price < 1 ? 4 : 
-                               closestPoint.price < 10 ? 3 : 2;
-                               
-          formattedPrice = new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-            minimumFractionDigits: decimalPlaces,
-            maximumFractionDigits: decimalPlaces
-          }).format(closestPoint.price);
-        }
-        
-        setHoverInfo({
-          price: formattedPrice,
-          time: timeLabel,
-          x: closestPoint.x,
-          y: closestPoint.y
-        });
-      } else {
-        setHoverInfo(null);
-      }
-    };
-    
-    const handleMouseLeave = () => {
-      setHoverInfo(null);
-    };
-    
-    canvas.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('mouseleave', handleMouseLeave);
-    
-    return () => {
-      canvas.removeEventListener('mousemove', handleMouseMove);
-      canvas.removeEventListener('mouseleave', handleMouseLeave);
-    };
-  }, [canvasRef, selectedTimeframe]);
+    if (btcPriceUsd === undefined) {
+      const timer = setTimeout(() => setBtcPriceLoadingTimeout(true), 10000); // 10 seconds
+      return () => clearTimeout(timer);
+    }
+    setBtcPriceLoadingTimeout(false);
+  }, [btcPriceUsd]);
+
+  // If BTC price is not available, show loading spinner
+  if (btcPriceUsd === undefined) {
+    return (
+      <div className={styles.priceChartInner} style={{ position: 'relative', width: '100%', height: 320, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Image src={hourglassIcon.src || '/icons/windows_hourglass.png'} alt="Loading..." width={48} height={48} style={{ marginRight: 12 }} />
+        <span style={{ fontSize: '1.2rem', color: '#000080', fontWeight: 'bold' }}>
+          {btcPriceLoadingTimeout
+            ? "Unable to load BTC price. Chart may be inaccurate."
+            : "Loading BTC price..."}
+        </span>
+      </div>
+    );
+  }
 
   // Render the chart
   return (
@@ -497,12 +253,115 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
       <div>
         <div className={styles.priceChartHeader}>
           <h3 className={styles.priceChartTitle}>{assetName} Price</h3>
+          <div 
+            className={styles.infoIconContainer} 
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+            onClick={() => setShowTooltip(!showTooltip)}
+          >
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              width="16" 
+              height="16" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              className={styles.infoIcon}
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            {showTooltip && (
+              <div className={styles.tooltipBox}>
+                Price history might be inaccurate and should only serve as an estimation.
+              </div>
+            )}
+          </div>
         </div>
-        <div style={{ position: 'relative' }}>
-          <canvas 
-            ref={canvasRef} 
-            className={styles.priceChartCanvas}
-          />
+        <div style={{ position: 'relative', width: '100%', height: 320 }}>
+          <ResponsiveContainer width="100%" height={320}>
+            <LineChart 
+              data={filteredPriceData} 
+              margin={{ top: 30, right: 10, left: 0, bottom: 25 }}
+            >
+              <CartesianGrid stroke="#C0C0C0" strokeDasharray="3 3" />
+              <XAxis
+                dataKey="timestamp"
+                type="number"
+                domain={[
+                  startTime?.getTime() || 'dataMin', 
+                  endTime?.getTime() || 'dataMax'
+                ]}
+                ticks={getCustomTicks}
+                tickFormatter={ts => {
+                  const date = new Date(ts);
+                  switch (selectedTimeframe) {
+                    case '24h':
+                      // Show HH:00 format for 24 hour view
+                      return `${date.getHours()}:00`;
+                    case '7d':
+                      // Show day and month for 7d view
+                      return date.toLocaleDateString([], { month: 'numeric', day: 'numeric' });
+                    case '30d':
+                    case 'all':
+                      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                    default:
+                      return date.toLocaleString();
+                  }
+                }}
+                tick={{ fill: '#000', fontSize: 10 }}
+                axisLine={{ stroke: '#000' }}
+                tickLine={{ stroke: '#000' }}
+                minTickGap={15}
+                label={{ 
+                  value: `Time (${selectedTimeframe})`, 
+                  position: 'insideBottom', 
+                  offset: -15,
+                  style: { fontSize: 10 }
+                }}
+              />
+              <YAxis
+                dataKey="price"
+                tickFormatter={v => {
+                  // Format based on value range, preserving readability without exponential notation
+                  if (v < 0.0001) return v.toFixed(8);
+                  if (v < 0.001) return v.toFixed(6);
+                  if (v < 0.01) return v.toFixed(5);
+                  if (v < 0.1) return v.toFixed(4);
+                  if (v < 1) return v.toFixed(3);
+                  return v.toFixed(2);
+                }}
+                tick={{ fill: '#000', fontSize: 10 }}
+                axisLine={{ stroke: '#000' }}
+                tickLine={{ stroke: '#000' }}
+                width={50}
+                domain={['dataMin', 'dataMax']}
+              />
+              <Tooltip
+                contentStyle={{ background: '#fff', border: '1px solid #000080', fontSize: 12 }}
+                labelFormatter={ts => {
+                  const date = new Date(ts as number);
+                  return date.toLocaleString();
+                }}
+                formatter={(value: number) => [
+                  value < 0.0001 ? `$${value.toExponential(4)}` : `$${value.toFixed(6)}`,
+                  'Price (USD)'
+                ]}
+              />
+              <Line
+                type="monotone"
+                dataKey="price"
+                stroke="#000080"
+                strokeWidth={2}
+                dot={false}
+                isAnimationActive={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
 
           {/* Show message when chart data is not available */}
           {(!isLoading && filteredPriceData.length === 0) && (

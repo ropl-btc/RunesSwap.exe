@@ -1,41 +1,33 @@
 import { NextRequest } from 'next/server';
-import { getOrdiscanClient } from '@/lib/serverUtils';
-import { RuneInfo } from '@/types/ordiscan';
-import { createSuccessResponse, createErrorResponse, handleApiError } from '@/lib/apiUtils';
+import { createSuccessResponse, createErrorResponse, handleApiError, validateRequest } from '@/lib/apiUtils';
+import { getRuneData } from '@/lib/runesData';
+import { z } from 'zod';
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const name = searchParams.get('name');
+  // const { searchParams } = new URL(request.url);
+  // const name = searchParams.get('name');
 
-  if (!name || name.trim() === '') {
-    return createErrorResponse('Rune name parameter is required', undefined, 400);
-  }
+  // Zod validation for 'name'
+  const schema = z.object({ name: z.string().min(1) });
+  const validation = await validateRequest(request, schema, 'query');
+  if (!validation.success) return validation.errorResponse;
+  const { name: validName } = validation.data;
 
   // Ensure name doesn't have spacers for the API call
-  const formattedName = name.replace(/•/g, '');
+  const formattedName = validName.replace(/•/g, '');
 
   try {
-    const ordiscan = getOrdiscanClient();
-    const info: RuneInfo = await ordiscan.rune.getInfo({ name: formattedName });
+    const runeInfo = await getRuneData(formattedName);
     
-    // Validate that info is an object and not null
-    if (!info || typeof info !== 'object') {
-      console.warn(`[API Route] Invalid rune info received for ${formattedName}`);
-      return createErrorResponse('Invalid rune info data received', undefined, 500);
-    }
-    
-    return createSuccessResponse(info);
-  } catch (error: unknown) {
-    // Special handling for 404 errors
-    const errorInfo = handleApiError(error, `Failed to fetch info for rune ${formattedName}`);
-    
-    // Return null with 404 status for "not found" errors
-    if (errorInfo.status === 404) {
+    if (!runeInfo) {
       console.warn(`[API Route] Rune info not found for ${formattedName}`);
       // Return null data with success: true for consistent client-side handling
       return createSuccessResponse(null, 404);
     }
     
+    return createSuccessResponse(runeInfo);
+  } catch (error: unknown) {
+    const errorInfo = handleApiError(error, `Failed to fetch info for rune ${formattedName}`);
     return createErrorResponse(errorInfo.message, errorInfo.details, errorInfo.status);
   }
 } 
