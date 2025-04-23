@@ -1,15 +1,22 @@
 /* src/components/Layout.module.css */
 
 .container {
-  min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   padding: 1rem; /* p-4 */
   background-color: var(--win98-gray);
 }
 
+@media (min-width: 769px) {
+  .container {
+    height: 100vh;
+  }
+}
+
 .window {
+  /* flex: 1 0 auto; */
   background-color: var(--win98-gray);
   border-width: 2px;
   border-style: solid;
@@ -19,8 +26,20 @@
   border-bottom-color: var(--win98-dark-gray);
   width: 100%;
   max-width: 42rem; /* max-w-2xl */
+  min-height: 658px;
   box-shadow: 1px 1px 0 1px var(--win98-black); /* Simple shadow */
+  margin: auto;
   /* Add more robust shadow/bevel later if needed */
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 5px;
+  }
+  .window {
+    min-height: max(fit-content, -webkit-fill-available);
+    margin: 0 auto 20px auto;
+  }
 }
 
 .titleBar {

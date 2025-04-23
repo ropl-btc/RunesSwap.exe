@@ -12,7 +12,6 @@ import SwapTab from './SwapTab';
 import RunesInfoTab from './RunesInfoTab';
 import YourTxsTab from './YourTxsTab';
 import PortfolioTab from './PortfolioTab';
-import FooterComponent from './FooterComponent';
 import PriceChart from './PriceChart';
 
 // CoinGecko API endpoint
@@ -209,13 +208,6 @@ export function AppInterface({ activeTab }: AppInterfaceProps) {
       ) : (
         renderActiveTab()
       )}
-      
-      {/* Render footer for all tabs */}
-      <FooterComponent 
-        btcPriceUsd={btcPriceUsd}
-        isBtcPriceLoading={isBtcPriceLoading}
-        btcPriceError={btcPriceError}
-      />
     </div>
   );
 }
