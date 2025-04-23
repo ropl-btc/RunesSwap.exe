@@ -38,11 +38,11 @@ yarn-error.log*
 .env.production.local
 
 # vercel
+
+#windsurf
+.windsurfrules
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-# Cursor Rules
-.cursor-rules/
