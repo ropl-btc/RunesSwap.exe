@@ -162,11 +162,13 @@ export function SwapTab({
   const [loadingDots, setLoadingDots] = useState('.');
   // Add back quote, quoteError, quoteExpired for quote data and error
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
-  const [quoteError, setQuoteError] = useState<string | null>(null);
-  const [quoteExpired, setQuoteExpired] = useState(false);
 
   // --- Swap process state (reducer) ---
   const [swapState, dispatchSwap] = useReducer(swapProcessReducer, initialSwapProcessState);
+
+  // Use reducer state for quoteError and quoteExpired
+  const quoteError = swapState.quoteError;
+  const quoteExpired = swapState.quoteExpired;
 
   // Handle pre-selected rune
   useEffect(() => {
@@ -534,11 +536,10 @@ export function SwapTab({
     setInputAmount('');
     setOutputAmount('');
     setQuote(null);
-    setQuoteError(null);
+    dispatchSwap({ type: 'FETCH_QUOTE_ERROR', error: '' });
     setExchangeRate(null);
     setInputUsdValue(null);
     setOutputUsdValue(null);
-    setQuoteExpired(false); // Reset quote expired state
   };
 
   const handleSelectAssetOut = (selectedAsset: Asset) => {
@@ -580,11 +581,10 @@ export function SwapTab({
 
     // Always clear quote and related state when output asset changes
     setQuote(null);
-    setQuoteError(null);
+    dispatchSwap({ type: 'FETCH_QUOTE_ERROR', error: '' });
     setExchangeRate(null);
     setInputUsdValue(null);
     setOutputUsdValue(null);
-    setQuoteExpired(false); // Reset quote expired state
   };
 
   // --- Swap Direction Logic ---
@@ -601,111 +601,95 @@ export function SwapTab({
 
     // Clear quote and related state
     setQuote(null);
-    setQuoteError(null);
+    dispatchSwap({ type: 'FETCH_QUOTE_ERROR', error: '' });
     setExchangeRate(null);
     setInputUsdValue(null);
     setOutputUsdValue(null);
     // Reset swap process state
     dispatchSwap({ type: 'RESET_SWAP' });
-    setQuoteExpired(false); // Reset quote expired state
   };
 
   // --- Quote & Price Calculation ---
   // Memoized quote fetching using API
-  const handleFetchQuote = useCallback(() => {
-    setQuoteExpired(false);
-    const fetchQuoteAsync = async () => {
-      const isBtcToRune = assetIn?.isBTC;
-      const runeAsset = isBtcToRune ? assetOut : assetIn;
-      const currentInputAmount = parseFloat(inputAmount); // Read latest input from ref
+  const handleFetchQuote = useCallback(async () => {
+    dispatchSwap({ type: 'FETCH_QUOTE_START' });
+    setQuote(null); // Clear previous quote
+    setExchangeRate(null); // Clear previous rate
 
-      if (!assetIn || !assetOut || !runeAsset || runeAsset.isBTC || currentInputAmount <= 0) return;
+    // Use MOCK_ADDRESS if no wallet is connected to allow quote fetching
+    const effectiveAddress = address || MOCK_ADDRESS;
+    if (!effectiveAddress) { // Should theoretically never happen with MOCK_ADDRESS fallback
+         dispatchSwap({ type: 'FETCH_QUOTE_ERROR', error: "Internal error: Missing address for quote." });
+         return;
+    }
+
+    try {
+      const params = {
+        btcAmount: parseFloat(inputAmount), 
+        runeName: assetIn?.name,
+        address: effectiveAddress,
+        sell: !assetIn?.isBTC,
+        // TODO: Add other params like marketplace, rbfProtection if needed
+      };
+
+      // *** Use API client function ***
+      const quoteResponse = await fetchQuoteFromApi(params); 
+      setQuote(quoteResponse);
       
-      dispatchSwap({ type: 'FETCH_QUOTE_START' });
-      setQuote(null); // Clear previous quote
-      setQuoteError(null);
-      setExchangeRate(null); // Clear previous rate
+      let calculatedOutputAmount = '';
+      let calculatedRate = null;
 
-      // Use MOCK_ADDRESS if no wallet is connected to allow quote fetching
-      const effectiveAddress = address || MOCK_ADDRESS;
-      if (!effectiveAddress) { // Should theoretically never happen with MOCK_ADDRESS fallback
-           setQuoteError("Internal error: Missing address for quote.");
-           dispatchSwap({ type: 'FETCH_QUOTE_ERROR', error: "Internal error: Missing address for quote." });
-           return;
-      }
+      if (quoteResponse) {
+        const inputVal = parseFloat(inputAmount);
+        let outputVal = 0;
+        let btcValue = 0;
+        let runeValue = 0;
 
-      try {
-        const params = {
-          btcAmount: currentInputAmount, 
-          runeName: runeAsset.name,
-          address: effectiveAddress,
-          sell: !isBtcToRune,
-          // TODO: Add other params like marketplace, rbfProtection if needed
-        };
-
-        // *** Use API client function ***
-        const quoteResponse = await fetchQuoteFromApi(params); 
-        setQuote(quoteResponse);
-        
-        let calculatedOutputAmount = '';
-        let calculatedRate = null;
-
-        if (quoteResponse) {
-          const inputVal = currentInputAmount;
-          let outputVal = 0;
-          let btcValue = 0;
-          let runeValue = 0;
-
-          try {
-            if (isBtcToRune) {
-              outputVal = parseFloat(quoteResponse.totalFormattedAmount || '0');
-              btcValue = inputVal;
-              runeValue = outputVal;
-              calculatedOutputAmount = outputVal.toLocaleString(undefined, {});
-            } else {
-              outputVal = parseFloat(quoteResponse.totalPrice || '0');
-              runeValue = inputVal;
-              btcValue = outputVal;
-              calculatedOutputAmount = outputVal.toLocaleString(undefined, { maximumFractionDigits: 8 });
-            }
-
-            if (btcValue > 0 && runeValue > 0 && btcPriceUsd) {
-               const btcUsdAmount = (isBtcToRune ? btcValue : btcValue) * btcPriceUsd;
-               const pricePerRune = btcUsdAmount / runeValue;
-               calculatedRate = `${pricePerRune.toLocaleString(undefined, { 
-                  style: 'currency', 
-                  currency: 'USD',
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 6
-                })} per ${runeAsset.name}`;
-            }
-            setExchangeRate(calculatedRate);
-
-          } catch (e) {
-            console.error("Error parsing quote amounts:", e);
-            calculatedOutputAmount = 'Error';
-            setExchangeRate('Error calculating rate');
+        try {
+          if (assetIn?.isBTC) {
+            outputVal = parseFloat(quoteResponse.totalFormattedAmount || '0');
+            btcValue = inputVal;
+            runeValue = outputVal;
+            calculatedOutputAmount = outputVal.toLocaleString(undefined, {});
+          } else {
+            outputVal = parseFloat(quoteResponse.totalPrice || '0');
+            runeValue = inputVal;
+            btcValue = outputVal;
+            calculatedOutputAmount = outputVal.toLocaleString(undefined, { maximumFractionDigits: 8 });
           }
+
+          if (btcValue > 0 && runeValue > 0 && btcPriceUsd) {
+             const btcUsdAmount = (assetIn?.isBTC ? btcValue : btcValue) * btcPriceUsd;
+             const pricePerRune = btcUsdAmount / runeValue;
+             calculatedRate = `${pricePerRune.toLocaleString(undefined, { 
+                style: 'currency', 
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 6
+              })} per ${assetIn?.name}`;
+          }
+          setExchangeRate(calculatedRate);
+
+        } catch (e) {
+          console.error("Error parsing quote amounts:", e);
+          calculatedOutputAmount = 'Error';
+          setExchangeRate('Error calculating rate');
         }
-        setOutputAmount(calculatedOutputAmount);
-        dispatchSwap({ type: 'FETCH_QUOTE_SUCCESS' });
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch quote';
-        if (errorMessage.includes('Insufficient liquidity') || errorMessage.includes('not found')) {
-           setQuoteError(`Could not find a quote for this pair/amount.`);
-        } else {
-           setQuoteError(`Quote Error: ${errorMessage}`);
-        }
-        setQuote(null);
-        setOutputAmount('');
-        setExchangeRate(null);
-        dispatchSwap({ type: 'FETCH_QUOTE_ERROR', error: errorMessage });
       }
-    };
-    fetchQuoteAsync();
-  }, [assetIn, assetOut, inputAmount, address, btcPriceUsd,
-      dispatchSwap, setQuote, setQuoteError, setExchangeRate, setOutputAmount, setQuoteExpired
-  ]);
+      setOutputAmount(calculatedOutputAmount);
+      dispatchSwap({ type: 'FETCH_QUOTE_SUCCESS' });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch quote';
+      if (errorMessage.includes('Insufficient liquidity') || errorMessage.includes('not found')) {
+         dispatchSwap({ type: 'FETCH_QUOTE_ERROR', error: `Could not find a quote for this pair/amount.` });
+      } else {
+         dispatchSwap({ type: 'FETCH_QUOTE_ERROR', error: `Quote Error: ${errorMessage}` });
+      }
+      setQuote(null);
+      setOutputAmount('');
+      setExchangeRate(null);
+    }
+  }, [assetIn, inputAmount, address, btcPriceUsd, dispatchSwap, setQuote, setExchangeRate, setOutputAmount]);
 
   // Effect to call the memoized fetchQuote when debounced amount or assets change
   useEffect(() => {
@@ -717,12 +701,10 @@ export function SwapTab({
       // Reset quote state if conditions aren't met
       setQuote(null);
       // Don't set loading to false here, handleFetchQuote does it
-      setQuoteError(null);
       setOutputAmount('');
       setExchangeRate(null);
       setInputUsdValue(null);
       setOutputUsdValue(null);
-      setQuoteExpired(false); // Reset quote expired state here too
     }
   }, [debouncedInputAmount, assetIn, assetOut, handleFetchQuote]);
 
@@ -833,7 +815,6 @@ export function SwapTab({
 
     dispatchSwap({ type: 'SWAP_START' });
     dispatchSwap({ type: 'FETCH_QUOTE_START' });
-    setQuoteExpired(false); // Ensure reset before attempting swap
 
     try {
       // 1. Get PSBT via API
@@ -970,9 +951,6 @@ export function SwapTab({
       if (!quoteExpired) {
          dispatchSwap({ type: 'SWAP_STEP', step: 'idle' });
       }
-      // If quoteExpired is true, isSwapping should remain false anyway because we didn't set it true
-      // or we exited the try block before confirming. Let's ensure it's false in finally.
-       dispatchSwap({ type: 'SWAP_STEP', step: 'idle' });
     }
   };
 

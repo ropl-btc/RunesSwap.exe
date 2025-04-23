@@ -33,6 +33,7 @@ const findClosestTimestamp = (data: Array<{timestamp: number}>, targetTimestamp:
 const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', onClose, btcPriceUsd }) => {
   const [selectedTimeframe, setSelectedTimeframe] = useState<'24h' | '7d' | '30d' | 'all'>(timeFrame);
   const [showTooltip, setShowTooltip] = useState(false);
+  const [btcPriceLoadingTimeout, setBtcPriceLoadingTimeout] = useState(false);
   
   // Fetch price history data using React Query
   const {
@@ -59,15 +60,19 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
     
     // Convert price data from sats to USD
     const convertedPriceData = priceHistoryData.prices.map(point => {
-      // Convert sats to USD: sats_per_token * (btc_price_usd / 100_000_000)
-      const priceInUsd = point.price * (btcPriceUsd! / 100000000);
-      
+      // Safely convert to USD or return null if BTC price isn't available
+      const priceInUsd = btcPriceUsd !== undefined 
+        ? point.price * (btcPriceUsd / 100000000)
+        : null;
       return {
         ...point,
         price: priceInUsd,
         originalPriceInSats: point.price // Keep the original price for reference
       };
-    }).sort((a, b) => a.timestamp - b.timestamp); // Ensure data is sorted by timestamp
+    })
+    // Filter out points where price is null
+    .filter(point => point.price !== null)
+    .sort((a, b) => a.timestamp - b.timestamp); // Ensure data is sorted by timestamp
 
     // Calculate the exact target end time (current time) and start time (24h/7d/30d ago)
     const targetEndTime = now.getTime();
@@ -208,7 +213,7 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
         }
         return ticks;
       }
-      case 'all': // 90 days
+      case 'all': { // 90 days
         // Create approximately 6 evenly spaced ticks
         const tickCount = 6;
         const ticks: number[] = [];
@@ -216,15 +221,28 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
           ticks.push(startMs + (i * (duration / tickCount)));
         }
         return ticks;
+      }
     }
   }, [startTime, endTime, filteredPriceData, selectedTimeframe]);
+
+  useEffect(() => {
+    if (btcPriceUsd === undefined) {
+      const timer = setTimeout(() => setBtcPriceLoadingTimeout(true), 10000); // 10 seconds
+      return () => clearTimeout(timer);
+    }
+    setBtcPriceLoadingTimeout(false);
+  }, [btcPriceUsd]);
 
   // If BTC price is not available, show loading spinner
   if (btcPriceUsd === undefined) {
     return (
       <div className={styles.priceChartInner} style={{ position: 'relative', width: '100%', height: 320, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Image src={hourglassIcon.src || '/icons/windows_hourglass.png'} alt="Loading..." width={48} height={48} style={{ marginRight: 12 }} />
-        <span style={{ fontSize: '1.2rem', color: '#000080', fontWeight: 'bold' }}>Loading BTC price...</span>
+        <span style={{ fontSize: '1.2rem', color: '#000080', fontWeight: 'bold' }}>
+          {btcPriceLoadingTimeout
+            ? "Unable to load BTC price. Chart may be inaccurate."
+            : "Loading BTC price..."}
+        </span>
       </div>
     );
   }

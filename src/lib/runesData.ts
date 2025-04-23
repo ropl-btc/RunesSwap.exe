@@ -93,8 +93,7 @@ export async function updateRuneData(runeName: string): Promise<RuneData | null>
 
     const { error: updateError } = await supabase
       .from('runes')
-      .upsert(dataToUpdate)
-      .eq('name', runeName)
+      .upsert([dataToUpdate])
       .select()
 
     if (updateError) {

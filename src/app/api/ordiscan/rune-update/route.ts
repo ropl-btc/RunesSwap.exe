@@ -42,6 +42,11 @@ export async function POST(request: NextRequest) {
         details: updateError.details,
         hint: updateError.hint
       });
+      return createErrorResponse(
+        'Database update failed',
+        JSON.stringify(updateError),
+        500
+      );
     }
 
     return createSuccessResponse(runeData as RuneData);
