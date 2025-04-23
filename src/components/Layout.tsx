@@ -1,8 +1,7 @@
 'use client'; // Required for hooks
 
-import React, { useEffect } from 'react'; // Added useEffect
+import React from 'react'; // Only import React
 import styles from './Layout.module.css'; // Import the CSS module
-import { useSharedLaserEyes } from '@/context/LaserEyesContext'; // Import shared hook
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -10,19 +9,10 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   // Use shared hook to get disconnect
-  const { disconnect } = useSharedLaserEyes();
+  // const { disconnect } = useSharedLaserEyes();
 
-  // WORKAROUND: Force disconnect wallet on initial mount.
-  // This is a workaround for a bug observed with the LaserEyes library (v0.0.134)
-  // where refreshing the page while connected (especially with Xverse) triggers
-  // multiple simultaneous connection prompts from the wallet extension.
-  // This occurs even when using a single shared hook instance and with React Strict Mode off,
-  // suggesting an issue with the library's internal auto-reconnect/initialization logic.
-  // Forcing disconnect on mount prevents these multiple prompts, requiring manual reconnect after refresh.
-  useEffect(() => {
-    disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Use empty dependency array to run only ONCE on mount
+  // WORKAROUND REMOVED: No longer force disconnect wallet on initial mount.
+  // This fixes the bug where multiple sign-in popups appeared on refresh.
 
   return (
     // Apply styles using the styles object
