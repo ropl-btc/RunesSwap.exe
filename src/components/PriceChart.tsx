@@ -21,15 +21,6 @@ interface PriceChartProps {
   btcPriceUsd?: number; // BTC price in USD
 }
 
-// Find the closest timestamp to a target timestamp from an array of data points
-const findClosestTimestamp = (data: Array<{timestamp: number}>, targetTimestamp: number) => {
-  if (!data || data.length === 0) return null;
-  
-  return data.reduce((prev, curr) => {
-    return Math.abs(curr.timestamp - targetTimestamp) < Math.abs(prev.timestamp - targetTimestamp) ? curr : prev;
-  });
-};
-
 const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', onClose, btcPriceUsd }) => {
   const [selectedTimeframe, setSelectedTimeframe] = useState<'24h' | '7d' | '30d' | 'all'>(timeFrame);
   const [showTooltip, setShowTooltip] = useState(false);
@@ -49,82 +40,86 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
     retry: 2, // Retry failed requests twice
   });
   
-  // Convert sats to USD and filter by timeframe
+  // TEMPORARY FIX: The external API only returns data points when the price changes, so there are gaps in the time series.
+  // This helper forward-fills missing hourly data points so the chart is visually continuous.
+  // Ideally, the API should provide a complete time series and this workaround can be removed.
+  function fillMissingHours(
+    sortedData: { timestamp: number; price: number; originalPriceInSats: number }[],
+    hours: number,
+    endTimestamp: number
+  ) {
+    const filled: { timestamp: number; price: number; originalPriceInSats: number }[] = [];
+    let lastPrice = sortedData.length ? sortedData[0].price : undefined;
+    let lastOriginal = sortedData.length ? sortedData[0].originalPriceInSats : undefined;
+    let dataIdx = 0;
+    for (let i = hours - 1; i >= 0; i--) {
+      const ts = endTimestamp - i * 60 * 60 * 1000;
+      while (dataIdx < sortedData.length && sortedData[dataIdx].timestamp <= ts) {
+        lastPrice = sortedData[dataIdx].price;
+        lastOriginal = sortedData[dataIdx].originalPriceInSats;
+        dataIdx++;
+      }
+      if (typeof lastPrice === 'number' && typeof lastOriginal === 'number') {
+        filled.push({
+          timestamp: ts,
+          price: lastPrice,
+          originalPriceInSats: lastOriginal
+        });
+      }
+    }
+    return filled;
+  }
+
+  // Replace the filtering and start/end logic in the useMemo for filteredPriceData
   const { filteredPriceData, startTime, endTime } = React.useMemo(() => {
     if (!priceHistoryData?.prices || priceHistoryData.prices.length === 0) {
       return { filteredPriceData: [], startTime: null, endTime: null };
     }
 
-    // Current time to calculate exact time ranges
-    const now = new Date();
-    
-    // Convert price data from sats to USD
-    const convertedPriceData = priceHistoryData.prices.map(point => {
-      // Safely convert to USD or return null if BTC price isn't available
-      const priceInUsd = btcPriceUsd !== undefined 
-        ? point.price * (btcPriceUsd / 100000000)
-        : null;
-      return {
+    // Sort data by timestamp ascending
+    const sortedData = priceHistoryData.prices
+      .map(point => ({
         ...point,
-        price: priceInUsd,
-        originalPriceInSats: point.price // Keep the original price for reference
-      };
-    })
-    // Filter out points where price is null
-    .filter(point => point.price !== null)
-    .sort((a, b) => a.timestamp - b.timestamp); // Ensure data is sorted by timestamp
+        price: btcPriceUsd !== undefined ? point.price * (btcPriceUsd / 100000000) : null,
+        originalPriceInSats: point.price
+      }))
+      .filter((point): point is { timestamp: number; price: number; originalPriceInSats: number } => typeof point.price === 'number')
+      .sort((a, b) => a.timestamp - b.timestamp);
 
-    // Calculate the exact target end time (current time) and start time (24h/7d/30d ago)
-    const targetEndTime = now.getTime();
-    let targetStartTime: number;
-    let periodLabel: string;
-    
-    switch(selectedTimeframe) {
+    // Determine time window
+    let now = Date.now();
+    let windowStart: number;
+    let hours = 0;
+    switch (selectedTimeframe) {
       case '24h':
-        // Exactly 24 hours ago from current time
-        targetStartTime = now.getTime() - (24 * 60 * 60 * 1000);
-        periodLabel = '24 hours';
+        hours = 24;
+        windowStart = now - 24 * 60 * 60 * 1000;
         break;
       case '7d':
-        // Exactly 7 days ago from current time
-        targetStartTime = now.getTime() - (7 * 24 * 60 * 60 * 1000);
-        periodLabel = '7 days';
+        hours = 7 * 24;
+        windowStart = now - 7 * 24 * 60 * 60 * 1000;
         break;
       case '30d':
-        // Exactly 30 days ago from current time
-        targetStartTime = now.getTime() - (30 * 24 * 60 * 60 * 1000);
-        periodLabel = '30 days';
+        hours = 30 * 24;
+        windowStart = now - 30 * 24 * 60 * 60 * 1000;
         break;
       case 'all':
-        // For "all" (90 days), calculate exact 90 days ago
-        targetStartTime = now.getTime() - (90 * 24 * 60 * 60 * 1000);
-        periodLabel = '90 days';
+        windowStart = sortedData[0]?.timestamp || now;
+        now = sortedData[sortedData.length - 1]?.timestamp || now;
         break;
     }
-    
-    // Find closest data points to our target times
-    const closestEndPoint = findClosestTimestamp(convertedPriceData, targetEndTime);
-    const closestStartPoint = findClosestTimestamp(convertedPriceData, targetStartTime);
-    
-    const startTimestamp = closestStartPoint?.timestamp || targetStartTime;
-    
-    // Always use the current time as the end time for consistent display
-    const endTimestamp = targetEndTime;
-    
-    // Safety check - if no close data points found, use actual targets
-    if (!closestStartPoint || !closestEndPoint) {
-      console.log(`[PriceChart] Warning: Missing data points near target times for ${periodLabel} period`);
+
+    let filtered;
+    if (selectedTimeframe === 'all') {
+      filtered = sortedData.filter(point => point.timestamp >= windowStart && point.timestamp <= now);
+    } else {
+      filtered = fillMissingHours(sortedData, hours, now);
     }
-    
-    // Filter data to include points between start and end times
-    const filtered = convertedPriceData.filter(point => {
-      return point.timestamp >= startTimestamp && point.timestamp <= endTimestamp;
-    });
-    
-    return { 
+
+    return {
       filteredPriceData: filtered,
-      startTime: new Date(startTimestamp),
-      endTime: now // Use the actual current time for end boundary
+      startTime: filtered.length > 0 ? new Date(filtered[0].timestamp) : null,
+      endTime: filtered.length > 0 ? new Date(filtered[filtered.length - 1].timestamp) : null
     };
   }, [priceHistoryData, selectedTimeframe, btcPriceUsd]);
 
@@ -136,91 +131,28 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
     }
   }, [filteredPriceData, startTime, endTime, selectedTimeframe]);
 
-  // Get ticks for the x-axis based on timeframe
+  // Replace getCustomTicks logic with a simpler, data-driven approach
   const getCustomTicks = React.useMemo(() => {
     if (!startTime || !endTime || filteredPriceData.length === 0) return [];
-    
-    const startMs = startTime.getTime();
-    const endMs = endTime.getTime();
-    const duration = endMs - startMs;
-    
-    // Generate appropriate number of ticks based on timeframe
-    switch(selectedTimeframe) {
+
+    const dataTimestamps = filteredPriceData.map(p => p.timestamp);
+
+    switch (selectedTimeframe) {
       case '24h': {
-        // For 24h view, create hour-based ticks
-        const startDate = new Date(startMs);
-        const endDate = new Date(endMs);
-        
-        // Get the current hour to make sure we include it
-        const currentHour = endDate.getHours();
-        
-        // Create a tick for each 3-hour interval, ensuring we include the current hour
-        const hours: number[] = [];
-        for (let h = 0; h <= 24; h += 3) {
-          // Create a new date at start time and set the hour based on our interval
-          const tickDate = new Date(startDate);
-          tickDate.setHours(startDate.getHours() + h);
-          
-          // Only add if within our range
-          if (tickDate.getTime() <= endMs) {
-            hours.push(tickDate.getTime());
-          }
-        }
-        
-        // Make sure we include the current hour if it's not already included
-        const lastTickHour = new Date(hours[hours.length - 1]).getHours();
-        if (lastTickHour !== currentHour && currentHour % 3 !== 0) {
-          const currentHourDate = new Date(endDate);
-          currentHourDate.setMinutes(0, 0, 0); // Set minutes, seconds, ms to 0
-          hours.push(currentHourDate.getTime());
-        }
-        
-        return hours;
+        // Use available data points for ticks, spaced every ~3-4 points (hourly granularity)
+        const tickCount = Math.min(8, dataTimestamps.length);
+        if (tickCount <= 2) return dataTimestamps;
+        const step = Math.floor(dataTimestamps.length / (tickCount - 1));
+        return dataTimestamps.filter((_, i) => i % step === 0 || i === dataTimestamps.length - 1);
       }
-      case '7d': {
-        // For 7d view, create day-based ticks
-        const startDate = new Date(startMs);
-        const endDate = new Date(endMs);
-        
-        // Create a tick for each day
-        const days: number[] = [];
-        for (let d = 0; d <= 7; d++) {
-          const tickDate = new Date(startDate);
-          tickDate.setDate(startDate.getDate() + d);
-          
-          // Only add if within our range
-          if (tickDate.getTime() <= endMs) {
-            days.push(tickDate.getTime());
-          }
-        }
-        
-        // Make sure we include the current day
-        const lastTickDay = new Date(days[days.length - 1]).getDate();
-        if (lastTickDay !== endDate.getDate()) {
-          const currentDayDate = new Date(endDate);
-          currentDayDate.setHours(0, 0, 0, 0); // Set time to start of day
-          days.push(currentDayDate.getTime());
-        }
-        
-        return days;
-      }
-      case '30d': {
-        // Create approximately 6 evenly spaced ticks, plus start and end dates
+      case '7d':
+      case '30d':
+      case 'all': {
+        // For longer timeframes, space ticks evenly across available data
         const tickCount = 6;
-        const ticks: number[] = [];
-        for (let i = 0; i <= tickCount; i++) {
-          ticks.push(startMs + (i * (duration / tickCount)));
-        }
-        return ticks;
-      }
-      case 'all': { // 90 days
-        // Create approximately 6 evenly spaced ticks
-        const tickCount = 6;
-        const ticks: number[] = [];
-        for (let i = 0; i <= tickCount; i++) {
-          ticks.push(startMs + (i * (duration / tickCount)));
-        }
-        return ticks;
+        if (dataTimestamps.length <= tickCount) return dataTimestamps;
+        const step = Math.floor(dataTimestamps.length / (tickCount - 1));
+        return dataTimestamps.filter((_, i) => i % step === 0 || i === dataTimestamps.length - 1);
       }
     }
   }, [startTime, endTime, filteredPriceData, selectedTimeframe]);
@@ -317,12 +249,6 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
                 axisLine={{ stroke: '#000' }}
                 tickLine={{ stroke: '#000' }}
                 minTickGap={15}
-                label={{ 
-                  value: `Time (${selectedTimeframe})`, 
-                  position: 'insideBottom', 
-                  offset: -15,
-                  style: { fontSize: 10 }
-                }}
               />
               <YAxis
                 dataKey="price"
