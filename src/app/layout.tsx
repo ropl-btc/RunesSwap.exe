@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'RunesSwap.app | Swap Bitcoin Runes',
     description: 'Swap Bitcoin Runes instantly with RunesSwap.app, the aggregator for Bitcoin Runes swaps. Connect your wallet, view live prices, and trade securely with low fees—almost always getting the best exchange rate.',
-    images: ['https://runesswap.app/og-image.png'],
+    images: ['https://runesswap.app/icons/runesswap_logo.png'],
   },
   icons: {
     icon: '/favicon.ico',
