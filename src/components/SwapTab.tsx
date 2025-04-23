@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Fragment, useCallback, useMemo, useReducer } from 'react';
+import React, { useState, useEffect, Fragment, useCallback, useMemo, useReducer, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Listbox, Transition } from '@headlessui/react';
 import { ChevronUpDownIcon, CheckIcon, ArrowPathIcon } from '@heroicons/react/24/solid';
@@ -169,6 +169,9 @@ export function SwapTab({
   // Use reducer state for quoteError and quoteExpired
   const quoteError = swapState.quoteError;
   const quoteExpired = swapState.quoteExpired;
+
+  // Track the latest quote request to avoid race conditions
+  const latestQuoteRequestId = useRef(0);
 
   // Handle pre-selected rune
   useEffect(() => {
@@ -388,7 +391,6 @@ export function SwapTab({
     queryFn: () => fetchBtcBalanceFromApi(paymentAddress!), // Use API function
     enabled: !!connected && !!paymentAddress, // Only run query if connected and address exists
     staleTime: 30000, // Consider balance stale after 30 seconds
-    refetchInterval: 60000, // Refetch every 60 seconds
   });
 
   const {
@@ -400,7 +402,6 @@ export function SwapTab({
     queryFn: () => fetchRuneBalancesFromApi(address!), // Use API function
     enabled: !!connected && !!address, // Only run query if connected and address exists
     staleTime: 30000, // Consider balances stale after 30 seconds
-    refetchInterval: 60000, // Refetch every 60 seconds
   });
 
   // Query for Input Rune Info (needed for decimals and other info)
@@ -612,82 +613,82 @@ export function SwapTab({
   // --- Quote & Price Calculation ---
   // Memoized quote fetching using API
   const handleFetchQuote = useCallback(async () => {
+    // Increment and capture the request ID for this quote
+    const requestId = ++latestQuoteRequestId.current;
     dispatchSwap({ type: 'FETCH_QUOTE_START' });
     setQuote(null); // Clear previous quote
     setExchangeRate(null); // Clear previous rate
 
     // Use MOCK_ADDRESS if no wallet is connected to allow quote fetching
     const effectiveAddress = address || MOCK_ADDRESS;
-    if (!effectiveAddress) { // Should theoretically never happen with MOCK_ADDRESS fallback
+    if (!effectiveAddress) {
          dispatchSwap({ type: 'FETCH_QUOTE_ERROR', error: "Internal error: Missing address for quote." });
          return;
     }
 
     try {
+      // Prevent BTC->BTC or invalid asset pairs
+      if ((assetIn?.isBTC && assetOut?.isBTC) || (!assetIn?.isBTC && !assetOut?.isBTC)) {
+        dispatchSwap({ type: 'FETCH_QUOTE_ERROR', error: 'Invalid asset pair selected.' });
+        return;
+      }
+      // Compute correct runeName for quote
+      const runeName = assetIn?.isBTC ? assetOut?.name : assetIn?.name;
+      const isSell = !assetIn?.isBTC;
       const params = {
         btcAmount: parseFloat(inputAmount), 
-        runeName: assetIn?.name,
+        runeName,
         address: effectiveAddress,
-        sell: !assetIn?.isBTC,
-        // TODO: Add other params like marketplace, rbfProtection if needed
+        sell: isSell,
       };
-
-      // *** Use API client function ***
       const quoteResponse = await fetchQuoteFromApi(params); 
-      setQuote(quoteResponse);
-      
-      let calculatedOutputAmount = '';
-      let calculatedRate = null;
-
-      if (quoteResponse) {
-        const inputVal = parseFloat(inputAmount);
-        let outputVal = 0;
-        let btcValue = 0;
-        let runeValue = 0;
-
-        try {
-          if (assetIn?.isBTC) {
-            outputVal = parseFloat(quoteResponse.totalFormattedAmount || '0');
-            btcValue = inputVal;
-            runeValue = outputVal;
-            calculatedOutputAmount = outputVal.toLocaleString(undefined, {});
-          } else {
-            outputVal = parseFloat(quoteResponse.totalPrice || '0');
-            runeValue = inputVal;
-            btcValue = outputVal;
-            calculatedOutputAmount = outputVal.toLocaleString(undefined, { maximumFractionDigits: 8 });
+      // Only update state if this is the latest request
+      if (requestId === latestQuoteRequestId.current) {
+        setQuote(quoteResponse);
+        let calculatedOutputAmount = '';
+        let calculatedRate = null;
+        if (quoteResponse) {
+          const inputVal = parseFloat(inputAmount);
+          let outputVal = 0;
+          let btcValue = 0;
+          let runeValue = 0;
+          try {
+            if (assetIn?.isBTC) {
+              outputVal = parseFloat(quoteResponse.totalFormattedAmount || '0');
+              btcValue = inputVal;
+              runeValue = outputVal;
+              calculatedOutputAmount = outputVal.toLocaleString(undefined, {});
+            } else {
+              outputVal = parseFloat(quoteResponse.totalPrice || '0');
+              runeValue = inputVal;
+              btcValue = outputVal;
+              calculatedOutputAmount = outputVal.toLocaleString(undefined, { maximumFractionDigits: 8 });
+            }
+            if (btcValue > 0 && runeValue > 0 && btcPriceUsd) {
+               const btcUsdAmount = btcValue * btcPriceUsd;
+               const pricePerRune = btcUsdAmount / runeValue;
+               calculatedRate = `${pricePerRune.toLocaleString(undefined, { 
+                  style: 'currency', 
+                  currency: 'USD',
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 6
+                })} per ${assetIn?.name}`;
+            }
+            setExchangeRate(calculatedRate);
+          } catch {
+            calculatedOutputAmount = 'Error';
+            setExchangeRate('Error calculating rate');
           }
-
-          if (btcValue > 0 && runeValue > 0 && btcPriceUsd) {
-             const btcUsdAmount = (assetIn?.isBTC ? btcValue : btcValue) * btcPriceUsd;
-             const pricePerRune = btcUsdAmount / runeValue;
-             calculatedRate = `${pricePerRune.toLocaleString(undefined, { 
-                style: 'currency', 
-                currency: 'USD',
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 6
-              })} per ${assetIn?.name}`;
-          }
-          setExchangeRate(calculatedRate);
-
-        } catch (e) {
-          console.error("Error parsing quote amounts:", e);
-          calculatedOutputAmount = 'Error';
-          setExchangeRate('Error calculating rate');
         }
+        setOutputAmount(calculatedOutputAmount);
+        dispatchSwap({ type: 'FETCH_QUOTE_SUCCESS' });
       }
-      setOutputAmount(calculatedOutputAmount);
-      dispatchSwap({ type: 'FETCH_QUOTE_SUCCESS' });
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch quote';
-      if (errorMessage.includes('Insufficient liquidity') || errorMessage.includes('not found')) {
-         dispatchSwap({ type: 'FETCH_QUOTE_ERROR', error: `Could not find a quote for this pair/amount.` });
-      } else {
-         dispatchSwap({ type: 'FETCH_QUOTE_ERROR', error: `Quote Error: ${errorMessage}` });
+    } catch {
+      // Only update error state if this is the latest request
+      if (requestId === latestQuoteRequestId.current) {
+        // Let the error propagate to error boundaries or error UI
+        throw new Error('Failed to fetch quote');
       }
-      setQuote(null);
-      setOutputAmount('');
-      setExchangeRate(null);
     }
   }, [assetIn, inputAmount, address, btcPriceUsd, dispatchSwap, setQuote, setExchangeRate, setOutputAmount]);
 

@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
   const validation = await validateRequest(request, quoteParamsSchema, 'body');
   if (!validation.success) return validation.errorResponse;
   const validatedParams = validation.data;
+  console.log('[QUOTE DEBUG] Params received in API:', validatedParams);
   // Ensure btcAmount is a string for the SDK
   validatedParams.btcAmount = String(validatedParams.btcAmount);
 
