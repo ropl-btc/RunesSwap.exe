@@ -43,25 +43,29 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
   // TEMPORARY FIX: The external API only returns data points when the price changes, so there are gaps in the time series.
   // This helper forward-fills missing hourly data points so the chart is visually continuous.
   // Ideally, the API should provide a complete time series and this workaround can be removed.
-  function fillMissingHours(sortedData: { timestamp: number; price: number; originalPriceInSats?: number }[], hours: number, endTimestamp: number) {
+  function fillMissingHours(
+    sortedData: { timestamp: number; price: number; originalPriceInSats: number }[],
+    hours: number,
+    endTimestamp: number
+  ) {
     const filled: { timestamp: number; price: number; originalPriceInSats: number }[] = [];
-    let lastPrice = 0;
-    let lastOriginal = 0;
+    let lastPrice = sortedData.length ? sortedData[0].price : undefined;
+    let lastOriginal = sortedData.length ? sortedData[0].originalPriceInSats : undefined;
     let dataIdx = 0;
     for (let i = hours - 1; i >= 0; i--) {
       const ts = endTimestamp - i * 60 * 60 * 1000;
       while (dataIdx < sortedData.length && sortedData[dataIdx].timestamp <= ts) {
-        if (typeof sortedData[dataIdx].price === 'number') {
-          lastPrice = sortedData[dataIdx].price;
-          lastOriginal = sortedData[dataIdx].originalPriceInSats ?? sortedData[dataIdx].price;
-        }
+        lastPrice = sortedData[dataIdx].price;
+        lastOriginal = sortedData[dataIdx].originalPriceInSats;
         dataIdx++;
       }
-      filled.push({
-        timestamp: ts,
-        price: lastPrice,
-        originalPriceInSats: lastOriginal
-      });
+      if (typeof lastPrice === 'number' && typeof lastOriginal === 'number') {
+        filled.push({
+          timestamp: ts,
+          price: lastPrice,
+          originalPriceInSats: lastOriginal
+        });
+      }
     }
     return filled;
   }
