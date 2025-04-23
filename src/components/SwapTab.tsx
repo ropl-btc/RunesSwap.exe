@@ -250,7 +250,7 @@ export function SwapTab({
               setSearchQuery('');
             }
           } catch (error) {
-            console.error(`Error searching for pre-selected rune:`, error);
+            console.error("Error searching for pre-selected rune:", error);
           } finally {
             setIsSearching(false);
             setIsPreselectedRuneLoading(false);
@@ -479,7 +479,7 @@ export function SwapTab({
         setSearchResults(mappedResults); // Store as Asset[]
       } catch (error: unknown) {
         // Keep actual error logging
-        console.error("[SwapTab] Error searching runes:", error);
+        console.error("Error searching runes:", error);
         setSearchError(error instanceof Error ? error.message : 'Failed to search');
         setSearchResults([]); // Clear results on error
       } finally {
@@ -534,7 +534,6 @@ export function SwapTab({
       setAssetOut(BTC_ASSET);
     }
     // Clear amounts and quote when assets change
-    setInputAmount('');
     setOutputAmount('');
     setQuote(null);
     dispatchSwap({ type: 'FETCH_QUOTE_ERROR', error: '' });
@@ -562,7 +561,6 @@ export function SwapTab({
         // Input was BTC (or null), now must be Rune
         setAssetIn(popularRunes.length > 0 ? popularRunes[0] : BTC_ASSET); // Fallback needed if no popular runes
         // Since input asset type changed, reset amounts
-        setInputAmount('');
         setOutputAmount('');
       }
       // else: Input was already a Rune, keep it. Amount reset handled below.
@@ -572,7 +570,6 @@ export function SwapTab({
       // Check if the input asset type *actually* changed
       if (!previousAssetIn || !previousAssetIn.isBTC) {
          // Input was Rune (or null), now is BTC. Reset both amounts.
-         setInputAmount('');
          setOutputAmount('');
       } else {
          // Input was already BTC and remains BTC. Keep inputAmount, just reset output.
@@ -606,7 +603,6 @@ export function SwapTab({
     setExchangeRate(null);
     setInputUsdValue(null);
     setOutputUsdValue(null);
-    // Reset swap process state
     dispatchSwap({ type: 'RESET_SWAP' });
   };
 
@@ -616,6 +612,7 @@ export function SwapTab({
     // Increment and capture the request ID for this quote
     const requestId = ++latestQuoteRequestId.current;
     dispatchSwap({ type: 'FETCH_QUOTE_START' });
+    setOutputAmount(''); // Clear output immediately so loading state is visible
     setQuote(null); // Clear previous quote
     setExchangeRate(null); // Clear previous rate
 
@@ -624,6 +621,13 @@ export function SwapTab({
     if (!effectiveAddress) {
          dispatchSwap({ type: 'FETCH_QUOTE_ERROR', error: "Internal error: Missing address for quote." });
          return;
+    }
+
+    // Exit early if amount is 0 or negative
+    if (!inputAmount || parseFloat(inputAmount) <= 0) {
+        setOutputAmount('0.0');
+        dispatchSwap({ type: 'FETCH_QUOTE_SUCCESS' });
+        return;
     }
 
     try {
@@ -654,12 +658,12 @@ export function SwapTab({
           let runeValue = 0;
           try {
             if (assetIn?.isBTC) {
-              outputVal = parseFloat(quoteResponse.totalFormattedAmount || '0');
+              outputVal = parseFloat((quoteResponse.totalFormattedAmount || '0').replace(/,/g, ''));
               btcValue = inputVal;
               runeValue = outputVal;
               calculatedOutputAmount = outputVal.toLocaleString(undefined, {});
             } else {
-              outputVal = parseFloat(quoteResponse.totalPrice || '0');
+              outputVal = parseFloat((quoteResponse.totalPrice || '0').replace(/,/g, ''));
               runeValue = inputVal;
               btcValue = outputVal;
               calculatedOutputAmount = outputVal.toLocaleString(undefined, { maximumFractionDigits: 8 });
@@ -683,18 +687,20 @@ export function SwapTab({
         setOutputAmount(calculatedOutputAmount);
         dispatchSwap({ type: 'FETCH_QUOTE_SUCCESS' });
       }
-    } catch {
+    } catch (err) {
       // Only update error state if this is the latest request
       if (requestId === latestQuoteRequestId.current) {
-        // Let the error propagate to error boundaries or error UI
-        throw new Error('Failed to fetch quote');
+        dispatchSwap({
+          type: 'FETCH_QUOTE_ERROR',
+          error: err instanceof Error ? err.message : 'Failed to fetch quote'
+        });
       }
     }
-  }, [assetIn, inputAmount, address, btcPriceUsd, dispatchSwap, setQuote, setExchangeRate, setOutputAmount]);
+  }, [assetIn, assetOut, inputAmount, address, btcPriceUsd, dispatchSwap, setQuote, setExchangeRate, setOutputAmount]);
 
   // Effect to call the memoized fetchQuote when debounced amount or assets change
   useEffect(() => {
-    // Fetch quote only if amount and assets are valid
+    // Fetch quote only if amount and assets are valid (amount must be greater than 0)
     const runeAsset = assetIn?.isBTC ? assetOut : assetIn;
     if (debouncedInputAmount > 0 && assetIn && assetOut && runeAsset && !runeAsset.isBTC) {
       handleFetchQuote();
@@ -706,6 +712,11 @@ export function SwapTab({
       setExchangeRate(null);
       setInputUsdValue(null);
       setOutputUsdValue(null);
+      
+      // Clear any error state if the input is 0 or empty
+      if (!debouncedInputAmount || debouncedInputAmount === 0) {
+        dispatchSwap({ type: 'RESET_SWAP' });
+      }
     }
   }, [debouncedInputAmount, assetIn, assetOut, handleFetchQuote]);
 
@@ -735,8 +746,8 @@ export function SwapTab({
           inputUsdVal = amountNum * inputRuneMarketInfo.price_in_usd;
       } else if (!assetIn.isBTC && quote && quote.totalPrice && btcPriceUsd && !quoteError) {
           // Fallback to quote calculation if market info not available
-          const btcPerRune = (quote.totalPrice && quote.totalFormattedAmount && parseFloat(quote.totalFormattedAmount) > 0)
-              ? parseFloat(quote.totalPrice) / parseFloat(quote.totalFormattedAmount)
+          const btcPerRune = (quote.totalPrice && quote.totalFormattedAmount && parseFloat(quote.totalFormattedAmount.replace(/,/g, '')) > 0)
+              ? parseFloat(quote.totalPrice.replace(/,/g, '')) / parseFloat(quote.totalFormattedAmount.replace(/,/g, ''))
               : 0;
 
           if (btcPerRune > 0) {
@@ -760,8 +771,8 @@ export function SwapTab({
             outputUsdVal = outputAmountNum * outputRuneMarketInfo.price_in_usd;
           } else if (!assetOut.isBTC && quote && quote.totalPrice && btcPriceUsd && !quoteError) {
             // Fallback to quote calculation if market info not available
-            const btcPerRune = (quote.totalPrice && quote.totalFormattedAmount && parseFloat(quote.totalFormattedAmount) > 0)
-                ? parseFloat(quote.totalPrice) / parseFloat(quote.totalFormattedAmount)
+            const btcPerRune = (quote.totalPrice && quote.totalFormattedAmount && parseFloat(quote.totalFormattedAmount.replace(/,/g, '')) > 0)
+                ? parseFloat(quote.totalPrice.replace(/,/g, '')) / parseFloat(quote.totalFormattedAmount.replace(/,/g, ''))
                 : 0;
 
             if (btcPerRune > 0) {
@@ -832,9 +843,6 @@ export function SwapTab({
         return patchedOrder as RuneOrder;
       });
       
-      console.log("[DEBUG] Quote orders:", orders);
-      console.log("[DEBUG] Rune asset:", runeAsset);
-      
       const psbtParams: GetPSBTParams = {
         orders: orders, 
         address: address, 
@@ -843,16 +851,11 @@ export function SwapTab({
         paymentPublicKey: paymentPublicKey,
         runeName: runeAsset.name, 
         sell: !isBtcToRune,
-        // TODO: Add feeRate, slippage, rbfProtection from UI state later
       };
-      
-      // Debug log for PSBT params
-      console.log("[DEBUG] PSBT params:", JSON.stringify(psbtParams, null, 2));
       
       // *** Use API client function ***
       try {
         const psbtResult = await getPsbtFromApi(psbtParams);
-        console.log("[DEBUG] PSBT result:", psbtResult);
         
         const mainPsbtBase64 = (psbtResult as unknown as { psbtBase64?: string, psbt?: string })?.psbtBase64 
                              || (psbtResult as unknown as { psbtBase64?: string, psbt?: string })?.psbt;
@@ -914,17 +917,13 @@ export function SwapTab({
         }
         dispatchSwap({ type: 'SWAP_SUCCESS', txId: finalTxId });
       } catch (psbtError) {
-        console.error("[DEBUG] PSBT creation error:", psbtError);
         // Re-throw to be caught by the outer catch block
         throw psbtError;
       }
     } catch (error: unknown) {
-      console.error("[DEBUG] Swap failed with error:", error);
+      // Check for specific errors
       if (error instanceof Error) {
-        console.error("[DEBUG] Error message:", error.message);
-        console.error("[DEBUG] Error stack:", error.stack);
       } else {
-        console.error("[DEBUG] Non-Error object thrown:", error);
       }
       
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred during the swap.";
@@ -1182,18 +1181,8 @@ export function SwapTab({
 
   // Reset swap state when inputs/wallet change significantly
   useEffect(() => {
-    if (swapState.swapStep !== 'idle') {
-      dispatchSwap({ type: 'RESET_SWAP' });
-    }
-  }, [address, connected, swapState.swapStep]); // Add swapStep to dependencies
-
-  // Add dev log for quoteError and swapError for debugging
-  if (quoteError && !swapState.isQuoteLoading) {
-    console.error('[SwapTab error: quoteError]', quoteError);
-  }
-  if (swapState.swapError) {
-    console.error('[SwapTab error: swapError]', swapState.swapError);
-  }
+    dispatchSwap({ type: 'RESET_SWAP' });
+  }, [address, connected]);
 
   return (
     <div className={styles.runesInfoTabContainer}>
@@ -1268,7 +1257,7 @@ export function SwapTab({
             false // Input asset is never preselected
           )}
         </div>
-        {inputUsdValue && !swapState.isQuoteLoading && (
+        {inputUsdValue && (
           <div className={styles.usdValueText}>≈ {inputUsdValue}</div>
         )}
       </div>
@@ -1295,7 +1284,12 @@ export function SwapTab({
             type="text"
             id="output-amount"
             placeholder="0.0"
-            value={swapState.isQuoteLoading ? `Loading${loadingDots}` : outputAmount}
+            value={(() => {
+              if (swapState.isQuoteLoading) {
+                return `Loading${loadingDots}`;
+              }
+              return outputAmount;
+            })()}
             readOnly
             className={styles.amountInputReadOnly}
           />
@@ -1313,7 +1307,7 @@ export function SwapTab({
             isPreselectedRuneLoading // Output asset can be preselected from URL
           )}
         </div>
-        {outputUsdValue && !swapState.isQuoteLoading && (
+        {outputUsdValue && (
           <div className={styles.usdValueText}>≈ {outputUsdValue}</div>
         )}
         {quoteError && !swapState.isQuoteLoading && (
