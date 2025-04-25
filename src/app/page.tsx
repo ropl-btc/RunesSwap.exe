@@ -2,7 +2,6 @@
 
 
 import React, { useState } from 'react';
-import Image from 'next/image';
 import { ConnectWalletButton } from '@/components/ConnectWalletButton';
 import { AppInterface } from '@/components/AppInterface';
 import styles from './page.module.css';
@@ -49,17 +48,6 @@ export default function Home() {
 
   return (
     <div className={styles.mainContainer}>
-      {/* Alpha Version Disclaimer */}
-      <div className={styles.disclaimer}>
-        <Image 
-          src="/icons/msg_warning-0.png" 
-          alt="Warning" 
-          className={styles.warningIcon}
-          width={16}
-          height={16}
-        />
-        This is an alpha version. Use at your own risk.
-      </div>
 
       {/* New Header Container */}
       <div className={styles.headerContainer}>

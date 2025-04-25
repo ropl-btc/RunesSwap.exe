@@ -676,7 +676,7 @@ export function SwapTab({
                   currency: 'USD',
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 6
-                })} per ${assetIn?.name}`;
+                 })} per ${(assetIn && !assetIn.isBTC ? assetIn.name : assetOut?.name)}`;
             }
             setExchangeRate(calculatedRate);
           } catch {
@@ -1184,6 +1184,45 @@ export function SwapTab({
     dispatchSwap({ type: 'RESET_SWAP' });
   }, [address, connected]);
 
+  // Add balance percentage helper functions
+  const handlePercentageClick = (percentage: number) => {
+    if (!connected || !assetIn) return;
+    
+    let availableBalance = 0;
+    let decimals = 8; // Default decimals for BTC
+    
+    if (assetIn.isBTC) {
+      if (btcBalanceSats !== undefined) {
+        availableBalance = btcBalanceSats / 100_000_000;
+      } else {
+        return; // No balance available
+      }
+    } else {
+      const rawBalance = getSpecificRuneBalance(assetIn.name);
+      if (rawBalance === null) return;
+      
+      try {
+        const balanceNum = parseFloat(rawBalance);
+        if (isNaN(balanceNum)) return;
+        
+        decimals = swapRuneInfo?.decimals ?? 0;
+        availableBalance = balanceNum / (10 ** decimals);
+      } catch (e) {
+        console.error("Error calculating percentage:", e);
+        return;
+      }
+    }
+    
+    // Calculate percentage of available balance
+    let newAmount = percentage === 1 ? availableBalance : availableBalance * percentage;
+    
+    // Format with appropriate decimal places
+    newAmount = Math.floor(newAmount * 10**decimals) / 10**decimals;
+    
+    // Convert to string with appropriate decimal places
+    setInputAmount(newAmount.toString());
+  };
+
   return (
     <div className={styles.runesInfoTabContainer}>
       <h2 className={styles.title}>Swap</h2>
@@ -1194,6 +1233,40 @@ export function SwapTab({
           <label htmlFor="input-amount" className={styles.inputLabel}>You Pay</label>
           {connected && assetIn && (
             <span className={styles.availableBalance}>
+              <span className={styles.percentageShortcuts}>
+                <button 
+                  className={styles.percentageButton} 
+                  onClick={() => handlePercentageClick(0.25)}
+                  type="button"
+                >
+                  25%
+                </button>
+                {' | '}
+                <button 
+                  className={styles.percentageButton} 
+                  onClick={() => handlePercentageClick(0.5)}
+                  type="button"
+                >
+                  50%
+                </button>
+                {' | '}
+                <button 
+                  className={styles.percentageButton} 
+                  onClick={() => handlePercentageClick(0.75)}
+                  type="button"
+                >
+                  75%
+                </button>
+                {' | '}
+                <button 
+                  className={styles.percentageButton} 
+                  onClick={() => handlePercentageClick(1)}
+                  type="button"
+                >
+                  Max
+                </button>
+                {' • '}
+              </span>
               Available: {' '}
               {assetIn.isBTC ? (
                 isBtcBalanceLoading ? (
@@ -1201,33 +1274,30 @@ export function SwapTab({
                 ) : btcBalanceError ? (
                   <span className={styles.errorText}>Error loading balance</span>
                 ) : btcBalanceSats !== undefined ? (
-                  `${(btcBalanceSats / 100_000_000).toLocaleString(undefined, { maximumFractionDigits: 8 })} BTC`
+                  `${(btcBalanceSats / 100_000_000).toLocaleString(undefined, { maximumFractionDigits: 8 })}`
                 ) : (
                   'N/A' // Should not happen if connected
                 )
-              ) : (
-                isRuneBalancesLoading || isSwapRuneInfoLoading ? (
-                  <span className={styles.loadingText}>Loading{loadingDots}</span>
-                ) : runeBalancesError || swapRuneInfoError ? (
-                  <span className={styles.errorText}>Error loading balance</span>
-                ) : (
-                  () => {
-                    const rawBalance = getSpecificRuneBalance(assetIn.name);
-                    const decimals = swapRuneInfo?.decimals ?? 0; 
-                    
-                    if (rawBalance === null) return 'N/A';
-                    try {
-                      const balanceNum = parseFloat(rawBalance);
-                      if (isNaN(balanceNum)) return 'Invalid Balance';
-                      const displayValue = balanceNum / (10 ** decimals);
-                      return `${displayValue.toLocaleString(undefined, { maximumFractionDigits: decimals })} ${assetIn.name}`;
-                    } catch (e) {
-                      console.error("Error formatting rune balance:", e);
-                      return 'Formatting Error';
-                    }
-                  }
-                )()
-              )}
+              ) : isRuneBalancesLoading || isSwapRuneInfoLoading ? (
+                <span className={styles.loadingText}>Loading{loadingDots}</span>
+              ) : runeBalancesError || swapRuneInfoError ? (
+                <span className={styles.errorText}>Error loading balance</span>
+              ) : (() => {
+                const rawBalance = getSpecificRuneBalance(assetIn.name);
+                if (rawBalance === null) return 'N/A';
+                
+                try {
+                  const balanceNum = parseFloat(rawBalance);
+                  if (isNaN(balanceNum)) return 'Invalid Balance';
+                  
+                  const decimals = swapRuneInfo?.decimals ?? 0;
+                  const displayValue = balanceNum / (10 ** decimals);
+                  return `${displayValue.toLocaleString(undefined, { maximumFractionDigits: decimals })}`;
+                } catch (error) {
+                  console.error("Error formatting rune balance:", error);
+                  return 'Formatting Error';
+                }
+              })()}
             </span>
           )}
           {!connected && (<span className={styles.availableBalance}></span>)}
