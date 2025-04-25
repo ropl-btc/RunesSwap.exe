@@ -76,6 +76,30 @@
   margin-left: 0.5rem; /* Add some space between label and balance */
 }
 
+.percentageShortcuts {
+  font-size: 0.7rem; /* Match availableBalance font size */
+  color: var(--win98-dark-gray);
+}
+
+.percentageButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.7rem; /* Match availableBalance font size */
+  color: var(--win98-dark-gray);
+  padding: 0;
+  margin: 0 3px; /* Add horizontal spacing between buttons */
+  text-decoration: underline;
+}
+
+.percentageButton:hover {
+  color: var(--win98-blue);
+}
+
+.percentageButton:active {
+  color: var(--win98-dark-blue);
+}
+
 .inputRow {
   display: flex;
   justify-content: space-between;

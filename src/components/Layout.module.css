@@ -17,7 +17,7 @@
 
 @media (min-width: 769px) {
   .container {
-    height: 100vh;
+    min-height: 100vh;
   }
 }
 
@@ -32,7 +32,7 @@
   border-bottom-color: var(--win98-dark-gray);
   width: 100%;
   max-width: 42rem; /* max-w-2xl */
-  min-height: 658px;
+  min-height: 610px;
   box-shadow: 1px 1px 0 1px var(--win98-black); /* Simple shadow */
   margin: auto;
   /* Add more robust shadow/bevel later if needed */
