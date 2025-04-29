@@ -15,11 +15,13 @@ interface ILaserEyesContext {
   provider?: string; // Keep this as string for display?
   connect: (providerName: ProviderType) => Promise<void>; // Use ProviderType
   disconnect: () => void;
-  signPsbt: (tx: string, finalize?: boolean, broadcast?: boolean) => Promise<{ 
+  signPsbt: (tx: string, finalize?: boolean, broadcast?: boolean) => Promise<{
     signedPsbtHex?: string;
     signedPsbtBase64?: string;
     txId?: string;
    } | undefined>;
+  // Add signMessage function for Liquidium API authentication
+  signMessage?: (message: string, address?: string) => Promise<string>;
   // Wallet availability properties
   hasUnisat?: boolean;
   // Add other properties/methods from LaserEyesData if needed later
@@ -38,4 +40,4 @@ export const useSharedLaserEyes = () => {
 };
 
 // Export the context itself if needed, and the Provider component wrapper
-export { LaserEyesContext }; 
+export { LaserEyesContext };

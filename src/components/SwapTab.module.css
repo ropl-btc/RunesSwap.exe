@@ -1,0 +1,415 @@
+/* SwapTab Component Styles */
+
+.swapTabContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  white-space: nowrap;
+}
+
+.inputArea {
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  background-color: var(--win98-white);
+  width: 100%;
+  min-width: auto; /* Override min-width for narrow containers */
+  border: var(--win98-border-inset);
+  border-color: var(--win98-border-inset-colors);
+}
+
+.inputLabel {
+  font-size: var(--font-size-small);
+  line-height: 1rem;
+}
+
+.inputHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline; /* Align baselines of label and balance text */
+  width: 100%;
+}
+
+.availableBalance {
+  font-size: var(--font-size-small);
+  line-height: 1rem;
+  color: var(--win98-dark-gray);
+  text-align: right;
+  margin-left: var(--space-2);
+}
+
+.percentageShortcuts {
+  font-size: var(--font-size-small);
+  color: var(--win98-dark-gray);
+}
+
+.percentageButton {
+  font-size: var(--font-size-small);
+  color: var(--win98-dark-gray);
+  margin: 0 var(--space-1);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.percentageButton:hover {
+  color: var(--win98-blue);
+}
+
+.percentageButton:active {
+  color: var(--win98-dark-blue);
+}
+
+.inputRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.amountInput {
+  font-size: var(--font-size-large);
+  line-height: 1.75rem;
+  width: 100%;
+  padding: var(--space-1);
+  border: none;
+  outline: none;
+  background: transparent;
+}
+
+.amountInput::placeholder {
+  color: var(--win98-dark-gray);
+}
+
+/* Style for the input USD value display */
+.usdValueText {
+  font-size: var(--font-size-small);
+  color: var(--win98-dark-gray);
+  text-align: left;
+  padding-left: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.amountInputReadOnly {
+  composes: amountInput; /* Inherit base input styles */
+  color: var(--win98-dark-gray);
+}
+
+.assetButtonImage,
+.messageIcon,
+.runeImage,
+.searchIconEmbedded {
+  /* Common styles for pixelated images */
+  flex-shrink: 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges; /* Fallback for Firefox */
+}
+
+.assetButtonImage {
+  height: 1.25rem;
+  width: 1.25rem;
+  margin-right: var(--space-2);
+}
+
+/* Base Button Style */
+.baseButton {
+  padding: var(--space-2) var(--space-4);
+  background-color: var(--win98-gray);
+  color: var(--win98-black);
+  cursor: pointer;
+  border: var(--win98-border-outset);
+  border-color: var(--win98-border-outset-colors);
+}
+
+.baseButton:active {
+  border-color: var(--win98-border-inset-colors);
+}
+
+.baseButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: var(--win98-dark-gray);
+}
+
+.swapButton {
+  composes: baseButton; /* Inherit base button styles */
+  width: 100%;
+  font-weight: 700;
+}
+
+/* Style for transaction links */
+.txLink {
+  color: var(--win98-blue);
+  text-decoration: underline;
+  margin-left: var(--space-2);
+}
+
+.txLink:hover {
+  color: var(--win98-dark-blue);
+}
+
+/* Container for messages with icons */
+.messageWithIcon {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Style for message icons (error, warning, etc.) */
+.messageIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Info Area Styles */
+.infoArea {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: var(--win98-border-width) solid var(--win98-dark-gray);
+  font-size: var(--font-size-normal);
+  color: var(--win98-black);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Headless UI Listbox Styles */
+.listboxContainer {
+  flex-shrink: 0;
+}
+
+.listboxRelative {
+  position: relative;
+}
+
+.listboxButton {
+  composes: baseButton; /* Inherit base button styles */
+  position: relative;
+  width: 100%;
+  cursor: default;
+  padding: var(--space-1) 2.5rem var(--space-1) var(--space-2); /* Custom padding */
+  text-align: left;
+  font-size: var(--font-size-normal);
+}
+
+.listboxButton:focus {
+  outline: none; /* Or style focus state if needed */
+}
+
+.listboxButtonText {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.listboxButtonIconContainer {
+  pointer-events: none;
+  position: absolute;
+  inset: 0 0 0 auto; /* top, right, bottom, left */
+  display: flex;
+  align-items: center;
+  padding-right: var(--space-2);
+}
+
+.listboxButtonIcon {
+  height: 1.25rem;
+  width: 1.25rem;
+  color: var(--win98-dark-gray); /* Approximation of gray-700 */
+}
+
+.listboxOptions {
+  position: absolute;
+  right: 0; /* Align right edge */
+  margin-top: var(--space-1);
+  max-height: 15rem;
+  min-width: 100%;
+  width: max-content; /* Expand for long names */
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  background-color: var(--win98-gray);
+  padding: var(--space-1) 0;
+  font-size: var(--font-size-normal);
+  z-index: var(--z-dropdown);
+  border: var(--win98-border-outset);
+  border-color: var(--win98-border-outset-colors);
+}
+
+/* Hide webkit scrollbar */
+.listboxOptions::-webkit-scrollbar {
+  display: none;
+}
+
+.listboxOption {
+  position: relative;
+  cursor: default;
+  user-select: none;
+  padding: var(--space-2) var(--space-4) var(--space-2) 2.5rem; /* Space for checkmark */
+}
+
+.listboxOptionActive {
+  background-color: var(--win98-blue);
+  color: var(--win98-white);
+}
+
+.listboxOptionInactive {
+  color: var(--win98-black);
+}
+
+.listboxOptionText {
+  display: block;
+  white-space: nowrap;
+  padding: var(--space-1) 0;
+}
+
+.listboxOptionTextSelected {
+  font-weight: 500; /* Medium */
+}
+
+.listboxOptionTextUnselected {
+  font-weight: 400; /* Normal */
+}
+
+.listboxOptionCheckContainer {
+  position: absolute;
+  inset: 0 0 0 0; /* top, right, bottom, left */
+  display: flex;
+  align-items: center;
+  padding-left: var(--space-2);
+  color: var(--win98-blue); /* Check color when active */
+}
+
+.listboxOptionCheckIcon {
+  height: 1.25rem;
+  width: 1.25rem;
+}
+
+.listboxLoadingOrEmpty {
+  position: relative;
+  cursor: default;
+  user-select: none;
+  padding: var(--space-2) var(--space-4);
+  color: var(--win98-dark-gray);
+}
+
+.listboxError {
+  composes: listboxLoadingOrEmpty;
+  color: var(--win98-red);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Add styles for the search container */
+.searchContainer {
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--win98-dark-gray);
+}
+
+.searchWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchInput {
+  width: 100%;
+  padding: var(--space-1) var(--space-2) var(--space-1) 2rem; /* Left padding for icon */
+  background-color: var(--win98-white);
+  color: var(--win98-black);
+  font-size: var(--font-size-normal);
+  border: var(--win98-border-inset);
+  border-color: var(--win98-border-inset-colors);
+}
+
+.searchInput:focus {
+  outline: 1px solid var(--win98-blue);
+}
+
+/* Style for the embedded search icon */
+.searchIconEmbedded {
+  position: absolute;
+  left: var(--space-2);
+  top: 50%;
+  transform: translateY(-50%);
+  height: 1rem;
+  width: 1rem;
+  color: var(--win98-dark-gray);
+  pointer-events: none;
+}
+
+/* Style for the rune image in the dropdown */
+.runeImage {
+  height: 1.25rem;
+  width: 1.25rem;
+  margin-right: var(--space-2);
+}
+
+/* Wrapper for rune image + text in dropdown option */
+.runeOptionContent {
+  display: flex;
+  align-items: center;
+}
+
+/* Add styles for the swap direction button */
+.swapIconContainer {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-2) 0;
+}
+
+.swapIconButton {
+  composes: baseButton; /* Inherit base button styles */
+  padding: var(--space-1);
+  line-height: 1;
+}
+
+.swapIcon {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: block; /* Prevent extra space below icon */
+}
+
+.loadingText {
+  font-style: italic;
+  color: var(--win98-dark-gray);
+}
+
+.showPriceChartButton {
+  composes: baseButton; /* Inherit base button styles */
+  width: 100%;
+  padding: var(--space-2);
+  margin-top: var(--space-2);
+  font-weight: 700;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .inputRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .amountInput,
+  .amountInputReadOnly {
+    font-size: var(--font-size-normal);
+    text-align: left;
+  }
+
+  .listboxContainer,
+  .listboxButton {
+    width: 100%;
+  }
+
+  .inputArea {
+    min-width: 0;
+  }
+}

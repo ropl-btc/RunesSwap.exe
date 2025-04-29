@@ -17,7 +17,7 @@ export function FormattedRuneAmount({ runeName, rawAmount }: FormattedRuneAmount
     error,
   } = useQuery<RuneData | null, Error>({
     // Update queryKey to reflect API usage
-    queryKey: ['runeInfoApi', (runeName || '').toUpperCase()], 
+    queryKey: ['runeInfoApi', (runeName || '').toUpperCase()],
     // Use the new API client function
     queryFn: () => (runeName ? fetchRuneInfoFromApi(runeName) : Promise.resolve(null)),
     enabled: !!runeName && rawAmount !== 'N/A' && rawAmount !== null && rawAmount !== undefined, // Only run if we have a rune name and a valid raw amount
@@ -29,7 +29,7 @@ export function FormattedRuneAmount({ runeName, rawAmount }: FormattedRuneAmount
   if (rawAmount === 'N/A' || rawAmount === null || rawAmount === undefined) {
     return <span>N/A</span>;
   }
-  
+
   if (!runeName) {
      return <span>{rawAmount} (Unknown Rune)</span>; // Should not happen if enabled logic works
   }
@@ -50,7 +50,7 @@ export function FormattedRuneAmount({ runeName, rawAmount }: FormattedRuneAmount
   }
 
   const decimals = runeInfo.decimals;
-  
+
   // Handle case where decimals are 0
   if (decimals === 0) {
       try {
@@ -68,7 +68,7 @@ export function FormattedRuneAmount({ runeName, rawAmount }: FormattedRuneAmount
     // Use BigInt for precision with large numbers before converting to Number for division
     const rawAmountBigInt = BigInt(rawAmount);
     const divisor = BigInt(10 ** decimals);
-    
+
     // Perform division carefully to handle potential floating point issues
     // For display, Number should be sufficient after scaling down
     const formattedAmount = Number(rawAmountBigInt) / Number(divisor);
@@ -83,4 +83,4 @@ export function FormattedRuneAmount({ runeName, rawAmount }: FormattedRuneAmount
     console.error("Error formatting rune amount:", e);
     return <span>{rawAmount} (Formatting Error)</span>; // Fallback
   }
-} 
+}

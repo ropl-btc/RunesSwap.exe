@@ -1,10 +1,11 @@
-'use client'; // Required for hooks
+'use client';
 
-import React from 'react'; // Only import React
+import React, { useRef, useState } from 'react';
 import Image from 'next/image';
-import styles from './Layout.module.css'; // Import the CSS module
+import styles from './Layout.module.css';
 import FooterComponent from './FooterComponent';
 import { useQuery } from '@tanstack/react-query';
+import { useBackground } from '@/context/BackgroundContext';
 
 const COINGECKO_BTC_PRICE_URL = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd';
 const getBtcPrice = async (): Promise<number> => {
@@ -25,6 +26,7 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
+  const { backgroundImage, setBackgroundImage, clearBackgroundImage } = useBackground();
   const {
     data: btcPriceUsd,
     isLoading: isBtcPriceLoading,
@@ -36,28 +38,91 @@ export function Layout({ children }: LayoutProps) {
     staleTime: 30000,
   });
 
-  // WORKAROUND REMOVED: No longer force disconnect wallet on initial mount.
-  // This fixes the bug where multiple sign-in popups appeared on refresh.
+  // Background settings
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Image is too large. Please select an image under 2MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setBackgroundImage(event.target.result as string);
+        setIsSettingsOpen(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   return (
-    // Apply styles using the styles object
-    <div className={styles.container}>
-      {/* The main "window" */}
+    <div className={styles.container} style={backgroundImage ? {
+      backgroundImage: `url(${backgroundImage})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+    } : {}}>
+      {/* Background settings */}
+      <button
+        className={styles.bgSettingsButton}
+        onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+        title="Change Background"
+      >
+        Choose Background
+      </button>
+
+      {isSettingsOpen && (
+        <div className={styles.bgSettingsPanel}>
+          <div className={styles.bgSettingsContent}>
+            <button
+              className={styles.uploadButton}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Upload Image
+            </button>
+
+            {backgroundImage && (
+              <button
+                className={styles.clearButton}
+                onClick={clearBackgroundImage}
+              >
+                Clear Background
+              </button>
+            )}
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              style={{ display: 'none' }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Main window */}
       <div className={styles.window}>
-        {/* Optional Title Bar */}
         <div className={styles.titleBar}>
           <span className={styles.titleBarRow}>
-  <Image src="/icons/runesswap_logo.png" alt="RunesSwap.app Logo" aria-hidden="true" width={18} height={18} style={{ imageRendering: 'pixelated' }} priority />
-  RunesSwap.app
-</span>
-          {/* Placeholder for window controls maybe? */}
+            <Image src="/icons/runesswap_logo.png" alt="RunesSwap.app Logo" width={18} height={18} style={{ imageRendering: 'pixelated' }} priority />
+            RunesSwap.app
+          </span>
         </div>
-        {/* Window Content Area */}
         <div className={styles.content}>
           {children}
         </div>
       </div>
-      <FooterComponent btcPriceUsd={btcPriceUsd} isBtcPriceLoading={isBtcPriceLoading} btcPriceError={btcPriceError} />
+      <FooterComponent
+        btcPriceUsd={btcPriceUsd}
+        isBtcPriceLoading={isBtcPriceLoading}
+        btcPriceError={btcPriceError}
+      />
     </div>
   );
 }

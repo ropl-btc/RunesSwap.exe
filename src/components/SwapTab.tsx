@@ -3,13 +3,13 @@ import { useQuery } from '@tanstack/react-query';
 import { Listbox, Transition } from '@headlessui/react';
 import { ChevronUpDownIcon, CheckIcon, ArrowPathIcon } from '@heroicons/react/24/solid';
 import Image from 'next/image';
-import styles from './AppInterface.module.css';
+import styles from './SwapTab.module.css';
 import debounce from 'lodash.debounce';
 import { useDebounce } from 'use-debounce';
 import { type QuoteResponse, type RuneOrder, type GetPSBTParams, type ConfirmPSBTParams } from 'satsterminal-sdk';
 import { Asset, BTC_ASSET } from '@/types/common';
 import type { Rune } from '@/types/satsTerminal.ts';
-import { 
+import {
   fetchRunesFromApi,
   fetchPopularFromApi,
   fetchQuoteFromApi,
@@ -112,15 +112,15 @@ function swapProcessReducer(state: SwapProcessState, action: SwapProcessAction):
   }
 }
 
-export function SwapTab({ 
-  connected, 
-  address, 
-  paymentAddress, 
-  publicKey, 
-  paymentPublicKey, 
-  signPsbt, 
-  btcPriceUsd, 
-  isBtcPriceLoading, 
+export function SwapTab({
+  connected,
+  address,
+  paymentAddress,
+  publicKey,
+  paymentPublicKey,
+  signPsbt,
+  btcPriceUsd,
+  isBtcPriceLoading,
   btcPriceError,
   cachedPopularRunes = [],
   isPopularRunesLoading = false,
@@ -179,28 +179,28 @@ export function SwapTab({
       if (preSelectedRune && !hasLoadedPreselectedRune) {
         // Show loading state while searching
         setIsPreselectedRuneLoading(true);
-        
+
         // Force search for the rune if it changes
         // Normalize names by removing spacers for comparison
         const normalizedPreSelected = preSelectedRune.replace(/•/g, '');
-        
+
         // Try to find in available runes first
         const rune = availableRunes.find(r => r.name.replace(/•/g, '') === normalizedPreSelected);
-        
+
         if (rune) {
           // Found in available runes, set it
           setAssetIn(BTC_ASSET);
           setAssetOut(rune);
           setIsPreselectedRuneLoading(false);
           setHasLoadedPreselectedRune(true);
-          
+
           // Clear the URL parameter
           if (typeof window !== 'undefined') {
             const url = new URL(window.location.href);
             url.searchParams.delete('rune');
             window.history.replaceState({}, '', url.toString());
           }
-          
+
           // Clear search field after loading
           setSearchQuery('');
         } else {
@@ -208,14 +208,14 @@ export function SwapTab({
           try {
             setIsSearching(true);
             const searchResults = await fetchRunesFromApi(preSelectedRune);
-            
+
             if (searchResults && searchResults.length > 0) {
               // Find closest match
               const matchingRune = searchResults.find(r => r.name.replace(/•/g, '') === normalizedPreSelected);
-              
+
               // If found a match or just take the first result if no exact match
               const foundRune = matchingRune || searchResults[0];
-              
+
               // Convert to Asset format
               const foundAsset: Asset = {
                 id: foundRune.id,
@@ -223,7 +223,7 @@ export function SwapTab({
                 imageURI: foundRune.imageURI,
                 isBTC: false,
               };
-              
+
               // Add to search results
               setSearchResults(prev => {
                 // Avoid duplicates
@@ -232,20 +232,20 @@ export function SwapTab({
                 }
                 return prev;
               });
-              
+
               // Set as output asset
               setAssetIn(BTC_ASSET);
               setAssetOut(foundAsset);
               setIsPreselectedRuneLoading(false);
               setHasLoadedPreselectedRune(true);
-              
+
               // Clear the URL parameter
               if (typeof window !== 'undefined') {
                 const url = new URL(window.location.href);
                 url.searchParams.delete('rune');
                 window.history.replaceState({}, '', url.toString());
               }
-              
+
               // Clear search field
               setSearchQuery('');
             }
@@ -255,14 +255,14 @@ export function SwapTab({
             setIsSearching(false);
             setIsPreselectedRuneLoading(false);
             setHasLoadedPreselectedRune(true);
-            
+
             // Clear the URL parameter even if there was an error
             if (typeof window !== 'undefined') {
               const url = new URL(window.location.href);
               url.searchParams.delete('rune');
               window.history.replaceState({}, '', url.toString());
             }
-            
+
             // Clear search field
             setSearchQuery('');
           }
@@ -273,7 +273,7 @@ export function SwapTab({
         setHasLoadedPreselectedRune(false);
       }
     };
-    
+
     findAndSelectRune();
   }, [preSelectedRune, availableRunes, hasLoadedPreselectedRune, searchQuery]);
 
@@ -305,16 +305,16 @@ export function SwapTab({
         // Prepend the hardcoded token ONLY if no pre-selected rune
         const mappedRunes = preSelectedRune ? fetchedRunes : [liquidiumToken, ...fetchedRunes];
         setPopularRunes(mappedRunes);
-        
+
         // Only set default assetOut if there's no pre-selected rune and no current assetOut and no search query
         if (!preSelectedRune && !assetOut && !searchQuery && mappedRunes.length > 0) {
           setAssetOut(mappedRunes[0]);
         }
-        
+
         setIsPopularLoading(false);
         return;
       }
-      
+
       // If no cached data, fetch from API
       setIsPopularLoading(true);
       setPopularError(null);
@@ -364,7 +364,7 @@ export function SwapTab({
         };
         // Only set Liquidium Token if no pre-selected rune
         setPopularRunes(preSelectedRune ? [] : [liquidiumTokenOnError]);
-        
+
         // Only set default assetOut if there's no pre-selected rune and no current assetOut
         if (!preSelectedRune && !assetOut) {
           setAssetOut(liquidiumTokenOnError);
@@ -381,7 +381,7 @@ export function SwapTab({
   const [inputUsdValue, setInputUsdValue] = useState<string | null>(null);
   const [outputUsdValue, setOutputUsdValue] = useState<string | null>(null);
 
-  // Ordiscan Balance Queries 
+  // Ordiscan Balance Queries
   const {
     data: btcBalanceSats,
     isLoading: isBtcBalanceLoading,
@@ -406,7 +406,7 @@ export function SwapTab({
 
   // Query for Input Rune Info (needed for decimals and other info)
   const {
-    data: swapRuneInfo, 
+    data: swapRuneInfo,
     isLoading: isSwapRuneInfoLoading,
     error: swapRuneInfoError,
   } = useQuery<RuneData | null, Error>({
@@ -425,7 +425,7 @@ export function SwapTab({
     enabled: !!assetIn && !assetIn.isBTC,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
-  
+
   // Query for Output Rune Market Info (for swap tab)
   const {
     data: outputRuneMarketInfo,
@@ -456,7 +456,7 @@ export function SwapTab({
   }, [isBtcPriceLoading, isSearching]); // Added isSearching
 
   // Create a debounced search function - MEMOIZED
-  const debouncedSearch = useMemo(() => 
+  const debouncedSearch = useMemo(() =>
     debounce(async (query: string) => {
       if (!query) {
         setSearchResults([]);
@@ -468,10 +468,10 @@ export function SwapTab({
       setSearchError(null);
       try {
         // *** Ensure this uses the API fetch function ***
-        const results: Rune[] = await fetchRunesFromApi(query); 
+        const results: Rune[] = await fetchRunesFromApi(query);
         // Map results to Asset type for consistency in the component
         const mappedResults: Asset[] = results.map(rune => ({
-          id: rune.id, 
+          id: rune.id,
           name: rune.name,
           imageURI: rune.imageURI,
           isBTC: false,
@@ -500,7 +500,7 @@ export function SwapTab({
     const query = e.target.value;
     setSearchQuery(query);
     setIsSearching(true); // Indicate searching immediately
-    
+
     // If we were using a preselected rune, make sure the URL stays clean
     if (hasLoadedPreselectedRune && typeof window !== 'undefined') {
       const url = new URL(window.location.href);
@@ -509,18 +509,22 @@ export function SwapTab({
         window.history.replaceState({}, '', url.toString());
       }
     }
-    
+
     debouncedSearch(query);
   };
 
   // Define debounced value for input amount
   // Correctly use the imported useDebounce hook - extract the first element
-  const [debouncedInputAmount] = useDebounce(inputAmount ? parseFloat(inputAmount) : 0, 500); 
+  const [debouncedInputAmount] = useDebounce(inputAmount ? parseFloat(inputAmount) : 0, 500);
 
   // --- Asset Selection Logic ---
   const handleSelectAssetIn = (selectedAsset: Asset) => {
-    // Prevent selecting the same asset for both input and output
-    if (assetOut && selectedAsset.id === assetOut.id) return;
+    // If user tries to select the same asset that's already in the output,
+    // swap the assets instead of blocking the selection
+    if (assetOut && selectedAsset.id === assetOut.id) {
+      handleSwapDirection();
+      return;
+    }
 
     setAssetIn(selectedAsset);
     // If selected asset is BTC, ensure output is a Rune
@@ -543,8 +547,12 @@ export function SwapTab({
   };
 
   const handleSelectAssetOut = (selectedAsset: Asset) => {
-    // Prevent selecting the same asset for both input and output
-    if (assetIn && selectedAsset.id === assetIn.id) return;
+    // If user tries to select the same asset that's already in the input,
+    // swap the assets instead of blocking the selection
+    if (assetIn && selectedAsset.id === assetIn.id) {
+      handleSwapDirection();
+      return;
+    }
 
     const previousAssetIn = assetIn; // Store previous input asset
 
@@ -640,12 +648,12 @@ export function SwapTab({
       const runeName = assetIn?.isBTC ? assetOut?.name : assetIn?.name;
       const isSell = !assetIn?.isBTC;
       const params = {
-        btcAmount: parseFloat(inputAmount), 
+        btcAmount: parseFloat(inputAmount),
         runeName,
         address: effectiveAddress,
         sell: isSell,
       };
-      const quoteResponse = await fetchQuoteFromApi(params); 
+      const quoteResponse = await fetchQuoteFromApi(params);
       // Only update state if this is the latest request
       if (requestId === latestQuoteRequestId.current) {
         setQuote(quoteResponse);
@@ -671,8 +679,8 @@ export function SwapTab({
             if (btcValue > 0 && runeValue > 0 && btcPriceUsd) {
                const btcUsdAmount = btcValue * btcPriceUsd;
                const pricePerRune = btcUsdAmount / runeValue;
-               calculatedRate = `${pricePerRune.toLocaleString(undefined, { 
-                  style: 'currency', 
+               calculatedRate = `${pricePerRune.toLocaleString(undefined, {
+                  style: 'currency',
                   currency: 'USD',
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 6
@@ -712,7 +720,7 @@ export function SwapTab({
       setExchangeRate(null);
       setInputUsdValue(null);
       setOutputUsdValue(null);
-      
+
       // Clear any error state if the input is 0 or empty
       if (!debouncedInputAmount || debouncedInputAmount === 0) {
         dispatchSwap({ type: 'RESET_SWAP' });
@@ -761,7 +769,7 @@ export function SwapTab({
         // Remove commas from outputAmount before parsing
         const sanitizedOutputAmount = outputAmount.replace(/,/g, '');
         const outputAmountNum = parseFloat(sanitizedOutputAmount);
-        
+
         if (!isNaN(outputAmountNum) && outputAmountNum > 0) {
           if (assetOut.isBTC && btcPriceUsd) {
             // Output is BTC
@@ -810,7 +818,7 @@ export function SwapTab({
       setInputUsdValue(null);
       setOutputUsdValue(null);
     }
-  }, [inputAmount, outputAmount, assetIn, assetOut, btcPriceUsd, isBtcPriceLoading, btcPriceError, 
+  }, [inputAmount, outputAmount, assetIn, assetOut, btcPriceUsd, isBtcPriceLoading, btcPriceError,
       quote, quoteError, inputRuneMarketInfo, outputRuneMarketInfo]);
 
   // Function to handle the entire swap process using API
@@ -842,22 +850,22 @@ export function SwapTab({
         if ('side' in order && order.side) (patchedOrder as Record<string, unknown>)['side'] = String(order.side).toUpperCase() as 'BUY' | 'SELL';
         return patchedOrder as RuneOrder;
       });
-      
+
       const psbtParams: GetPSBTParams = {
-        orders: orders, 
-        address: address, 
-        publicKey: publicKey, 
-        paymentAddress: paymentAddress, 
+        orders: orders,
+        address: address,
+        publicKey: publicKey,
+        paymentAddress: paymentAddress,
         paymentPublicKey: paymentPublicKey,
-        runeName: runeAsset.name, 
+        runeName: runeAsset.name,
         sell: !isBtcToRune,
       };
-      
+
       // *** Use API client function ***
       try {
         const psbtResult = await getPsbtFromApi(psbtParams);
-        
-        const mainPsbtBase64 = (psbtResult as unknown as { psbtBase64?: string, psbt?: string })?.psbtBase64 
+
+        const mainPsbtBase64 = (psbtResult as unknown as { psbtBase64?: string, psbt?: string })?.psbtBase64
                              || (psbtResult as unknown as { psbtBase64?: string, psbt?: string })?.psbt;
         const swapId = (psbtResult as unknown as { swapId?: string })?.swapId;
         const rbfPsbtBase64 = (psbtResult as unknown as { rbfProtected?: { base64?: string } })?.rbfProtected?.base64;
@@ -899,7 +907,7 @@ export function SwapTab({
           rbfProtection: !!signedRbfPsbt,
         };
         // *** Use API client function ***
-        const confirmResult = await confirmPsbtViaApi(confirmParams); 
+        const confirmResult = await confirmPsbtViaApi(confirmParams);
 
         // Define a basic interface for expected response structure
         interface SwapConfirmationResult {
@@ -910,7 +918,7 @@ export function SwapTab({
         }
 
         // Use proper typing instead of 'any'
-        const finalTxId = (confirmResult as SwapConfirmationResult)?.txid || 
+        const finalTxId = (confirmResult as SwapConfirmationResult)?.txid ||
                           (confirmResult as SwapConfirmationResult)?.rbfProtection?.fundsPreparationTxId;
         if (!finalTxId) {
             throw new Error(`Confirmation failed or transaction ID missing. Response: ${JSON.stringify(confirmResult)}`);
@@ -925,12 +933,12 @@ export function SwapTab({
       if (error instanceof Error) {
       } else {
       }
-      
+
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred during the swap.";
 
       // Check for specific errors
-      if (errorMessage.includes("Quote expired. Please, fetch again.") || 
-          (error && typeof error === 'object' && 'code' in error && 
+      if (errorMessage.includes("Quote expired. Please, fetch again.") ||
+          (error && typeof error === 'object' && 'code' in error &&
            (error as { code?: string }).code === 'QUOTE_EXPIRED')) {
         // Quote expired error
         dispatchSwap({ type: 'QUOTE_EXPIRED' });
@@ -987,6 +995,7 @@ export function SwapTab({
       onChange: (asset: Asset) => void,
       disabled: boolean,
       purpose: 'selectRune' | 'selectBtcOrRune',
+      // otherAsset parameter is no longer used for filtering but kept for API compatibility
       otherAsset: Asset | null,
       availableRunes: Asset[],
       isLoadingRunes: boolean,
@@ -995,9 +1004,8 @@ export function SwapTab({
       handleSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
       isPreselectedLoading: boolean = false
   ) => {
-    const runesToShow = purpose === 'selectBtcOrRune' ? [BTC_ASSET, ...availableRunes] : availableRunes;
-    // Filter out the other selected asset if necessary
-    const filteredRunes = runesToShow.filter(rune => !otherAsset || rune.id !== otherAsset.id);
+    // Use all available runes directly without filtering
+    const filteredRunes = availableRunes;
 
     return (
       <div className={styles.listboxContainer}>
@@ -1042,49 +1050,13 @@ export function SwapTab({
                       leaveTo="opacity-0"
                   >
                       <Listbox.Options className={styles.listboxOptions}>
-                          {purpose === 'selectBtcOrRune' && (
-                             <Listbox.Option
-                                  key={BTC_ASSET.id}
-                                  className={({ active }) =>
-                                      `${styles.listboxOption} ${ active ? styles.listboxOptionActive : styles.listboxOptionInactive }`
-                                  }
-                                  value={BTC_ASSET}
-                                  disabled={BTC_ASSET.id === otherAsset?.id}
-                             >
-                                  {({ selected }) => (
-                                       <>
-                                          <span className={styles.runeOptionContent}> {/* Use rune option style */}
-                                              {isValidImageSrc(BTC_ASSET.imageURI) ? (
-                                                  <Image 
-                                                    src={BTC_ASSET.imageURI} 
-                                                    alt="" 
-                                                    className={styles.runeImage} 
-                                                    width={24}
-                                                    height={24}
-                                                    aria-hidden="true" 
-                                                  />
-                                              ) : (
-                                                null
-                                              )}
-                                              <span className={`${styles.listboxOptionText} ${ selected ? styles.listboxOptionTextSelected : styles.listboxOptionTextUnselected }`}>
-                                                  {BTC_ASSET.name}
-                                              </span>
-                                          </span>
-                                          {selected && (
-                                              <span className={styles.listboxOptionCheckContainer}>
-                                                  <CheckIcon className={styles.listboxOptionCheckIcon} aria-hidden="true" />
-                                              </span>
-                                          )}
-                                      </>
-                                  )}
-                             </Listbox.Option>
-                          )}
+                          {/* Removed BTC option from here - will be added after search bar */}
 
                           <div className={styles.searchContainer}>
                               <div className={styles.searchWrapper}>
-                                  <Image 
-                                      src="/icons/magnifying_glass-0.png" 
-                                      alt="Search" 
+                                  <Image
+                                      src="/icons/magnifying_glass-0.png"
+                                      alt="Search"
                                       className={styles.searchIconEmbedded}
                                       width={16}
                                       height={16}
@@ -1102,9 +1074,9 @@ export function SwapTab({
                           {isLoadingRunes && <div className={styles.listboxLoadingOrEmpty}>Loading Runes...</div>}
                           {!isLoadingRunes && currentRunesError && (
                             <div className={`${styles.listboxError} ${styles.messageWithIcon}`}>
-                              <Image 
-                                src="/icons/msg_error-0.png" 
-                                alt="Error" 
+                              <Image
+                                src="/icons/msg_error-0.png"
+                                alt="Error"
                                 className={styles.messageIcon}
                                 width={16}
                                 height={16}
@@ -1118,8 +1090,44 @@ export function SwapTab({
                                </div>
                           )}
 
+                          {/* Always show BTC option after search bar for both selectors */}
+                          <Listbox.Option
+                               key={BTC_ASSET.id}
+                               className={({ active }) =>
+                                   `${styles.listboxOption} ${ active ? styles.listboxOptionActive : styles.listboxOptionInactive }`
+                               }
+                               value={BTC_ASSET}
+                          >
+                               {({ selected }) => (
+                                    <>
+                                       <span className={styles.runeOptionContent}>
+                                           {isValidImageSrc(BTC_ASSET.imageURI) ? (
+                                               <Image
+                                                 src={BTC_ASSET.imageURI}
+                                                 alt=""
+                                                 className={styles.runeImage}
+                                                 width={24}
+                                                 height={24}
+                                                 aria-hidden="true"
+                                               />
+                                           ) : (
+                                             null
+                                           )}
+                                           <span className={`${styles.listboxOptionText} ${ selected ? styles.listboxOptionTextSelected : styles.listboxOptionTextUnselected }`}>
+                                               {BTC_ASSET.name}
+                                           </span>
+                                       </span>
+                                       {selected && (
+                                           <span className={styles.listboxOptionCheckContainer}>
+                                               <CheckIcon className={styles.listboxOptionCheckIcon} aria-hidden="true" />
+                                           </span>
+                                       )}
+                                   </>
+                               )}
+                          </Listbox.Option>
+
                           {filteredRunes
-                              .filter(rune => rune.id !== otherAsset?.id)
+                              .filter(rune => rune.id !== BTC_ASSET.id) // Only filter out BTC since we're showing it separately above
                               .map((rune) => (
                               <Listbox.Option
                                   key={rune.id}
@@ -1187,10 +1195,10 @@ export function SwapTab({
   // Add balance percentage helper functions
   const handlePercentageClick = (percentage: number) => {
     if (!connected || !assetIn) return;
-    
+
     let availableBalance = 0;
     let decimals = 8; // Default decimals for BTC
-    
+
     if (assetIn.isBTC) {
       if (btcBalanceSats !== undefined) {
         availableBalance = btcBalanceSats / 100_000_000;
@@ -1200,11 +1208,11 @@ export function SwapTab({
     } else {
       const rawBalance = getSpecificRuneBalance(assetIn.name);
       if (rawBalance === null) return;
-      
+
       try {
         const balanceNum = parseFloat(rawBalance);
         if (isNaN(balanceNum)) return;
-        
+
         decimals = swapRuneInfo?.decimals ?? 0;
         availableBalance = balanceNum / (10 ** decimals);
       } catch (e) {
@@ -1212,20 +1220,20 @@ export function SwapTab({
         return;
       }
     }
-    
+
     // Calculate percentage of available balance
     let newAmount = percentage === 1 ? availableBalance : availableBalance * percentage;
-    
+
     // Format with appropriate decimal places
     newAmount = Math.floor(newAmount * 10**decimals) / 10**decimals;
-    
+
     // Convert to string with appropriate decimal places
     setInputAmount(newAmount.toString());
   };
 
   return (
-    <div className={styles.runesInfoTabContainer}>
-      <h2 className={styles.title}>Swap</h2>
+    <div className={styles.swapTabContainer}>
+      <h1 className="heading">Swap</h1>
 
       {/* Input Area */}
       <div className={styles.inputArea}>
@@ -1234,32 +1242,32 @@ export function SwapTab({
           {connected && assetIn && (
             <span className={styles.availableBalance}>
               <span className={styles.percentageShortcuts}>
-                <button 
-                  className={styles.percentageButton} 
+                <button
+                  className={styles.percentageButton}
                   onClick={() => handlePercentageClick(0.25)}
                   type="button"
                 >
                   25%
                 </button>
                 {' | '}
-                <button 
-                  className={styles.percentageButton} 
+                <button
+                  className={styles.percentageButton}
                   onClick={() => handlePercentageClick(0.5)}
                   type="button"
                 >
                   50%
                 </button>
                 {' | '}
-                <button 
-                  className={styles.percentageButton} 
+                <button
+                  className={styles.percentageButton}
                   onClick={() => handlePercentageClick(0.75)}
                   type="button"
                 >
                   75%
                 </button>
                 {' | '}
-                <button 
-                  className={styles.percentageButton} 
+                <button
+                  className={styles.percentageButton}
                   onClick={() => handlePercentageClick(1)}
                   type="button"
                 >
@@ -1285,11 +1293,11 @@ export function SwapTab({
               ) : (() => {
                 const rawBalance = getSpecificRuneBalance(assetIn.name);
                 if (rawBalance === null) return 'N/A';
-                
+
                 try {
                   const balanceNum = parseFloat(rawBalance);
                   if (isNaN(balanceNum)) return 'Invalid Balance';
-                  
+
                   const decimals = swapRuneInfo?.decimals ?? 0;
                   const displayValue = balanceNum / (10 ** decimals);
                   return `${displayValue.toLocaleString(undefined, { maximumFractionDigits: decimals })}`;
@@ -1381,16 +1389,16 @@ export function SwapTab({
           <div className={styles.usdValueText}>≈ {outputUsdValue}</div>
         )}
         {quoteError && !swapState.isQuoteLoading && (
-          <div className={`${styles.quoteErrorText} ${styles.messageWithIcon}`}>
-            <Image 
-              src="/icons/msg_error-0.png" 
-              alt="Error" 
+          <div className={`errorText ${styles.messageWithIcon}`} style={{paddingTop: '0.25rem', width: '100%'}}>
+            <Image
+              src="/icons/msg_error-0.png"
+              alt="Error"
               className={styles.messageIcon}
               width={16}
               height={16}
             />
             <span>{quoteError}</span>
-            <div className={styles.hintText}>
+            <div className="smallText" style={{whiteSpace: 'normal', wordBreak: 'break-word'}}>
               Please retry the swap, reconnect your wallet, or try a different amount.
             </div>
           </div>
@@ -1399,7 +1407,7 @@ export function SwapTab({
 
       {/* Show Price Chart button - Moved here */}
       {!showPriceChart && (
-        <button 
+        <button
           className={styles.showPriceChartButton}
           onClick={() => onShowPriceChart?.(assetOut?.name || "LIQUIDIUM•TOKEN")}
         >
@@ -1417,7 +1425,7 @@ export function SwapTab({
                 if (swapState.isQuoteLoading) return loadingDots;
                 if (exchangeRate) return exchangeRate;
                 // Show N/A only if amount entered, but no quote/rate yet and no specific quote error
-                if (debouncedInputAmount > 0 && !quoteError) return 'N/A'; 
+                if (debouncedInputAmount > 0 && !quoteError) return 'N/A';
                 return ''; // Otherwise, display nothing
               })()}
             </span>
@@ -1428,7 +1436,7 @@ export function SwapTab({
       {/* Swap Button */}
       <button
         className={styles.swapButton}
-        onClick={quoteExpired ? handleFetchQuote : handleSwap} 
+        onClick={quoteExpired ? handleFetchQuote : handleSwap}
         disabled={
           (quoteExpired && swapState.isQuoteLoading) ||
           (!quoteExpired && (
@@ -1437,9 +1445,9 @@ export function SwapTab({
             parseFloat(inputAmount) <= 0 ||
             !assetIn ||
             !assetOut ||
-            swapState.isQuoteLoading || 
-            !!quoteError || 
-            !quote || 
+            swapState.isQuoteLoading ||
+            !!quoteError ||
+            !quote ||
             swapState.isSwapping ||
             swapState.swapStep === 'success' ||
             (swapState.swapStep === 'error' && !quoteExpired)
@@ -1451,10 +1459,10 @@ export function SwapTab({
 
       {/* Display Swap Process Status */}
       {swapState.isSwapping && swapState.swapStep !== 'error' && swapState.swapStep !== 'success' && (
-        <div className={`${styles.statusText} ${styles.messageWithIcon}`}>
-          <Image 
-            src="/icons/windows_hourglass.png" 
-            alt="Processing" 
+        <div className={`smallText ${styles.messageWithIcon}`} style={{paddingTop: '0.5rem'}}>
+          <Image
+            src="/icons/windows_hourglass.png"
+            alt="Processing"
             className={styles.messageIcon}
             width={16}
             height={16}
@@ -1470,25 +1478,25 @@ export function SwapTab({
 
       {/* Display Swap Error/Success Messages */}
       {swapState.swapError && (
-        <div className={`${styles.errorText} ${styles.messageWithIcon}`}>
-          <Image 
-            src="/icons/msg_error-0.png" 
-            alt="Error" 
+        <div className={`errorText ${styles.messageWithIcon}`}>
+          <Image
+            src="/icons/msg_error-0.png"
+            alt="Error"
             className={styles.messageIcon}
             width={16}
             height={16}
           />
           <span>Error: {swapState.swapError}</span>
-          <div className={styles.hintText}>
+          <div className="smallText" style={{whiteSpace: 'normal', wordBreak: 'break-word'}}>
             Please retry the swap, reconnect your wallet, or try a different amount.
           </div>
         </div>
       )}
       {!swapState.swapError && swapState.swapStep === 'success' && swapState.txId && (
-        <div className={`${styles.successText} ${styles.messageWithIcon}`}>
-          <Image 
-            src="/icons/check-0.png" 
-            alt="Success" 
+        <div className={`smallText ${styles.messageWithIcon}`} style={{paddingTop: '0.5rem', color: '#16a34a'}}>
+          <Image
+            src="/icons/check-0.png"
+            alt="Success"
             className={styles.messageIcon}
             width={16}
             height={16}
@@ -1510,4 +1518,4 @@ export function SwapTab({
   );
 }
 
-export default SwapTab; 
+export default SwapTab;

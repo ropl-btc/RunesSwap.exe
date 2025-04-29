@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import debounce from 'lodash.debounce';
 import Image from 'next/image';
-import styles from './AppInterface.module.css'; // Reuse styles for now
+import styles from './RunesInfoTab.module.css';
 import {
   type RuneInfo as OrdiscanRuneInfo,
   type RuneMarketInfo as OrdiscanRuneMarketInfo
@@ -50,6 +50,10 @@ export function RunesInfoTab({
   // Use persisted values for initial state
   const [runeInfoSearchQuery, setLocalRuneInfoSearchQuery] = useState(persistedRuneSearchQuery);
   const [selectedRuneForInfo, setLocalSelectedRuneForInfo] = useState<OrdiscanRuneInfo | null>(persistedSelectedRuneInfo);
+  // Track if search input is focused
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  // Track if we should show loading state (with delay)
+  const [showLoading, setShowLoading] = useState(false);
 
   // New states for SatsTerminal search
   const [isSearching, setIsSearching] = useState(false);
@@ -164,7 +168,7 @@ export function RunesInfoTab({
         setIsPopularLoading(false);
       }
     };
-    
+
     fetchPopular();
     // Run this effect only once on mount, not when props change
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -209,27 +213,48 @@ export function RunesInfoTab({
     debouncedSearch(query);
   };
 
+  // Handle search input focus
+  const handleSearchFocus = () => {
+    setIsSearchFocused(true);
+  };
+
+  // Handle search input blur with delay to match rune selection
+  const handleSearchBlur = () => {
+    // Use 200ms delay to match rune selection timing
+    setTimeout(() => {
+      if (!runeInfoSearchQuery.trim()) {
+        setIsSearchFocused(false);
+      }
+    }, 200);
+  };
+
   // Determine which runes to display
   const availableRunes = runeInfoSearchQuery.trim() ? searchResults : popularRunes;
   const isLoadingRunes = runeInfoSearchQuery.trim() ? isSearching : isPopularLoading;
   const currentRunesError = runeInfoSearchQuery.trim() ? searchError : popularError;
 
-  // Update global store when detailed info changes
+  // Update global store when detailed info changes and reset loading state
   useEffect(() => {
+    // Reset loading state when data is loaded or there's an error
+    if (detailedRuneInfo || detailedRuneInfoError) {
+      setShowLoading(false);
+    }
+
     if (detailedRuneInfo) {
       // Convert RuneData to OrdiscanRuneInfo for compatibility with existing code
       const updatedInfo: OrdiscanRuneInfo = {
         ...detailedRuneInfo,
         formatted_name: detailedRuneInfo.formatted_name || detailedRuneInfo.name,
       } as OrdiscanRuneInfo;
+
       setSelectedRuneInfo(updatedInfo);
     } else if (detailedRuneInfoError && selectedRuneForInfo) {
-      // On error, use the minimal info in the global store
       setSelectedRuneInfo(selectedRuneForInfo);
     }
-  }, [detailedRuneInfo, detailedRuneInfoError, selectedRuneForInfo, setSelectedRuneInfo]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailedRuneInfo, detailedRuneInfoError, selectedRuneForInfo]);
 
-  // Handle rune selection
+  // Handle rune selection with delayed loading state
   const handleRuneSelect = (rune: Rune) => {
     // Create minimal rune info for immediate UI feedback
     const minimalRuneInfo = {
@@ -244,17 +269,21 @@ export function RunesInfoTab({
       current_supply: '0',
     } as OrdiscanRuneInfo;
 
-    // Update local state with minimal info
-    setLocalSelectedRuneForInfo(minimalRuneInfo);
+    // Delay showing loading state to match dropdown closing delay (200ms)
+    setTimeout(() => {
+      setLocalSelectedRuneForInfo(minimalRuneInfo);
+      setShowLoading(true);
 
-    // Update price chart if it's visible
-    if (showPriceChart && onShowPriceChart) {
-      onShowPriceChart(rune.name, false); // Update chart without toggling visibility
-    }
+      // Update price chart if it's visible
+      if (showPriceChart && onShowPriceChart) {
+        onShowPriceChart(rune.name, false);
+      }
+    }, 200);
   };
 
   return (
     <div className={styles.runesInfoTabContainer}>
+      <h1 className="heading">Runes Info</h1>
       <div className={styles.searchAndResultsContainer}>
         <div className={styles.searchContainerRunesInfo}>
           <div className={styles.searchWrapper}>
@@ -267,76 +296,87 @@ export function RunesInfoTab({
             />
             <input
               type="text"
-              placeholder="Search runes..."
+              placeholder="Click to search or browse runes..."
               value={runeInfoSearchQuery}
               onChange={handleSearchChange}
+              onFocus={handleSearchFocus}
+              onBlur={handleSearchBlur}
               className={styles.searchInput}
             />
           </div>
         </div>
 
-        <div className={styles.runesListContainer}>
-          {isLoadingRunes && (
-            <div className={styles.listboxLoadingOrEmpty}>
-              {runeInfoSearchQuery.trim()
-                ? `Searching for "${runeInfoSearchQuery}"...`
-                : 'Loading Latest Runes...'}
-            </div>
-          )}
-          {currentRunesError && (
-            <div className={`${styles.listboxError} ${styles.messageWithIcon}`}>
-              <Image
-                src="/icons/msg_error-0.png"
-                alt="Error"
-                className={styles.messageIcon}
-                width={16}
-                height={16}
-              />
-              <span>{currentRunesError}</span>
-            </div>
-          )}
-          {!isLoadingRunes && !currentRunesError && availableRunes.length === 0 && (
-            <div className={styles.listboxLoadingOrEmpty}>
-              {runeInfoSearchQuery.trim()
-                ? `Rune "${runeInfoSearchQuery}" not found.`
-                : 'No recent runes found'}
-            </div>
-          )}
-          {!isLoadingRunes && !currentRunesError && availableRunes.map((rune) => (
-            <button
-              key={rune.id}
-              className={`${styles.runeListItem} ${selectedRuneForInfo?.name === rune.name ? styles.runeListItemSelected : ''}`}
-              onClick={() => handleRuneSelect(rune)}
-            >
-              <div className={styles.runeListItemContent}>
-                {rune.imageURI && (
-                  <Image
-                    src={rune.imageURI}
-                    alt=""
-                    className={styles.runeImage}
-                    width={24}
-                    height={24}
-                    onError={(e) => {
-                      // Handle error in Next Image component by setting display to none
-                      const target = e.target as HTMLImageElement;
-                      if (target) {
-                        target.style.display = 'none';
-                      }
-                    }}
-                  />
-                )}
-                <span>{rune.name}</span>
+        {/* Only show the runes list when search is focused or there's a search query */}
+        {(isSearchFocused || runeInfoSearchQuery.trim()) && (
+          <div className={styles.runesListContainer}>
+            {isLoadingRunes && (
+              <div className={styles.listboxLoadingOrEmpty}>
+                {runeInfoSearchQuery.trim()
+                  ? `Searching for "${runeInfoSearchQuery}"...`
+                  : 'Loading Latest Runes...'}
               </div>
-            </button>
-          ))}
-        </div>
+            )}
+            {currentRunesError && (
+              <div className={`${styles.listboxError} ${styles.messageWithIcon}`}>
+                <Image
+                  src="/icons/msg_error-0.png"
+                  alt="Error"
+                  className={styles.messageIcon}
+                  width={16}
+                  height={16}
+                />
+                <span>{currentRunesError}</span>
+              </div>
+            )}
+            {!isLoadingRunes && !currentRunesError && availableRunes.length === 0 && (
+              <div className={styles.listboxLoadingOrEmpty}>
+                {runeInfoSearchQuery.trim()
+                  ? `Rune "${runeInfoSearchQuery}" not found.`
+                  : 'No recent runes found'}
+              </div>
+            )}
+            {!isLoadingRunes && !currentRunesError && availableRunes.map((rune) => (
+              <button
+                key={rune.id}
+                className={`${styles.runeListItem} ${selectedRuneForInfo?.name === rune.name ? styles.runeListItemSelected : ''}`}
+                onClick={() => handleRuneSelect(rune)}
+              >
+                <div className={styles.runeListItemContent}>
+                  {rune.imageURI && (
+                    <Image
+                      src={rune.imageURI}
+                      alt=""
+                      className={styles.runeImage}
+                      width={24}
+                      height={24}
+                      onError={(e) => {
+                        // Handle error in Next Image component by setting display to none
+                        const target = e.target as HTMLImageElement;
+                        if (target) {
+                          target.style.display = 'none';
+                        }
+                      }}
+                    />
+                  )}
+                  <span>{rune.name}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      <div className={styles.searchAndResultsContainer}>
-        <div className={`${styles.runeDetailsContainer} ${showPriceChart ? styles.narrowRightPanel : ''}`}>
-          {isDetailedRuneInfoLoading && selectedRuneForInfo && <p>Loading details for {selectedRuneForInfo.formatted_name}...</p>}
-          {detailedRuneInfoError && selectedRuneForInfo && <p className={styles.errorText}>Error loading details: {detailedRuneInfoError.message}</p>}
-          {!isDetailedRuneInfoLoading && detailedRuneInfo && (
+      <div className={`${styles.runeDetailsContainer} ${showPriceChart ? styles.narrowRightPanel : ''}`}>
+        {/* Show loading state with priority */}
+        {(isDetailedRuneInfoLoading || showLoading) && selectedRuneForInfo &&
+          <p>Loading details for {selectedRuneForInfo.formatted_name}...</p>
+        }
+        {/* Show error state if not loading */}
+        {detailedRuneInfoError && selectedRuneForInfo && !showLoading &&
+          <p className={styles.errorText}>Error loading details: {detailedRuneInfoError.message}</p>
+        }
+        {/* Show rune details when loaded and not in loading state */}
+        {!isDetailedRuneInfoLoading && !showLoading && detailedRuneInfo && (
             <div>
               <h3>{detailedRuneInfo.formatted_name} ({detailedRuneInfo.symbol})</h3>
               <p><strong>ID:</strong> {detailedRuneInfo.id}</p>
@@ -409,11 +449,10 @@ export function RunesInfoTab({
               )}
             </div>
           )}
-          {/* Display hint only if no rune is selected and not currently loading */}
-          {!selectedRuneForInfo && !isDetailedRuneInfoLoading && (
+          {/* Display hint only if no rune is selected and not loading */}
+          {!selectedRuneForInfo && !isDetailedRuneInfoLoading && !showLoading &&
             <p className={styles.hintText}>Select a rune from the list or search by name.</p>
-          )}
-        </div>
+          }
       </div>
     </div>
   );

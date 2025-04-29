@@ -17,7 +17,7 @@ export default function DocsPage() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>Documentation</h1>
+      <h1 className="heading">Documentation</h1>
       <div className={styles.docsContent}>
         <ReactMarkdown remarkPlugins={[remarkGfm]}>
           {fileContents}

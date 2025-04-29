@@ -1,21 +1,20 @@
+/* Layout */
 .container {
   padding: 0;
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  /* min-height: 450px; */
+  gap: var(--space-4);
 }
 
 .appLayout {
   display: flex;
   flex-direction: row;
-  gap: 1rem;
+  gap: var(--space-4);
   width: 100%;
   padding: 0;
 }
 
-/* Container with price chart visible takes up more space */
 .containerWithChart {
   padding: 0;
 }
@@ -26,734 +25,128 @@
   margin: 0;
 }
 
+/* Typography */
 .title {
-  font-size: 1.125rem; /* text-lg */
-  line-height: 1.75rem; /* text-lg */
-  font-weight: 700; /* font-bold */
-  /* margin-top: 1rem; */ /* Remove compensating margin */
-}
-
-.inputArea {
-  padding: 0.5rem; /* p-2 */
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem; /* space-y-1 */
-  border-width: 2px;
-  border-style: solid;
-  border-right-color: var(--win98-light-gray);
-  border-bottom-color: var(--win98-light-gray);
-  border-left-color: var(--win98-dark-gray);
-  border-top-color: var(--win98-dark-gray);
-  background-color: var(--win98-white);
-  /* margin-top: 1rem; */ /* Remove compensating margin */
-  width: 100%; /* Set width to 100% of container */
-  min-width: auto; /* Override min-width for narrow containers */
-}
-
-/* Special case for input area when in narrowed container */
-.narrowSwapContainer .inputArea {
-  min-width: auto;
-  width: 100%;
-}
-
-.inputLabel {
-  font-size: 0.75rem; /* text-xs */
-  line-height: 1rem; /* text-xs */
-}
-
-.inputHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline; /* Align baselines of label and balance text */
-  width: 100%; /* Ensure it takes full width */
-}
-
-.availableBalance {
-  font-size: 0.7rem; /* Smaller than label */
-  line-height: 1rem;
-  color: var(--win98-dark-gray);
-  text-align: right;
-  margin-left: 0.5rem; /* Add some space between label and balance */
-}
-
-.percentageShortcuts {
-  font-size: 0.7rem; /* Match availableBalance font size */
-  color: var(--win98-dark-gray);
-}
-
-.percentageButton {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 0.7rem; /* Match availableBalance font size */
-  color: var(--win98-dark-gray);
-  padding: 0;
-  margin: 0 3px; /* Add horizontal spacing between buttons */
-  text-decoration: underline;
-}
-
-.percentageButton:hover {
-  color: var(--win98-blue);
-}
-
-.percentageButton:active {
-  color: var(--win98-dark-blue);
-}
-
-.inputRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.amountInput {
-  background-color: transparent;
-  font-size: 1.25rem; /* text-xl */
-  line-height: 1.75rem; /* text-xl */
-  width: 100%;
-  outline: none;
-  padding: 0.25rem; /* p-1 */
-}
-
-.amountInput::placeholder {
-  color: var(--win98-dark-gray);
-}
-
-/* Style for the input USD value display */
-.usdValueText {
-  font-size: 0.75rem; /* text-xs */
-  color: var(--win98-dark-gray);
-  text-align: left; /* Align with the input field */
-  padding-left: 0.25rem; /* Align roughly with input text */
-  margin-top: 0.1rem; /* Small space below input */
-}
-
-.amountInputReadOnly {
-  composes: amountInput; /* Inherit base input styles */
-  color: var(--win98-dark-gray); /* text-gray-500 approximation */
+  font-size: var(--font-size-large);
+  line-height: 1.75rem;
+  font-weight: 700;
+  color: var(--win98-black);
 }
 
 .assetButton {
-  font-weight: 700; /* font-bold */
-  padding: 0.25rem; /* p-1 */
+  font-weight: 700;
+  padding: var(--space-1);
   background-color: var(--win98-gray);
-  border-width: 2px;
-  border-style: solid;
-  border-top-color: var(--win98-light-gray);
-  border-left-color: var(--win98-light-gray);
-  border-right-color: var(--win98-dark-gray);
-  border-bottom-color: var(--win98-dark-gray);
-  font-size: 0.875rem; /* text-sm */
+  font-size: var(--font-size-normal);
   flex-shrink: 0;
-  width: 5rem; /* w-20 approximation */
+  width: 5rem;
+  color: var(--win98-black);
+  border: var(--win98-border-outset);
+  border-color: var(--win98-border-outset-colors);
 }
 
-/* Wrapper for asset button image + text */
+.assetButton:active {
+  border-color: var(--win98-border-inset-colors);
+}
+
 .assetButtonContent {
   display: flex;
   align-items: center;
-  justify-content: center; /* Center content within the button */
+  justify-content: center;
 }
 
-/* Style for the asset image within the button */
 .assetButtonImage {
-  height: 1.25rem; /* h-5 */
-  width: 1.25rem; /* w-5 */
-  margin-right: 0.5rem; /* mr-2 */
+  height: 1.25rem;
+  width: 1.25rem;
+  margin-right: var(--space-2);
   flex-shrink: 0;
-  /* Disable image smoothing */
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
 
-.assetButton:active {
-  border-top-color: var(--win98-dark-gray);
-  border-left-color: var(--win98-dark-gray);
-  border-right-color: var(--win98-light-gray);
-  border-bottom-color: var(--win98-light-gray);
-}
-
-.swapButton {
-  width: 100%;
-  padding: 0.5rem 1rem; /* Increased vertical padding slightly for better feel */
-  background-color: var(--win98-gray);
-  border-width: 2px;
-  border-style: solid;
-  border-top-color: var(--win98-light-gray);
-  border-left-color: var(--win98-light-gray);
-  border-right-color: var(--win98-dark-gray);
-  border-bottom-color: var(--win98-dark-gray);
-  color: var(--win98-black);
-  font-weight: 700; /* font-bold */
-}
-
-.swapButton:active {
-  border-top-color: var(--win98-dark-gray);
-  border-left-color: var(--win98-dark-gray);
-  border-right-color: var(--win98-light-gray);
-  border-bottom-color: var(--win98-light-gray);
-}
-
-.swapButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  color: var(--win98-dark-gray);
-}
-
-.errorText {
-  font-size: 0.75rem; /* text-xs */
-  padding-top: 0.5rem; /* pt-2 */
-  color: #dc2626; /* text-red-600 */
-}
-
-/* Style for quote-specific errors */
-.quoteErrorText {
-  composes: errorText; /* Inherit base error styles */
-  padding-top: 0.25rem; /* pt-1, smaller top padding */
-  width: 100%; /* Ensure it takes full width */
-  color: var(--win98-red);
-}
-
-/* Style for swap success message */
-.successText {
-  font-size: 0.75rem; /* text-xs */
-  padding-top: 0.5rem; /* pt-2 */
-  color: #16a34a; /* text-green-600 approximation */
-}
-
-/* Style for transaction links in the swap success message or Tx list */
+/* Links */
 .txLink {
-  color: #0000EE; /* Visited link color - adjust if needed */
+  color: var(--win98-blue);
   text-decoration: underline;
-  margin-left: 0.5em;
+  margin-left: var(--space-2);
 }
 
 .txLink:hover {
-  color: #551A8B; /* Hover color - adjust if needed */
-}
-
-/* NEW: Specific style for the etching tx link */
-.etchingTxLink {
   color: var(--win98-dark-blue);
-  text-decoration: underline;
-}
-
-.etchingTxLink:hover {
-  text-decoration: none;
 }
 
 .txLinkBold {
-  composes: txLink; /* Inherit base link styles */
+  color: var(--win98-blue);
+  text-decoration: underline;
+  margin-left: var(--space-2);
   font-weight: bold;
-  font-size: 0.85rem;
+  font-size: var(--font-size-normal);
+}
+
+.txLinkBold:hover {
+  color: var(--win98-dark-blue);
 }
 
 .txTimestamp {
   color: var(--win98-dark-gray);
-  font-size: 0.75rem;
+  font-size: var(--font-size-small);
 }
 
 .txDetails {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  padding-left: 0.5rem; /* Indent details slightly */
+  gap: var(--space-1);
+  padding-left: var(--space-2);
 }
 
 .txDetailRow {
   display: flex;
   justify-content: space-between;
+  color: var(--win98-black); /* Ensure detail text color */
 }
 
-/* Highlight rune names in tx details */
 .runeNameHighlight {
   font-weight: bold;
-  color: var(--win98-blue); /* Or another distinct color */
-}
-
-/* Container for messages with icons */
-.messageWithIcon {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-/* Style for message icons (error, warning, etc.) */
-.messageIcon {
-  width: 1rem; /* w-4 */
-  height: 1rem; /* h-4 */
-  flex-shrink: 0; /* Prevent icon from shrinking */
-  /* Disable image smoothing */
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
-}
-
-/* New Info Area Styles */
-.infoArea {
-  margin-top: 1rem; /* mt-4 */
-  padding-top: 1rem; /* pt-4 */
-  border-top: 2px solid var(--win98-dark-gray);
-  font-size: 0.875rem; /* text-sm */
-  color: var(--win98-black);
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem; /* space-y-2 */
-}
-
-.infoRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-/* Headless UI Listbox Styles */
-.listboxContainer {
-  flex-shrink: 0;
-}
-
-.listboxRelative {
-  position: relative;
-}
-
-.listboxButton {
-  position: relative;
-  width: 100%;
-  cursor: default;
-  background-color: var(--win98-gray);
-  padding: 0.25rem 2.5rem 0.25rem 0.75rem; /* py-1 pl-3 pr-10 */
-  text-align: left;
-  border-width: 2px;
-  border-style: solid;
-  border-top-color: var(--win98-light-gray);
-  border-left-color: var(--win98-light-gray);
-  border-right-color: var(--win98-dark-gray);
-  border-bottom-color: var(--win98-dark-gray);
-  font-size: 0.875rem; /* text-sm */
-}
-
-.listboxButton:focus {
-  outline: none;
-  /* Add focus ring styles if desired */
-}
-
-.listboxButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.listboxButtonText {
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  white-space: nowrap;
-  font-weight: 700; /* font-bold */
-}
-
-.listboxButtonIconContainer {
-  pointer-events: none;
-  position: absolute;
-  inset: 0 0 0 auto; /* Equivalent to inset-y-0 right-0 */
-  display: flex;
-  align-items: center;
-  padding-right: 0.5rem; /* pr-2 */
-}
-
-.listboxButtonIcon {
-  height: 1.25rem; /* h-5 */
-  width: 1.25rem; /* w-5 */
-  color: #4b5563; /* text-gray-700 approximation */
-}
-
-.listboxOptions {
-  position: absolute;
-  right: 0; /* Align right edge with the button's right edge */
-  margin-top: 0.25rem; /* mt-1 */
-  max-height: 15rem; /* max-h-60 */
-  min-width: 100%; /* Ensure it's at least as wide as the button */
-  width: max-content; /* Allow dropdown to expand for long names */
-  /* Remove scrollbar but keep scrolling functionality */
-  overflow-y: auto;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
-  background-color: var(--win98-gray); /* Match other UI elements */
-  padding: 0.25rem 0; /* py-1 */
-  font-size: 0.875rem; /* sm:text-sm */
-  /* ring-1 ring-black/5 approximation */
-  border-width: 2px;
-  border-style: solid;
-  border-top-color: var(--win98-light-gray);
-  border-left-color: var(--win98-light-gray);
-  border-right-color: var(--win98-dark-gray);
-  border-bottom-color: var(--win98-dark-gray);
-  z-index: 20; /* Added z-index */
-}
-
-/* Hide webkit scrollbar */
-.listboxOptions::-webkit-scrollbar {
-  display: none;
-}
-
-.listboxOption {
-  position: relative;
-  cursor: default;
-  user-select: none;
-  padding: 0.5rem 1rem 0.5rem 2.5rem; /* py-2 pl-10 pr-4 */
-}
-
-.listboxOptionActive {
-  background-color: var(--win98-blue);
-  color: var(--win98-white);
-}
-
-.listboxOptionInactive {
-  color: var(--win98-black);
-}
-
-.listboxOptionText {
-  display: block;
-  white-space: nowrap; /* Ensure full name is visible on one line */
-  padding: 0.25rem 0; /* Add some padding */
-}
-
-.listboxOptionTextSelected {
-  font-weight: 500; /* font-medium */
-}
-
-.listboxOptionTextUnselected {
-  font-weight: 400; /* font-normal */
-}
-
-.listboxOptionCheckContainer {
-  position: absolute;
-  inset: 0 0 0 0; /* Equivalent to inset-y-0 left-0 */
-  display: flex;
-  align-items: center;
-  padding-left: 0.75rem; /* pl-3 */
   color: var(--win98-blue);
 }
 
-.listboxOptionCheckIcon {
-  height: 1.25rem; /* h-5 */
-  width: 1.25rem; /* w-5 */
-}
-
-.listboxLoadingOrEmpty {
-  position: relative;
-  cursor: default;
-  user-select: none;
-  padding: 0.5rem 1rem; /* py-2 px-4 */
-  color: #4b5563; /* text-gray-700 approximation */
-}
-
-.listboxError {
-  composes: listboxLoadingOrEmpty;
-  color: var(--win98-red);
+/* Messages */
+.messageWithIcon {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-}
-
-/* Add styles for the search container */
-.searchContainer {
-  padding: 0.5rem; /* p-2 */
-  border-bottom: 1px solid var(--win98-dark-gray);
-}
-
-.searchWrapper { /* New wrapper for input + icon */
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.searchInput {
-  width: 100%;
-  padding: 0.375rem 0.5rem; /* py-1.5 px-2 */
-  padding-left: 2rem; /* Make space for the icon */
-  background-color: var(--win98-white);
-  border: 1px solid var(--win98-dark-gray);
+  gap: var(--space-2);
   color: var(--win98-black);
-  font-size: 0.875rem; /* text-sm */
 }
 
-.searchInput:focus {
-  outline: 1px solid var(--win98-blue);
-}
-
-/* Style for the embedded search icon */
-.searchIconEmbedded {
-  position: absolute;
-  left: 0.5rem; /* pl-2 */
-  top: 50%;
-  transform: translateY(-50%);
-  height: 1rem; /* h-4 */
-  width: 1rem; /* w-4 */
-  color: var(--win98-dark-gray); /* text-gray-500 approximation */
-  pointer-events: none; /* Don't interfere with input clicks */
-  /* Disable image smoothing */
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
-}
-
-/* Remove old search form/button styles if they exist */
-.searchForm {
-  /* Remove or comment out */
-}
-
-.searchButton {
-   /* Remove or comment out */
-}
-
-/* Style for the rune image in the dropdown */
-.runeImage {
-  height: 1.25rem; /* h-5 */
-  width: 1.25rem; /* w-5 */
-  margin-right: 0.5rem; /* mr-2 */
+.messageIcon {
+  width: 1rem;
+  height: 1rem;
   flex-shrink: 0;
-  /* Disable image smoothing */
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
 
-/* Wrapper for rune image + text in dropdown option */
-.runeOptionContent {
-  display: flex;
-  align-items: center; 
-}
-
-/* Add styles for the swap direction button */
-.swapIconContainer {
-  display: flex;
-  justify-content: center;
-  padding: 0.5rem 0; /* Add some vertical spacing */
-}
-
-.swapIconButton {
-  background-color: var(--win98-gray);
-  border-width: 2px;
-  border-style: solid;
-  border-top-color: var(--win98-light-gray);
-  border-left-color: var(--win98-light-gray);
-  border-right-color: var(--win98-dark-gray);
-  border-bottom-color: var(--win98-dark-gray);
-  padding: 0.25rem; /* p-1 */
-  line-height: 1; /* Ensure icon aligns well */
-}
-
-.swapIconButton:active {
-  border-top-color: var(--win98-dark-gray);
-  border-left-color: var(--win98-dark-gray);
-  border-right-color: var(--win98-light-gray);
-  border-bottom-color: var(--win98-light-gray);
-}
-
-.swapIconButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.swapIcon {
-  width: 1.5rem; /* h-6 */
-  height: 1.5rem; /* w-6 */
-}
-
-/* Mobile Responsiveness */
-@media (max-width: 768px) {
-  .appLayout {
-    flex-direction: column;
-    gap: 1rem;
-    width: 100%;
-  }
-
-  .container {
-    width: 100%;
-    padding: 0;
-  }
-
-  .containerWithChart .runesInfoContainer,
-  .containerWithChart .swapContainer,
-  .swapContainer,
-  .runesInfoContainer,
-  .priceChartContainer {
-    max-width: 100%;
-    width: 100%;
-  }
-
-  .priceChartContainer {
-    position: static;
-    height: auto;
-    margin-top: 1rem;
-  }
-
-  .narrowSwapContainer,
-  .narrowRightPanel {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .inputRow {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem;
-  }
-
-  .amountInput,
-  .amountInputReadOnly {
-    font-size: 1.125rem;
-    text-align: left;
-  }
-
-  .listboxContainer,
-  .listboxButton {
-    width: 100%;
-  }
-
-  .title {
-    font-size: 1rem;
-  }
-
-  .inputArea {
-    min-width: 100%;
-    width: 100%;
-    margin: 0;
-  }
-
-  .btcPriceFooter {
-    position: static;
-    left: 0;
-    transform: none;
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    border-radius: 0;
-    box-sizing: border-box;
-  }
-}
-
-/* --- Runes Info Tab Styles --- */
-.runesInfoTabContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  white-space: nowrap;
-}
-
-/* Create a container that wraps both the search and results */
-.searchAndResultsContainer {
-  display: flex;
-  flex-direction: column;
-  border-width: 2px;
-  border-style: solid;
-  border-top-color: var(--win98-light-gray);
-  border-left-color: var(--win98-light-gray);
-  border-right-color: var(--win98-dark-gray);
-  border-bottom-color: var(--win98-dark-gray);
-  background-color: var(--win98-gray);
-  overflow: hidden; /* Ensure no gaps between children */
-  width: 100%;
-  box-sizing: border-box;
-  margin: 0;
-  max-width: 100%;
-}
-
-.searchContainerRunesInfo {
-  padding: 0.25rem;
-  background-color: var(--win98-gray);
-  /* Remove all borders as parent container handles them */
-  border: none;
-  margin: 0;
-  position: relative;
-}
-
-/* Special style for search input in runes info tab */
-.searchContainerRunesInfo .searchInput {
-  border: 1px solid var(--win98-dark-gray);
-  border-width: 1px;
-  background-color: var(--win98-white);
-  width: 100%;
-}
-
-.runesListContainer {
-  max-height: 200px; 
-  overflow-y: auto; 
-  background-color: var(--win98-gray);
-  padding: 0.25rem 0; 
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  /* Remove all borders as parent container handles them */
-  border: none;
-  /* Add a subtle separator */
-  border-top: 1px solid var(--win98-dark-gray);
-}
-
-.runeListItem {
-  padding: 0.5rem 1rem;
-  border: 1px solid transparent; 
-  background-color: transparent;
-  text-align: left;
-  width: 100%;
-  font-family: inherit;
-  font-size: 0.875rem;
-  cursor: default; 
-  color: var(--win98-black);
-}
-
-/* Ensure hover state applies correctly (match listboxOptionActive) */
-.runeListItem:hover {
-  background-color: var(--win98-blue);
-  color: var(--win98-white);
-}
-
-/* Ensure selected state applies correctly */
-.runeListItemSelected {
-  background-color: var(--win98-highlight); 
-  color: var(--win98-highlight-text);
-}
-
-.runeListItemContent {
-  display: flex;
-  align-items: center;
-}
-
-.hintText {
-  color: var(--win98-dark-gray);
-  white-space: normal;
-  word-break: break-word;
-  font-size: inherit;
-  margin-top: 0;
-  padding: 0;
-}
-
-.loadingText {
-  font-style: italic;
-  color: var(--win98-dark-gray);
-}
-
-.errorText {
-  color: var(--win98-red);
-}
-
-/* --- Styles for Your TXs Tab --- */
+/* Transaction List */
 .yourTxsTabContainer {
-  /* Similar padding/spacing as other tabs */
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .txListContainer {
-  max-height: 350px; /* Or adjust as needed */
+  max-height: 420px;
   overflow-y: auto;
-  border: 1px solid var(--win98-dark-gray);
-  padding: 0.5rem;
+  padding: var(--space-2);
   background-color: var(--win98-white);
-  /* Win98 scrollbar styling (optional, complex) */
+  color: var(--win98-black);
+  border: var(--win98-border-inset);
+  border-color: var(--win98-border-inset-colors);
 }
 
 .txListItem {
   border-bottom: 1px solid var(--win98-light-gray);
-  padding: 0.75rem 0.5rem;
-  font-size: 0.8rem; /* Smaller font for tx list */
+  padding: var(--space-3) var(--space-2);
+  font-size: var(--font-size-small);
 }
 
 .txListItem:last-child {
@@ -764,82 +157,33 @@
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--space-2);
 }
 
-/* --- New BTC Price Footer Styles --- */
+/* Footer */
 .btcPriceFooter {
-  padding: 0.25rem 0.75rem;
+  padding: var(--space-1) var(--space-2);
   background-color: var(--win98-gray);
-  border: 2px solid;
-  border-top-color: var(--win98-light-gray);
-  border-left-color: var(--win98-light-gray);
-  border-right-color: var(--win98-dark-gray);
-  border-bottom-color: var(--win98-dark-gray);
-  z-index: 10;
-  font-size: 0.875rem;
+  z-index: var(--z-dropdown);
+  font-size: var(--font-size-normal);
   color: var(--win98-black);
   display: flex;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: var(--space-2);
   align-items: center;
   width: 100%;
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
-}
-
-@media (min-width: 769px) {
-  .btcPriceFooter {
-    position: fixed;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: auto;
-    min-width: 300px;
-    max-width: 90%;
-  }
-}
-
-/* Ensure text within the footer looks okay */
-.btcPriceFooter span {
-  /* No specific overrides needed for now */
+  border: var(--win98-border-outset);
+  border-color: var(--win98-border-outset-colors);
 }
 
 .socialLinks {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-left: auto; /* Push social links to the right */
-}
-
-.docsButton {
-  color: var(--win98-blue);
-  font-size: 0.875rem;
-  text-decoration: none;
-  padding: 0.25rem 0.5rem;
-  background-color: var(--win98-gray);
-  border-width: 2px;
-  border-style: solid;
-  border-top-color: var(--win98-light-gray);
-  border-left-color: var(--win98-light-gray);
-  border-right-color: var(--win98-dark-gray);
-  border-bottom-color: var(--win98-dark-gray);
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.docsButton:hover {
-  background-color: var(--win98-light-gray);
-}
-
-.docsButton:active {
-  border-top-color: var(--win98-dark-gray);
-  border-left-color: var(--win98-dark-gray);
-  border-right-color: var(--win98-light-gray);
-  border-bottom-color: var(--win98-light-gray);
+  gap: var(--space-3);
+  margin-left: auto;
 }
 
 .socialLink {
@@ -849,12 +193,8 @@
   width: 22px;
   height: 22px;
   background-color: var(--win98-gray);
-  border-width: 2px;
-  border-style: solid;
-  border-top-color: var(--win98-light-gray);
-  border-left-color: var(--win98-light-gray);
-  border-right-color: var(--win98-dark-gray);
-  border-bottom-color: var(--win98-dark-gray);
+  border: var(--win98-border-outset);
+  border-color: var(--win98-border-outset-colors);
 }
 
 .socialLink:hover {
@@ -862,53 +202,46 @@
 }
 
 .socialLink:active {
-  border-top-color: var(--win98-dark-gray);
-  border-left-color: var(--win98-dark-gray);
-  border-right-color: var(--win98-light-gray);
-  border-bottom-color: var(--win98-light-gray);
+  border-color: var(--win98-border-inset-colors);
 }
 
-/* Price styling */
-.priceHighlight {
-  color: var(--win98-dark-green);
-  font-weight: bold;
-}
-
-/* Price Chart Styles */
+/* Price Chart */
 .swapContainer {
   flex: 1;
   width: 100%;
   transition: all 0.3s ease;
 }
 
-.narrowSwapContainer {
-  max-width: calc(50% - 0.5rem); /* Exactly 50% of the width minus half the gap */
+.runesInfoContainer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Applied when chart is visible and alongside swap/info */
+.containerWithChart .swapContainer,
+.containerWithChart .runesInfoContainer {
+  max-width: calc(50% - 0.5rem);
   width: calc(50% - 0.5rem);
-  transition: all 0.3s ease;
-  margin: 0; /* Ensure no margin when in narrow mode */
+  margin: 0;
 }
 
 .priceChartContainer {
-  padding: 0.5rem;
-  border-width: 2px;
-  border-style: solid;
-  border-right-color: var(--win98-dark-gray);
-  border-bottom-color: var(--win98-dark-gray);
-  border-left-color: var(--win98-light-gray);
-  border-top-color: var(--win98-light-gray);
+  padding: var(--space-2);
   background-color: var(--win98-gray);
-  max-width: calc(50% - 0.5rem); /* Exactly 50% of the width minus half the gap */
-  width: calc(50% - 0.5rem); /* Ensuring exact 50/50 split */
-  flex: 0 0 calc(50% - 0.5rem); /* Do not grow, do not shrink, fixed width */
-  min-height: auto;
-  max-height: auto;
-  margin: 0; /* Ensure no margin */
+  max-width: calc(50% - 0.5rem);
+  width: calc(50% - 0.5rem);
+  flex: 0 0 calc(50% - 0.5rem);
+  margin: 0;
+  border: var(--win98-border-outset);
+  border-color: var(--win98-border-outset-colors);
 }
 
 .priceChartInner {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-2);
   position: relative;
   height: 100%;
 }
@@ -917,10 +250,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  color: var(--win98-black); /* Ensure header text color */
 }
 
 .priceChartTitle {
-  font-size: 1rem;
+  font-size: var(--font-size-normal);
   font-weight: bold;
   margin: 0;
 }
@@ -928,202 +262,107 @@
 .timeframeSelectorBottom {
   display: flex;
   justify-content: center;
-  gap: 0.25rem;
-  margin-top: 0.25rem;
-  margin-bottom: 0.25rem;
+  gap: var(--space-1);
+  margin: var(--space-1) 0;
 }
 
 .timeframeButton {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.75rem;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-small);
   background-color: var(--win98-gray);
-  border-width: 2px;
-  border-style: solid;
-  border-top-color: var(--win98-light-gray);
-  border-left-color: var(--win98-light-gray);
-  border-right-color: var(--win98-dark-gray);
-  border-bottom-color: var(--win98-dark-gray);
+  color: var(--win98-black);
+  border: var(--win98-border-outset);
+  border-color: var(--win98-border-outset-colors);
 }
 
 .timeframeButton:active {
-  border-top-color: var(--win98-dark-gray);
-  border-left-color: var(--win98-dark-gray);
-  border-right-color: var(--win98-light-gray);
-  border-bottom-color: var(--win98-light-gray);
+  border-color: var(--win98-border-inset-colors);
 }
 
 .timeframeButtonActive {
-  border-top-color: var(--win98-dark-gray);
-  border-left-color: var(--win98-dark-gray);
-  border-right-color: var(--win98-light-gray);
-  border-bottom-color: var(--win98-light-gray);
-  background-color: var(--win98-navy);
-  color: var(--win98-white);
+  border: var(--win98-border-inset);
+  border-color: var(--win98-border-inset-colors);
 }
 
 .priceChartCanvas {
   width: 100%;
   height: 250px;
-  border-width: 2px;
-  border-style: solid;
-  border-right-color: var(--win98-light-gray);
-  border-bottom-color: var(--win98-light-gray);
-  border-left-color: var(--win98-dark-gray);
-  border-top-color: var(--win98-dark-gray);
   background-color: var(--win98-white);
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-  cursor: crosshair; /* Change cursor to crosshair when hovering over the chart */
+  cursor: crosshair;
+  border: var(--win98-border-inset);
+  border-color: var(--win98-border-inset-colors);
 }
-
-.showPriceChartButton {
-  width: 100%;
-  padding: 0.5rem;
-  margin-top: 0.5rem;
-  background-color: var(--win98-gray);
-  border-width: 2px;
-  border-style: solid;
-  border-top-color: var(--win98-light-gray);
-  border-left-color: var(--win98-light-gray);
-  border-right-color: var(--win98-dark-gray);
-  border-bottom-color: var(--win98-dark-gray);
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.showPriceChartButton:active {
-  border-top-color: var(--win98-dark-gray);
-  border-left-color: var(--win98-dark-gray);
-  border-right-color: var(--win98-light-gray);
-  border-bottom-color: var(--win98-light-gray);
-}
-
-/* ... Rest of CSS ... */
 
 .collapseChartButton {
   width: 100%;
-  padding: 0.5rem;
+  padding: var(--space-2);
   margin: 0;
   background-color: var(--win98-gray);
-  border-width: 2px;
-  border-style: solid;
-  border-top-color: var(--win98-light-gray);
-  border-left-color: var(--win98-light-gray);
-  border-right-color: var(--win98-dark-gray);
-  border-bottom-color: var(--win98-dark-gray);
   font-weight: 700;
   cursor: pointer;
-  margin-top: auto; /* Push button to bottom */
+  margin-top: auto;
+  color: var(--win98-black);
+  border: var(--win98-border-outset);
+  border-color: var(--win98-border-outset-colors);
 }
 
 .collapseChartButton:active {
-  border-top-color: var(--win98-dark-gray);
-  border-left-color: var(--win98-dark-gray);
-  border-right-color: var(--win98-light-gray);
-  border-bottom-color: var(--win98-light-gray);
+  border-color: var(--win98-border-inset-colors);
 }
 
-/* Apply mobile layout to narrowSwapContainer */
-.narrowSwapContainer .inputRow {
-  flex-direction: column; /* Stack input and selector vertically */
-  align-items: stretch; /* Make children take full width */
-  gap: 0.5rem; /* Add space between input and selector */
-}
-
-.narrowSwapContainer .amountInput,
-.narrowSwapContainer .amountInputReadOnly {
-  font-size: 1.125rem; /* text-lg - Slightly smaller font */
-  text-align: left; /* Ensure text starts left */
-}
-
-.narrowSwapContainer .listboxContainer {
-  width: 100%; /* Make selector take full width */
-}
-
-.narrowSwapContainer .listboxButton {
-  width: 100%; /* Ensure button takes full width */
-}
-
-/* Style for narrowed rune details panel when price chart is visible */
-.narrowRightPanel {
-  width: calc(100% - 20px);
-  transition: width 0.3s ease;
-}
-
-@media (max-width: 768px) {
-  .appLayout {
-    flex-direction: column;
-  }
-  
-  .priceChartContainer {
-    position: static;
-    width: 100%;
-    height: 300px;
-    margin-top: 1rem;
-  }
-  
-  .swapContainer {
-    width: 100%;
-  }
-  
-  .narrowSwapContainer {
-    width: 100%;
-  }
-  
-  /* Update narrowRightPanel for mobile */
-  .narrowRightPanel {
-    width: 100%;
-  }
-}
-
-/* Container for the price chart show/hide button */
-.showPriceChartButtonContainer {
-  display: flex;
+/* Tooltip */
+.infoIconContainer {
+  cursor: help;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  margin-top: 1rem;
-  width: 100%;
+  vertical-align: middle;
 }
 
-.showPriceChartButton {
-  width: 100%;
-  padding: 0.5rem;
-  margin-top: 0.5rem;
+.tooltipBox {
+  position: absolute;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  top: 100%;
+  right: 0;
+  width: 200px;
+  padding: var(--space-2);
+  margin-top: var(--space-1);
   background-color: var(--win98-gray);
-  border-width: 2px;
-  border-style: solid;
-  border-top-color: var(--win98-light-gray);
-  border-left-color: var(--win98-light-gray);
-  border-right-color: var(--win98-dark-gray);
-  border-bottom-color: var(--win98-dark-gray);
-  font-weight: 700;
-  cursor: pointer;
+  font-size: var(--font-size-small);
+  color: var(--win98-black);
+  z-index: var(--z-tooltip);
+  line-height: 1.2;
+  text-align: left;
+  border: var(--win98-border-outset);
+  border-color: var(--win98-border-outset-colors);
 }
 
-.showPriceChartButton:active {
-  border-top-color: var(--win98-dark-gray);
-  border-left-color: var(--win98-dark-gray);
-  border-right-color: var(--win98-light-gray);
-  border-bottom-color: var(--win98-light-gray);
+.infoIconContainer:hover .tooltipBox {
+  visibility: visible;
+  opacity: 1;
 }
 
-.runesInfoContainer {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
 
-/* When the price chart is visible */
-.containerWithChart .runesInfoContainer,
-.containerWithChart .swapContainer {
-  max-width: calc(50% - 0.5rem);
-  width: calc(50% - 0.5rem);
-}
-
+/* Mobile Responsiveness */
 @media (max-width: 768px) {
   .container {
     width: 100%;
     padding: 0;
+  }
+
+  .appLayout {
+    flex-direction: column;
+    gap: var(--space-4);
+    width: 100%;
+  }
+
+  .title {
+    font-size: var(--font-size-normal);
   }
 
   .containerWithChart .runesInfoContainer,
@@ -1133,96 +372,33 @@
   .priceChartContainer {
     max-width: 100%;
     width: 100%;
+    flex-basis: auto;
   }
 
   .priceChartContainer {
     position: static;
     height: auto;
-    margin-top: 1rem;
+    min-height: 300px;
+    margin-top: var(--space-4);
   }
 
-  .narrowSwapContainer,
-  .narrowRightPanel {
+  .btcPriceFooter {
+    position: static;
+    transform: none;
     width: 100%;
+    min-width: 0;
     max-width: 100%;
   }
 }
 
-.runeDetailsContainerWrapper {
-  padding: 0;
-  margin: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
+/* Desktop Footer */
+@media (min-width: 769px) {
+  .btcPriceFooter {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: auto;
+    min-width: 300px;
+  }
 }
-
-.runeDetailsContainer {
-  padding: 0.5rem;
-  background-color: var(--win98-white);
-  min-height: 100px;
-  width: 100%; 
-  box-sizing: border-box;
-  margin: 0;
-  border: 2px solid;
-  border-right-color: var(--win98-light-gray);
-  border-bottom-color: var(--win98-light-gray);
-  border-left-color: var(--win98-dark-gray);
-  border-top-color: var(--win98-dark-gray);
-}
-
-.runeDetailsContainer h3 {
-  font-weight: bold;
-  margin-bottom: 0.5rem;
-  border-bottom: 1px solid var(--win98-dark-gray);
-  padding-bottom: 0.25rem;
-}
-
-.runeDetailsContainer p {
-  margin-bottom: 0.25rem;
-  font-size: 0.875rem;
-}
-
-.hintText {
-  font-size: 0.75rem;
-  color: var(--win98-dark-gray);
-  margin-top: 0;
-  white-space: normal;
-  word-break: break-word;
-}
-
-.infoIconContainer {
-  cursor: help;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.infoIcon {
-  color: #000080;
-  transition: color 0.2s ease;
-}
-
-.infoIconContainer:hover .infoIcon {
-  color: #0000b3;
-}
-
-.tooltipBox {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  width: 200px;
-  padding: 8px;
-  margin-top: 5px;
-  background-color: var(--win98-gray);
-  border: 2px solid;
-  border-top-color: var(--win98-light-gray);
-  border-left-color: var(--win98-light-gray);
-  border-bottom-color: var(--win98-dark-gray);
-  border-right-color: var(--win98-dark-gray);
-  font-size: 0.75rem;
-  color: #000;
-  z-index: 100;
-  line-height: 1.2;
-  text-align: left;
-} 

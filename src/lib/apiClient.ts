@@ -18,7 +18,8 @@ export const QUERY_KEYS = {
   RUNE_BALANCES: 'runeBalances',
   RUNE_LIST: 'runesList',
   RUNE_ACTIVITY: 'runeActivity',
-  PORTFOLIO_DATA: 'portfolioData'
+  PORTFOLIO_DATA: 'portfolioData',
+  LIQUIDIUM_PORTFOLIO: 'liquidiumPortfolio'
 };
 
 // Standard API response handler
@@ -33,12 +34,12 @@ const handleApiResponse = <T>(data: unknown, expectedArrayType = false): T => {
     }
     return responseData as T;
   }
-  
+
   // Fallback for direct array/object response (backward compatibility)
   if ((expectedArrayType && Array.isArray(data)) || (!expectedArrayType && data !== null)) {
     return data as T;
   }
-  
+
   console.error("[Client] API response was OK, but data format is unexpected:", data);
   return (expectedArrayType ? [] : null) as unknown as T;
 };
@@ -46,7 +47,7 @@ const handleApiResponse = <T>(data: unknown, expectedArrayType = false): T => {
 // Fetch Runes search results from API
 export const fetchRunesFromApi = async (query: string): Promise<Rune[]> => {
   if (!query) return [];
-  
+
   const response = await fetch(`/api/sats-terminal/search?query=${encodeURIComponent(query)}`);
   let data;
   try {
@@ -293,7 +294,7 @@ export const fetchRunePriceHistoryFromApi = async (runeName: string): Promise<Pr
 
   // Apply direct formatting to specific runes
   let querySlug = runeName;
-  
+
   // Special case for LIQUIDIUM•TOKEN
   if (runeName.includes('LIQUIDIUM')) {
     querySlug = 'LIQUIDIUMTOKEN';
@@ -301,7 +302,7 @@ export const fetchRunePriceHistoryFromApi = async (runeName: string): Promise<Pr
 
   const response = await fetch(`/api/rune-price-history?slug=${encodeURIComponent(querySlug)}`);
   let data;
-  
+
   try {
     data = await response.json();
   } catch (error) {
@@ -326,7 +327,7 @@ export const fetchPortfolioDataFromApi = async (address: string): Promise<{
   if (!address) {
     return { balances: [], runeInfos: {}, marketData: {} };
   }
-  
+
   const response = await fetch(`/api/portfolio-data?address=${encodeURIComponent(address)}`);
   let data;
   try {
@@ -342,4 +343,71 @@ export const fetchPortfolioDataFromApi = async (address: string): Promise<{
     runeInfos: Record<string, RuneData>;
     marketData: Record<string, OrdiscanRuneMarketInfo>;
   }>(data, false);
-}; 
+};
+
+// Liquidium: Repay Loan (minimal, placeholder)
+export interface RepayLiquidiumLoanResponse {
+  success: boolean;
+  data?: {
+    psbt: string;
+    repaymentAmountSats: number;
+    loanId: string;
+    // Add more fields as needed
+  };
+  error?: string;
+}
+
+export const repayLiquidiumLoan = async (loanId: string, address: string): Promise<RepayLiquidiumLoanResponse> => {
+  const response = await fetch('/api/liquidium/repay', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ loanId, address }),
+  });
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error('Failed to parse repay response');
+  }
+  if (!response.ok) {
+    throw new Error(data?.error?.message || data?.error || `Failed to repay loan: ${response.statusText}`);
+  }
+  // Map Liquidium API fields to expected frontend fields
+  if (data?.data) {
+    data.data = {
+      psbt: data.data.base64_psbt || data.data.psbt,
+      repaymentAmountSats: data.data.repayment_amount_sats,
+      loanId: data.data.offer_id || loanId,
+      ...data.data,
+    };
+  }
+  return data;
+};
+
+// ... existing code ...
+
+export interface SubmitRepayResponse {
+  success: boolean;
+  data?: {
+    repayment_transaction_id: string;
+  };
+  error?: string;
+}
+
+export const submitRepayPsbt = async (loanId: string, signedPsbt: string, address: string): Promise<SubmitRepayResponse> => {
+  const response = await fetch('/api/liquidium/repay', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ loanId, signedPsbt, address }),
+  });
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error('Failed to parse repay submission response');
+  }
+  if (!response.ok) {
+    throw new Error(data?.error?.message || data?.error || `Failed to submit repayment: ${response.statusText}`);
+  }
+  return data;
+};

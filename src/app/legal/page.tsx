@@ -9,7 +9,7 @@ export const metadata = {
 export default function LegalPage() {
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>Legal Disclaimer</h1>
+      <h1 className="heading">Legal Disclaimer</h1>
       <div className={styles.docsContent}>
         <p>RunesSwap.app is an open-source project provided <strong>as is</strong> without any warranty.</p>
         <p>Use at your own risk. The developers assume no liability for any loss or damage.</p>

@@ -4,6 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import styles from './AppInterface.module.css';
+import buttonStyles from './Button.module.css';
 
 interface FooterComponentProps {
   btcPriceUsd: number | undefined;
@@ -24,19 +25,11 @@ export function FooterComponent({ btcPriceUsd, isBtcPriceLoading, btcPriceError 
         <span>BTC Price: N/A</span>
       )}
       <div className={styles.socialLinks}>
-        <Link
-          href="/docs"
-          className={styles.docsButton}
-          title="Documentation"
-        >
-          Docs
+        <Link href="/docs" legacyBehavior passHref>
+          <a className={buttonStyles.root} title="Documentation">Docs</a>
         </Link>
-        <Link
-          href="/legal"
-          className={styles.docsButton}
-          title="Legal"
-        >
-          Legal
+        <Link href="/legal" legacyBehavior passHref>
+          <a className={buttonStyles.root} title="Legal">Legal</a>
         </Link>
         <a
           href="https://github.com/ropl-btc/RunesSwap.app"

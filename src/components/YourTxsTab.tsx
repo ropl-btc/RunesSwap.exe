@@ -4,11 +4,12 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Image from 'next/image';
 import styles from './AppInterface.module.css'; // Reuse styles for now
-import { 
+import {
   RuneActivityEvent
 } from '@/types/ordiscan'; // Import types
 import { fetchRuneActivityFromApi } from '@/lib/apiClient'; // Import API functions
 import { FormattedRuneAmount } from './FormattedRuneAmount'; // Import component
+import { FormattedRuneName } from './FormattedRuneName'; // Import the new component
 import { interpretRuneTransaction } from '@/utils/transactionHelpers'; // Import the new utility function
 
 interface YourTxsTabProps {
@@ -33,7 +34,7 @@ export function YourTxsTab({ connected, address }: YourTxsTabProps) {
 
   return (
     <div className={styles.yourTxsTabContainer}>
-      <h2 className={styles.title}>Your Rune Transactions</h2>
+      <h1 className="heading">Your Rune Transactions</h1>
       {!connected || !address ? (
         <p className={styles.hintText}>Connect your wallet to view your transactions.</p>
       ) : isRuneActivityLoading ? (
@@ -42,10 +43,10 @@ export function YourTxsTab({ connected, address }: YourTxsTabProps) {
         </div>
       ) : runeActivityError ? (
         <div className={`${styles.listboxError} ${styles.messageWithIcon}`}>
-          <Image 
-            src="/icons/msg_error-0.png" 
-            alt="Error" 
-            className={styles.messageIcon} 
+          <Image
+            src="/icons/msg_error-0.png"
+            alt="Error"
+            className={styles.messageIcon}
             width={16}
             height={16}
           />
@@ -54,13 +55,13 @@ export function YourTxsTab({ connected, address }: YourTxsTabProps) {
       ) : !runeActivity || runeActivity.length === 0 ? (
         <p className={styles.hintText}>No recent rune transactions found for this address.</p>
       ) : (
-        <div className={styles.txListContainer}> 
+        <div className={styles.txListContainer}>
           {runeActivity.map((tx: RuneActivityEvent) => {
             // Get transaction interpretation using the utility function
-            const { action, runeName, runeAmountRaw } = address 
-              ? interpretRuneTransaction(tx, address) 
+            const { action, runeName, runeAmountRaw } = address
+              ? interpretRuneTransaction(tx, address)
               : { action: 'Unknown', runeName: 'N/A', runeAmountRaw: 'N/A' };
-              
+
             return (
               <div key={tx.txid} className={styles.txListItem}>
                 <div className={styles.txHeader}>
@@ -76,16 +77,18 @@ export function YourTxsTab({ connected, address }: YourTxsTabProps) {
                     {new Date(tx.timestamp).toLocaleString()}
                   </span>
                 </div>
-                <div className={styles.txDetails}> 
-                  <div className={styles.txDetailRow}> 
+                <div className={styles.txDetails}>
+                  <div className={styles.txDetailRow}>
                     <span>Action:</span>
                     <span style={{ fontWeight: 'bold' }}>{action}</span>
                   </div>
-                  <div className={styles.txDetailRow}> 
+                  <div className={styles.txDetailRow}>
                     <span>Rune:</span>
-                    <span className={styles.runeNameHighlight}>{runeName}</span>
+                    <span className={styles.runeNameHighlight}>
+                      <FormattedRuneName runeName={runeName} />
+                    </span>
                   </div>
-                  <div className={styles.txDetailRow}> 
+                  <div className={styles.txDetailRow}>
                     <span>Amount:</span>
                     <span>
                       <FormattedRuneAmount runeName={runeName} rawAmount={runeAmountRaw} />
@@ -101,4 +104,4 @@ export function YourTxsTab({ connected, address }: YourTxsTabProps) {
   );
 }
 
-export default YourTxsTab; 
+export default YourTxsTab;
