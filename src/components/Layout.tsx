@@ -6,6 +6,7 @@ import styles from './Layout.module.css';
 import FooterComponent from './FooterComponent';
 import { useQuery } from '@tanstack/react-query';
 import { useBackground } from '@/context/BackgroundContext';
+import TitleText from './TitleText';
 
 const COINGECKO_BTC_PRICE_URL = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd';
 const getBtcPrice = async (): Promise<number> => {
@@ -111,7 +112,7 @@ export function Layout({ children }: LayoutProps) {
         <div className={styles.titleBar}>
           <span className={styles.titleBarRow}>
             <Image src="/icons/runesswap_logo.png" alt="RunesSwap.app Logo" width={18} height={18} style={{ imageRendering: 'pixelated' }} priority />
-            RunesSwap.app
+            <TitleText />
           </span>
         </div>
         <div className={styles.content}>

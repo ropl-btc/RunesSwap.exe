@@ -249,8 +249,9 @@ export function SwapTab({
               // Clear search field
               setSearchQuery('');
             }
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           } catch (error) {
-            console.error("Error searching for pre-selected rune:", error);
+            // Error handled in finally block
           } finally {
             setIsSearching(false);
             setIsPreselectedRuneLoading(false);
@@ -354,7 +355,6 @@ export function SwapTab({
         }
 
       } catch (error) {
-        console.error("Error fetching popular runes:", error);
         setPopularError(error instanceof Error ? error.message : 'Failed to fetch popular runes');
         const liquidiumTokenOnError: Asset = {
           id: 'liquidiumtoken',
@@ -478,8 +478,6 @@ export function SwapTab({
         }));
         setSearchResults(mappedResults); // Store as Asset[]
       } catch (error: unknown) {
-        // Keep actual error logging
-        console.error("Error searching runes:", error);
         setSearchError(error instanceof Error ? error.message : 'Failed to search');
         setSearchResults([]); // Clear results on error
       } finally {
@@ -813,8 +811,8 @@ export function SwapTab({
       } else {
         setOutputUsdValue(null);
       }
-    } catch (e) {
-      console.error("Failed to calculate USD values:", e);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error) {
       setInputUsdValue(null);
       setOutputUsdValue(null);
     }
@@ -1090,44 +1088,44 @@ export function SwapTab({
                                </div>
                           )}
 
-                          {/* Always show BTC option after search bar for both selectors */}
-                          <Listbox.Option
-                               key={BTC_ASSET.id}
-                               className={({ active }) =>
-                                   `${styles.listboxOption} ${ active ? styles.listboxOptionActive : styles.listboxOptionInactive }`
-                               }
-                               value={BTC_ASSET}
-                          >
-                               {({ selected }) => (
-                                    <>
-                                       <span className={styles.runeOptionContent}>
-                                           {isValidImageSrc(BTC_ASSET.imageURI) ? (
-                                               <Image
-                                                 src={BTC_ASSET.imageURI}
-                                                 alt=""
-                                                 className={styles.runeImage}
-                                                 width={24}
-                                                 height={24}
-                                                 aria-hidden="true"
-                                               />
-                                           ) : (
-                                             null
-                                           )}
-                                           <span className={`${styles.listboxOptionText} ${ selected ? styles.listboxOptionTextSelected : styles.listboxOptionTextUnselected }`}>
-                                               {BTC_ASSET.name}
-                                           </span>
-                                       </span>
-                                       {selected && (
-                                           <span className={styles.listboxOptionCheckContainer}>
-                                               <CheckIcon className={styles.listboxOptionCheckIcon} aria-hidden="true" />
-                                           </span>
-                                       )}
-                                   </>
-                               )}
-                          </Listbox.Option>
+                          {/* Hide BTC when searching for runes */}
+                          {!searchQuery.trim() && (
+                            <Listbox.Option
+                                 key={BTC_ASSET.id}
+                                 className={({ active }) =>
+                                     `${styles.listboxOption} ${ active ? styles.listboxOptionActive : styles.listboxOptionInactive }`
+                                 }
+                                 value={BTC_ASSET}
+                            >
+                                 {({ selected }) => (
+                                      <>
+                                         <span className={styles.runeOptionContent}>
+                                             {isValidImageSrc(BTC_ASSET.imageURI) ? (
+                                                 <Image
+                                                   src={BTC_ASSET.imageURI}
+                                                   alt=""
+                                                   className={styles.runeImage}
+                                                   width={24}
+                                                   height={24}
+                                                   aria-hidden="true"
+                                                 />
+                                             ) : null}
+                                             <span className={`${styles.listboxOptionText} ${ selected ? styles.listboxOptionTextSelected : styles.listboxOptionTextUnselected }`}>
+                                                 {BTC_ASSET.name}
+                                             </span>
+                                         </span>
+                                         {selected && (
+                                             <span className={styles.listboxOptionCheckContainer}>
+                                                 <CheckIcon className={styles.listboxOptionCheckIcon} aria-hidden="true" />
+                                             </span>
+                                         )}
+                                     </>
+                                 )}
+                            </Listbox.Option>
+                          )}
 
                           {filteredRunes
-                              .filter(rune => rune.id !== BTC_ASSET.id) // Only filter out BTC since we're showing it separately above
+                              .filter(rune => rune.id !== BTC_ASSET.id) // Filter out BTC as it's conditionally shown above
                               .map((rune) => (
                               <Listbox.Option
                                   key={rune.id}
@@ -1215,8 +1213,8 @@ export function SwapTab({
 
         decimals = swapRuneInfo?.decimals ?? 0;
         availableBalance = balanceNum / (10 ** decimals);
-      } catch (e) {
-        console.error("Error calculating percentage:", e);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (error) {
         return;
       }
     }

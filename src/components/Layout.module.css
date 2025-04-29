@@ -98,6 +98,15 @@
   gap: 8px;
 }
 
+.titleText {
+  display: inline-block;
+  transition: opacity 0.3s ease;
+  min-width: 150px; /* Prevent layout shifts when text changes */
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
 /* Content area */
 .content {
   padding: 1rem;

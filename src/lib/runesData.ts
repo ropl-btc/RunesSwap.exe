@@ -31,7 +31,7 @@ export async function getRuneData(runeName: string): Promise<RuneData | null> {
       .single()
 
     if (dbError) {
-      console.error('[DEBUG] Error fetching from DB:', dbError)
+      // Error handled by continuing to API fetch
     }
 
     if (existingRune) {
@@ -52,24 +52,17 @@ export async function getRuneData(runeName: string): Promise<RuneData | null> {
       last_updated_at: new Date().toISOString()
     }
 
-    const { error: insertError } = await supabase
+    await supabase
       .from('runes')
       .upsert([dataToInsert])
       .select()
 
-    if (insertError) {
-      console.error('[DEBUG] Error storing rune data:', insertError)
-      console.error('[DEBUG] Insert error details:', {
-        code: insertError.code,
-        message: insertError.message,
-        details: insertError.details,
-        hint: insertError.hint
-      })
-    }
+    // Insert errors are non-critical - we can still return the data
+    // even if caching to DB fails
 
     return runeData as RuneData
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
-    console.error('[DEBUG] Error in getRuneData:', error)
     return null
   }
 }
@@ -91,24 +84,17 @@ export async function updateRuneData(runeName: string): Promise<RuneData | null>
       last_updated_at: new Date().toISOString()
     }
 
-    const { error: updateError } = await supabase
+    await supabase
       .from('runes')
       .upsert([dataToUpdate])
       .select()
 
-    if (updateError) {
-      console.error('[DEBUG] Error updating rune data:', updateError)
-      console.error('[DEBUG] Update error details:', {
-        code: updateError.code,
-        message: updateError.message,
-        details: updateError.details,
-        hint: updateError.hint
-      })
-    }
+    // Update errors are non-critical - we can still return the data
+    // even if updating the DB fails
 
     return runeData as RuneData
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
-    console.error('[DEBUG] Error in updateRuneData:', error)
     return null
   }
-} 
+}

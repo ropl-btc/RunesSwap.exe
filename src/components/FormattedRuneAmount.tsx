@@ -40,7 +40,6 @@ export function FormattedRuneAmount({ runeName, rawAmount }: FormattedRuneAmount
 
   if (error) {
       // 404 is handled by runeInfo being null, so this only catches other errors
-      console.error("Error fetching rune info for decimals:", error);
       return <span>{rawAmount} (&apos;Error fetching decimals&apos;)</span>;
   }
 
@@ -57,8 +56,8 @@ export function FormattedRuneAmount({ runeName, rawAmount }: FormattedRuneAmount
           // Format even if 0 decimals for consistency (e.g., add commas)
           const amountNum = BigInt(rawAmount); // Use BigInt for potentially large raw amounts
           return <span>{amountNum.toLocaleString()}</span>;
-      } catch (e) {
-          console.error("Error formatting raw amount (0 decimals):", e);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (error) {
           return <span>{rawAmount} (Invalid Raw)</span>; // Fallback for invalid rawAmount
       }
   }
@@ -79,8 +78,8 @@ export function FormattedRuneAmount({ runeName, rawAmount }: FormattedRuneAmount
 
     // Format the number with appropriate decimal places
     return <span>{formattedAmount.toLocaleString(undefined, { maximumFractionDigits: decimals })}</span>;
-  } catch (e) {
-    console.error("Error formatting rune amount:", e);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
     return <span>{rawAmount} (Formatting Error)</span>; // Fallback
   }
 }

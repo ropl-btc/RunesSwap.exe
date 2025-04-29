@@ -36,21 +36,21 @@ export async function GET(request: NextRequest) {
     }
     // Use the validated slug
     const { slug: originalSlug } = validation.data;
-    
+
     // Format the rune name for the API call
     // Try with different formats to ensure we get data
     const formattedSlug = originalSlug.replace(/[•.]/g, '').toUpperCase();
-    
+
     // Define a mapping for known runes that might have formatting issues
     const knownRunes: Record<string, string> = {
       'LIQUIDIUM•TOKEN': 'LIQUIDIUMTOKEN',
       'LIQUIDIUMTOKEN': 'LIQUIDIUMTOKEN',
       'LIQUIDIUM': 'LIQUIDIUMTOKEN'
     };
-    
+
     // Check if we have a direct mapping first
     let apiSlug = knownRunes[originalSlug] || formattedSlug;
-    
+
     // If not a direct match, try partial matching for known runes
     if (!knownRunes[originalSlug]) {
       // Check if it includes any known rune names
@@ -58,23 +58,22 @@ export async function GET(request: NextRequest) {
         apiSlug = 'LIQUIDIUMTOKEN';
       }
     }
-    
+
     // External API endpoint
     const apiUrl = `https://runes-floor-api.shudu.workers.dev/api/query?slug=${encodeURIComponent(apiSlug)}`;
-    
+
     // Check if API key is set
     const apiKey = process.env.RUNES_FLOOR_API_KEY;
     if (!apiKey) {
-      console.error('[API] RUNES_FLOOR_API_KEY is not set in environment variables');
       return createErrorResponse('API key not configured', 'Missing RUNES_FLOOR_API_KEY environment variable', 500);
     }
-    
+
     // Fetch data from the external API
     const response = await fetch(apiUrl, {
       headers: {
         'X-API-Key': apiKey
       },
-      next: { 
+      next: {
         revalidate: 300 // Cache for 5 minutes
       }
     });
@@ -88,17 +87,17 @@ export async function GET(request: NextRequest) {
           available: false
         });
       }
-      
+
       return createErrorResponse(
-        `Failed to fetch price history (${response.status})`, 
-        `Status: ${response.status}`, 
+        `Failed to fetch price history (${response.status})`,
+        `Status: ${response.status}`,
         500
       );
     }
-    
+
     // Parse the response body
     const data = await response.json();
-    
+
     // Check if we have any price data
     if (!data || !Array.isArray(data)) {
       return createSuccessResponse({
@@ -125,8 +124,6 @@ export async function GET(request: NextRequest) {
       available
     });
   } catch (error: unknown) {
-    console.error('[API Route] Error fetching price history:', error);
-    
     return createErrorResponse(
       error instanceof Error ? error.message : 'Unknown error occurred',
       error instanceof Error ? error.stack || 'No stack trace available' : 'Unknown error details',

@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
         .limit(1);
 
       if (prefixDbError) {
-        console.error('[DEBUG] Error fetching from DB by prefix:', prefixDbError);
+        // Error handled by returning not found
       }
 
       if (prefixRune && prefixRune.length > 0) {
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (dbError) {
-      console.error('[DEBUG] Error fetching from DB by prefix:', dbError);
+      // Error handled by continuing to next lookup method
     }
 
     if (existingRune && existingRune.length > 0) {
@@ -50,7 +50,6 @@ export async function GET(request: NextRequest) {
     // Since Ordiscan doesn't have a direct endpoint to search by ID,
     // we'll try to find a rune with a matching name pattern
     try {
-      console.log(`[DEBUG] Trying to find rune with ID ${prefix} from Ordiscan`);
       const ordiscan = getOrdiscanClient();
 
       // First, try to get all runes from our database to see if we can find a match
@@ -60,7 +59,7 @@ export async function GET(request: NextRequest) {
         .limit(1000);
 
       if (allRunesError) {
-        console.error('[DEBUG] Error fetching all runes:', allRunesError);
+        // Error handled by continuing with empty array
       }
 
       // Try to find a matching rune by ID pattern
@@ -76,33 +75,26 @@ export async function GET(request: NextRequest) {
       }
 
       if (matchingRune) {
-        console.log(`[DEBUG] Found matching rune with name: ${matchingRune.name}`);
-
         // Fetch the rune data from Ordiscan
         const runeData = await ordiscan.rune.getInfo({ name: matchingRune.name });
 
         if (runeData) {
-          console.log(`[DEBUG] Successfully fetched rune data from Ordiscan`);
-
           // Store in Supabase for future use
           const dataToInsert = {
             ...runeData,
             last_updated_at: new Date().toISOString()
           };
 
-          const { error: insertError } = await supabase
+          await supabase
             .from('runes')
             .upsert([dataToInsert]);
-
-          if (insertError) {
-            console.error('[DEBUG] Error storing rune data:', insertError);
-          }
 
           return NextResponse.json(runeData);
         }
       }
-    } catch (ordiscanError) {
-      console.error('[DEBUG] Error fetching from Ordiscan:', ordiscanError);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error) {
+      // Error handled by returning not found
     }
 
     // If all attempts fail, return not found
@@ -110,8 +102,8 @@ export async function GET(request: NextRequest) {
       { error: 'Rune not found with the given prefix' },
       { status: 404 }
     );
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
-    console.error('[DEBUG] Error in rune-info-by-id API route:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

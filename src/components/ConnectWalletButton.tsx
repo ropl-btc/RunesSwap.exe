@@ -12,7 +12,7 @@ import {
   ORANGE,
   PHANTOM,
   WIZZ,
-  type ProviderType, 
+  type ProviderType,
 } from '@omnisat/lasereyes';
 import { useSharedLaserEyes } from '@/context/LaserEyesContext'; // Import the shared hook
 import styles from './ConnectWalletButton.module.css'; // Import CSS module
@@ -64,8 +64,8 @@ const WALLET_ERROR_PATTERNS: Partial<Record<ProviderType, WalletErrorPatterns>> 
 
 // Common error patterns for all wallets
 const COMMON_ERROR_PATTERNS: string[] = [
-  'not installed', 
-  'not detected', 
+  'not installed',
+  'not detected',
   'not found',
   'provider not available',
   'wallet not found',
@@ -140,7 +140,7 @@ export function ConnectWalletButton() {
     setIsDropdownOpen(false);
     setConnectionError(null);
     setInstallLink(null);
-    
+
     if (isConnecting) {
       return;
     }
@@ -150,50 +150,47 @@ export function ConnectWalletButton() {
 
     // Check if wallet is installed
     if (!checkWalletInstalled(providerToConnect)) {
-      console.log(`[ConnectWalletButton] ${walletName} wallet not installed (detected by hasUnisat check)`);
       setConnectionError(`${walletName} wallet not installed.`);
       setInstallLink(WALLET_INSTALL_LINKS[providerToConnect] || null);
       return;
     }
-    
+
     try {
-      console.log(`[ConnectWalletButton] Attempting to connect to ${walletName} wallet...`);
       await connect(providerToConnect);
-      console.log(`[ConnectWalletButton] Successfully connected to ${walletName} wallet`);
     } catch (error) {
-      // Detailed error logging for debugging
-      console.error(`[ConnectWalletButton] Failed to connect ${walletName} wallet:`, error);
-      
+      // Keep error for critical issues
+      console.error(`Failed to connect wallet:`, error);
+
       // Determine if this is a "wallet not installed" error
       let isWalletNotInstalledError = false;
       let errorMessage = '';
-      
+
       if (error instanceof Error) {
         const errorString = error.message.toLowerCase();
-        
+
         // First check wallet-specific patterns if available
         const walletPatterns = WALLET_ERROR_PATTERNS[providerToConnect];
         if (walletPatterns) {
           // Check against wallet-specific patterns
-          isWalletNotInstalledError = walletPatterns.notInstalledPatterns.some(pattern => 
+          isWalletNotInstalledError = walletPatterns.notInstalledPatterns.some(pattern =>
             errorString.includes(pattern.toLowerCase())
           );
         }
-        
+
         // If no wallet-specific match, fall back to common patterns
         if (!isWalletNotInstalledError) {
-          isWalletNotInstalledError = COMMON_ERROR_PATTERNS.some(pattern => 
+          isWalletNotInstalledError = COMMON_ERROR_PATTERNS.some(pattern =>
             errorString.includes(pattern.toLowerCase())
           );
         }
-        
+
         errorMessage = error.message;
       } else {
         // For non-Error objects, assume they're related to wallet installation
         isWalletNotInstalledError = true;
         errorMessage = 'Wallet provider unavailable';
       }
-      
+
       if (isWalletNotInstalledError) {
         setConnectionError(`${walletName} wallet not installed.`);
         setInstallLink(WALLET_INSTALL_LINKS[providerToConnect] || null);
@@ -280,10 +277,10 @@ export function ConnectWalletButton() {
                 <span>{name}</span>
                 {disclaimer && (
                   <div className={styles.warningIconContainer} title={`Warning: ${disclaimer}`}>
-                    <Image 
-                      src="/icons/msg_warning-0.png" 
-                      alt="Warning" 
-                      className={styles.warningIcon} 
+                    <Image
+                      src="/icons/msg_warning-0.png"
+                      alt="Warning"
+                      className={styles.warningIcon}
                       width={16}
                       height={16}
                     />
@@ -298,10 +295,10 @@ export function ConnectWalletButton() {
         <div className={styles.errorMessage}>
           <p>{connectionError}</p>
           {installLink && (
-            <a 
-              href={installLink} 
-              target="_blank" 
-              rel="noopener noreferrer" 
+            <a
+              href={installLink}
+              target="_blank"
+              rel="noopener noreferrer"
               className={styles.installLink}
             >
               Install Wallet

@@ -26,7 +26,6 @@ export async function getCachedPopularRunes(): Promise<Record<string, unknown>[]
       .limit(1)
       .maybeSingle();
     if (error) {
-      console.error('[popularRunesCache] Error fetching from cache:', error);
       return null;
     }
 
@@ -38,15 +37,14 @@ export async function getCachedPopularRunes(): Promise<Record<string, unknown>[]
     const cacheExpiry = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
     const cacheDate = new Date(data.created_at).getTime();
     const now = new Date().getTime();
-    
+
     if (now - cacheDate > cacheExpiry) {
-      console.log('[popularRunesCache] Cache expired, will fetch fresh data');
       return null;
     }
 
     return data.runes_data as Record<string, unknown>[];
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
-    console.error('[popularRunesCache] Error in getCachedPopularRunes:', error);
     return null;
   }
 }
@@ -57,7 +55,7 @@ export async function getCachedPopularRunes(): Promise<Record<string, unknown>[]
  */
 export async function cachePopularRunes(runesData: Record<string, unknown>[]): Promise<void> {
   try {
-    const { error } = await supabase
+    await supabase
       .from('popular_runes_cache')
       .insert([
         {
@@ -66,12 +64,9 @@ export async function cachePopularRunes(runesData: Record<string, unknown>[]): P
         }
       ]);
 
-    if (error) {
-      console.error('[popularRunesCache] Error storing in cache:', error);
-    } else {
-      console.log('[popularRunesCache] Successfully cached popular runes data');
-    }
+    // Errors in caching are non-critical
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
-    console.error('[popularRunesCache] Error in cachePopularRunes:', error);
+    // Errors in caching are non-critical
   }
-} 
+}

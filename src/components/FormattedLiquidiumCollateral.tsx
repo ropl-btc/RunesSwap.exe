@@ -24,8 +24,6 @@ export function FormattedLiquidiumCollateral({
   // Use the full rune_id for querying
   useEffect(() => {
     if (runeId) {
-      // Log the rune_id for debugging
-      console.log(`[FormattedLiquidiumCollateral] Looking up rune with ID: ${runeId}`);
       setRuneIdForQuery(runeId);
     }
   }, [runeId]);
@@ -40,12 +38,10 @@ export function FormattedLiquidiumCollateral({
       if (runeIdForQuery) {
         try {
           // We'll try to find a rune with this ID in our database
-          console.log(`[FormattedLiquidiumCollateral] Fetching rune info for ID: ${runeIdForQuery}`);
           const response = await fetch(`/api/ordiscan/rune-info-by-id?prefix=${encodeURIComponent(runeIdForQuery)}`);
           if (response.ok) {
             const data = await response.json();
             if (data) {
-              console.log(`[FormattedLiquidiumCollateral] Received rune data:`, data);
               return data;
             }
           }
@@ -66,7 +62,6 @@ export function FormattedLiquidiumCollateral({
         setRuneName(runeInfo.name);
       }
       if (runeInfo.formatted_name) {
-        console.log(`[FormattedLiquidiumCollateral] Using formatted_name: ${runeInfo.formatted_name}`);
         setFormattedRuneName(runeInfo.formatted_name);
       } else if (runeInfo.name) {
         setFormattedRuneName(runeInfo.name);

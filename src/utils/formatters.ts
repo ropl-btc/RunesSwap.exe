@@ -8,16 +8,16 @@ export const truncateTxid = (txid: string, length: number = 8): string => {
 // Function to format large number strings with commas
 export function formatNumberString(numStr: string | undefined | null, defaultDisplay = 'N/A'): string {
   if (!numStr) return defaultDisplay;
-  
+
   try {
     // Parse the number string
     const num = parseFloat(numStr);
     if (isNaN(num)) return defaultDisplay;
-    
+
     // Format with commas for thousands separator
     return num.toLocaleString();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
-    console.error("Error formatting number string:", numStr, error);
     return defaultDisplay;
   }
-} 
+}
