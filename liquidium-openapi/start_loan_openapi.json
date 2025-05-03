@@ -1,0 +1,112 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+      "title": "Liquidium Instant Loan API - Start Loan Flow",
+      "version": "0.0.1",
+      "description": "Endpoints for starting a loan flow"
+    },
+    "tags": [
+      { "name": "Start Loan", "description": "Starting a loan flow" }
+    ],
+    "paths": {
+      "/api/v1/borrower/loans/start/prepare": {
+        "post": {
+          "tags": [ "Start Loan" ],
+          "summary": "Prepare to accept an instant loan",
+          "description": "Accepts parameters for starting a loan and returns a PSBT and a request UUID.",
+          "security": [{ "bearerAuth": [] }],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                     "loanAmount": { "type": "number", "description": "Amount to borrow" },
+                     "collateralAssetId": { "type": "string", "description": "Asset ID for collateral" }
+                   },
+                  "required": ["loanAmount", "collateralAssetId"]
+                }
+              }
+            }
+          },
+          "responses": {
+             "200": {
+              "description": "Successfully prepared the loan start transaction",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "requestUuid": { "type": "string", "format": "uuid" },
+                      "psbt": { "type": "string", "description": "Partially Signed Bitcoin Transaction" }
+                    },
+                    "required": ["requestUuid", "psbt"]
+                  }
+                }
+              }
+            },
+             "400": { "description": "Bad Request - Invalid parameters" },
+             "401": { "description": "Unauthorized - Invalid API Key" },
+             "500": { "description": "Internal Server Error" }
+          }
+        }
+      },
+      "/api/v1/borrower/loans/start/execute": {
+        "post": {
+          "tags": [ "Start Loan" ],
+          "summary": "Execute the prepared loan start transaction",
+          "description": "Submits the signed PSBT to execute the loan.",
+          "security": [{ "bearerAuth": [] }],
+          "requestBody": {
+             "required": true,
+             "content": {
+              "application/json": {
+                 "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestUuid": { "type": "string", "format": "uuid" },
+                    "signedPsbt": { "type": "string", "description": "Signed PSBT from the prepare step" }
+                   },
+                  "required": ["requestUuid", "signedPsbt"]
+                 }
+               }
+             }
+           },
+          "responses": {
+            "200": {
+              "description": "Loan successfully initiated",
+              "content": {
+                "application/json": {
+                  "schema": {
+                     "type": "object",
+                     "properties": {
+                       "loanId": { "type": "string" },
+                       "transactionId": { "type": "string" },
+                       "status": { "type": "string", "example": "pending" }
+                     },
+                     "required": ["loanId", "transactionId", "status"]
+                  }
+                }
+              }
+             },
+             "400": { "description": "Bad Request - Invalid parameters or signed PSBT" },
+             "401": { "description": "Unauthorized - Invalid API Key" },
+             "404": { "description": "Request UUID not found or expired" },
+             "429": { "description": "Rate limit exceeded" },
+             "500": { "description": "Internal Server Error" }
+           }
+         }
+       }
+     },
+     "components": {
+      "securitySchemes": {
+         "bearerAuth": {
+           "type": "http",
+           "scheme": "bearer",
+           "bearerFormat": "JWT",
+           "description": "API Key Authentication"
+         }
+       }
+     }
+  }

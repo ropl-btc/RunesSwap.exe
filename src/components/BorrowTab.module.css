@@ -1,6 +1,6 @@
-/* SwapTab Component Styles */
+/* BorrowTab Component Styles */
 
-.swapTabContainer {
+.borrowTabContainer {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
@@ -29,12 +29,6 @@
   color: var(--win98-dark-gray);
 }
 
-.swapButton {
-  composes: baseButton; /* Inherit base button styles */
-  width: 100%;
-  font-weight: 700;
-}
-
 /* Style for transaction links */
 .txLink {
   color: var(--win98-blue);
@@ -49,7 +43,7 @@
 /* Container for messages with icons */
 .messageWithIcon {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-2);
 }
 
@@ -57,6 +51,37 @@
 .messageIcon {
   width: 1rem;
   height: 1rem;
+  margin-top: 0.25rem;
+}
+
+/* Success message styles */
+.successMessage {
+  padding: var(--space-3);
+  background-color: var(--win98-light-gray);
+  border: var(--win98-border-outset);
+  border-color: var(--win98-border-outset-colors);
+}
+
+.successContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.successTitle {
+  font-weight: bold;
+  color: var(--win98-dark-green);
+  margin: 0;
+}
+
+.successDetails {
+  margin: 0;
+  color: var(--win98-black);
+}
+
+.successButtons {
+  display: flex;
+  margin-top: var(--space-2);
 }
 
 /* Info Area Styles */
@@ -79,36 +104,15 @@
 
 /* Asset selector styles moved to InputArea.module.css */
 
-/* Add styles for the swap direction button */
-.swapIconContainer {
-  display: flex;
-  justify-content: center;
-  padding: var(--space-2) 0;
-}
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .successButtons {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
 
-.swapIconButton {
-  composes: baseButton; /* Inherit base button styles */
-  padding: var(--space-1);
-  line-height: 1;
+  .successButtons button {
+    width: 100%;
+    margin-right: 0 !important;
+  }
 }
-
-.swapIcon {
-  width: 1.5rem;
-  height: 1.5rem;
-  display: block; /* Prevent extra space below icon */
-}
-
-.loadingText {
-  font-style: italic;
-  color: var(--win98-dark-gray);
-}
-
-.showPriceChartButton {
-  composes: baseButton; /* Inherit base button styles */
-  width: 100%;
-  padding: var(--space-2);
-  margin-top: var(--space-2);
-  font-weight: 700;
-}
-
-/* Mobile styles moved to InputArea.module.css */

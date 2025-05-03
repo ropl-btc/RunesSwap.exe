@@ -33,37 +33,6 @@
   color: var(--win98-black);
 }
 
-.assetButton {
-  font-weight: 700;
-  padding: var(--space-1);
-  background-color: var(--win98-gray);
-  font-size: var(--font-size-normal);
-  flex-shrink: 0;
-  width: 5rem;
-  color: var(--win98-black);
-  border: var(--win98-border-outset);
-  border-color: var(--win98-border-outset-colors);
-}
-
-.assetButton:active {
-  border-color: var(--win98-border-inset-colors);
-}
-
-.assetButtonContent {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.assetButtonImage {
-  height: 1.25rem;
-  width: 1.25rem;
-  margin-right: var(--space-2);
-  flex-shrink: 0;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
-}
-
 /* Links */
 .txLink {
   color: var(--win98-blue);

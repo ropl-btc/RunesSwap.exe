@@ -86,6 +86,11 @@
   color: #155724;
 }
 
+.statusActivating {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
 .statusRepaying, .statusRepaid {
   background-color: #d1ecf1;
   color: #0c5460;

@@ -1,7 +1,6 @@
-import React, { useState, useEffect, Fragment, useCallback, useMemo, useReducer, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useReducer, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Listbox, Transition } from '@headlessui/react';
-import { ChevronUpDownIcon, CheckIcon, ArrowPathIcon } from '@heroicons/react/24/solid';
+import { ArrowPathIcon } from '@heroicons/react/24/solid';
 import Image from 'next/image';
 import styles from './SwapTab.module.css';
 import debounce from 'lodash.debounce';
@@ -9,6 +8,7 @@ import { useDebounce } from 'use-debounce';
 import { type QuoteResponse, type RuneOrder, type GetPSBTParams, type ConfirmPSBTParams } from 'satsterminal-sdk';
 import { Asset, BTC_ASSET } from '@/types/common';
 import type { Rune } from '@/types/satsTerminal.ts';
+import { InputArea } from './InputArea';
 import {
   fetchRunesFromApi,
   fetchPopularFromApi,
@@ -46,11 +46,7 @@ interface SwapTabProps {
   preSelectedRune?: string | null;
 }
 
-// Helper to check if a string is a valid image src for Next.js
-function isValidImageSrc(src?: string | null): src is string {
-  if (!src || typeof src !== 'string') return false;
-  return src.startsWith('http') || src.startsWith('/') || src.startsWith('data:');
-}
+// Helper functions moved to InputArea component
 
 // --- Swap Process State Management (Reducer) ---
 type SwapProcessState = {
@@ -493,23 +489,7 @@ export function SwapTab({
     };
   }, [debouncedSearch]);
 
-  // Handle search input change
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-    setIsSearching(true); // Indicate searching immediately
-
-    // If we were using a preselected rune, make sure the URL stays clean
-    if (hasLoadedPreselectedRune && typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      if (url.searchParams.has('rune')) {
-        url.searchParams.delete('rune');
-        window.history.replaceState({}, '', url.toString());
-      }
-    }
-
-    debouncedSearch(query);
-  };
+  // Search functionality now handled by InputArea component
 
   // Define debounced value for input amount
   // Correctly use the imported useDebounce hook - extract the first element
@@ -885,7 +865,6 @@ export function SwapTab({
             const rbfSigningResult = await signPsbt(rbfPsbtBase64);
             signedRbfPsbt = rbfSigningResult?.signedPsbtBase64 ?? null;
             if (!signedRbfPsbt) {
-                console.warn("RBF PSBT signing cancelled or failed. Proceeding without RBF confirmation might be possible depending on API.");
             }
         }
 
@@ -987,194 +966,7 @@ export function SwapTab({
     return 'Swap';
   };
 
-  // --- Asset Selector Component (Simplified Inline) ---
-  const renderAssetSelector = (
-      value: Asset | null,
-      onChange: (asset: Asset) => void,
-      disabled: boolean,
-      purpose: 'selectRune' | 'selectBtcOrRune',
-      // otherAsset parameter is no longer used for filtering but kept for API compatibility
-      otherAsset: Asset | null,
-      availableRunes: Asset[],
-      isLoadingRunes: boolean,
-      currentRunesError: string | null,
-      searchQuery: string,
-      handleSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
-      isPreselectedLoading: boolean = false
-  ) => {
-    // Use all available runes directly without filtering
-    const filteredRunes = availableRunes;
-
-    return (
-      <div className={styles.listboxContainer}>
-          <Listbox value={value} onChange={onChange} disabled={disabled || isLoadingRunes || isPreselectedLoading}>
-              <div className={styles.listboxRelative}>
-                  <Listbox.Button className={styles.listboxButton}>
-                      <span className={styles.listboxButtonText}>
-                          {isPreselectedLoading ? (
-                            <span className={styles.loadingText}>Loading Rune{loadingDots}</span>
-                          ) : (
-                            <>
-                              {isValidImageSrc(value?.imageURI) ? (
-                                <Image
-                                    src={value.imageURI}
-                                    alt={`${value.name} logo`}
-                                    className={styles.assetButtonImage}
-                                    width={24}
-                                    height={24}
-                                    aria-hidden="true"
-                                    onError={(e) => {
-                                      const target = e.target as HTMLImageElement;
-                                      if (target) {
-                                        target.style.display = 'none';
-                                      }
-                                    }}
-                                />
-                              ) : (
-                                null
-                              )}
-                              {isLoadingRunes && purpose === 'selectRune' ? 'Loading...' : value ? value.name : 'Select Asset'}
-                            </>
-                          )}
-                      </span>
-                      <span className={styles.listboxButtonIconContainer}>
-                          <ChevronUpDownIcon className={styles.listboxButtonIcon} aria-hidden="true" />
-                      </span>
-                  </Listbox.Button>
-                  <Transition
-                      as={Fragment}
-                      leave="transition ease-in duration-100"
-                      leaveFrom="opacity-100"
-                      leaveTo="opacity-0"
-                  >
-                      <Listbox.Options className={styles.listboxOptions}>
-                          {/* Removed BTC option from here - will be added after search bar */}
-
-                          <div className={styles.searchContainer}>
-                              <div className={styles.searchWrapper}>
-                                  <Image
-                                      src="/icons/magnifying_glass-0.png"
-                                      alt="Search"
-                                      className={styles.searchIconEmbedded}
-                                      width={16}
-                                      height={16}
-                                  />
-                                  <input
-                                      type="text"
-                                      placeholder="Search runes..."
-                                      value={searchQuery}
-                                      onChange={handleSearchChange}
-                                      className={styles.searchInput}
-                                  />
-                              </div>
-                          </div>
-
-                          {isLoadingRunes && <div className={styles.listboxLoadingOrEmpty}>Loading Runes...</div>}
-                          {!isLoadingRunes && currentRunesError && (
-                            <div className={`${styles.listboxError} ${styles.messageWithIcon}`}>
-                              <Image
-                                src="/icons/msg_error-0.png"
-                                alt="Error"
-                                className={styles.messageIcon}
-                                width={16}
-                                height={16}
-                              />
-                              <span>{currentRunesError}</span>
-                            </div>
-                          )}
-                          {!isLoadingRunes && !currentRunesError && availableRunes.length === 0 && (
-                               <div className={styles.listboxLoadingOrEmpty}>
-                                  {searchQuery ? 'No matching runes found' : (purpose === 'selectBtcOrRune' ? 'No other runes available' : 'No runes available')}
-                               </div>
-                          )}
-
-                          {/* Hide BTC when searching for runes */}
-                          {!searchQuery.trim() && (
-                            <Listbox.Option
-                                 key={BTC_ASSET.id}
-                                 className={({ active }) =>
-                                     `${styles.listboxOption} ${ active ? styles.listboxOptionActive : styles.listboxOptionInactive }`
-                                 }
-                                 value={BTC_ASSET}
-                            >
-                                 {({ selected }) => (
-                                      <>
-                                         <span className={styles.runeOptionContent}>
-                                             {isValidImageSrc(BTC_ASSET.imageURI) ? (
-                                                 <Image
-                                                   src={BTC_ASSET.imageURI}
-                                                   alt=""
-                                                   className={styles.runeImage}
-                                                   width={24}
-                                                   height={24}
-                                                   aria-hidden="true"
-                                                 />
-                                             ) : null}
-                                             <span className={`${styles.listboxOptionText} ${ selected ? styles.listboxOptionTextSelected : styles.listboxOptionTextUnselected }`}>
-                                                 {BTC_ASSET.name}
-                                             </span>
-                                         </span>
-                                         {selected && (
-                                             <span className={styles.listboxOptionCheckContainer}>
-                                                 <CheckIcon className={styles.listboxOptionCheckIcon} aria-hidden="true" />
-                                             </span>
-                                         )}
-                                     </>
-                                 )}
-                            </Listbox.Option>
-                          )}
-
-                          {filteredRunes
-                              .filter(rune => rune.id !== BTC_ASSET.id) // Filter out BTC as it's conditionally shown above
-                              .map((rune) => (
-                              <Listbox.Option
-                                  key={rune.id}
-                                  className={({ active }) =>
-                                      `${styles.listboxOption} ${ active ? styles.listboxOptionActive : styles.listboxOptionInactive }`
-                                  }
-                                  value={rune}
-                              >
-                                  {({ selected }) => (
-                                      <>
-                                          <span className={styles.runeOptionContent}> {/* Use rune option style */}
-                                              {isValidImageSrc(rune.imageURI) ? (
-                                                  <Image
-                                                      src={rune.imageURI}
-                                                      alt=""
-                                                      className={styles.runeImage}
-                                                      width={24}
-                                                      height={24}
-                                                      aria-hidden="true"
-                                                      onError={(e) => {
-                                                        const target = e.target as HTMLImageElement;
-                                                        if (target) {
-                                                          target.style.display = 'none';
-                                                        }
-                                                      }}
-                                                  />
-                                              ) : (
-                                                null
-                                              )}
-                                              <span className={`${styles.listboxOptionText} ${ selected ? styles.listboxOptionTextSelected : styles.listboxOptionTextUnselected }`}>
-                                                  {rune.name}
-                                              </span>
-                                          </span>
-                                          {selected && (
-                                              <span className={styles.listboxOptionCheckContainer}>
-                                                  <CheckIcon className={styles.listboxOptionCheckIcon} aria-hidden="true" />
-                                              </span>
-                                          )}
-                                      </>
-                                  )}
-                              </Listbox.Option>
-                          ))}
-                      </Listbox.Options>
-                  </Transition>
-              </div>
-          </Listbox>
-      </div>
-    );
-  };
+  // Asset selector is now handled by the InputArea component
 
   // --- Find specific rune balance --- (Helper Function)
   const getSpecificRuneBalance = (runeName: string | undefined): string | null => {
@@ -1234,109 +1026,59 @@ export function SwapTab({
       <h1 className="heading">Swap</h1>
 
       {/* Input Area */}
-      <div className={styles.inputArea}>
-        <div className={styles.inputHeader}>
-          <label htmlFor="input-amount" className={styles.inputLabel}>You Pay</label>
-          {connected && assetIn && (
-            <span className={styles.availableBalance}>
-              <span className={styles.percentageShortcuts}>
-                <button
-                  className={styles.percentageButton}
-                  onClick={() => handlePercentageClick(0.25)}
-                  type="button"
-                >
-                  25%
-                </button>
-                {' | '}
-                <button
-                  className={styles.percentageButton}
-                  onClick={() => handlePercentageClick(0.5)}
-                  type="button"
-                >
-                  50%
-                </button>
-                {' | '}
-                <button
-                  className={styles.percentageButton}
-                  onClick={() => handlePercentageClick(0.75)}
-                  type="button"
-                >
-                  75%
-                </button>
-                {' | '}
-                <button
-                  className={styles.percentageButton}
-                  onClick={() => handlePercentageClick(1)}
-                  type="button"
-                >
-                  Max
-                </button>
-                {' • '}
-              </span>
-              Available: {' '}
-              {assetIn.isBTC ? (
-                isBtcBalanceLoading ? (
-                  <span className={styles.loadingText}>Loading{loadingDots}</span>
-                ) : btcBalanceError ? (
-                  <span className={styles.errorText}>Error loading balance</span>
-                ) : btcBalanceSats !== undefined ? (
-                  `${(btcBalanceSats / 100_000_000).toLocaleString(undefined, { maximumFractionDigits: 8 })}`
-                ) : (
-                  'N/A' // Should not happen if connected
-                )
-              ) : isRuneBalancesLoading || isSwapRuneInfoLoading ? (
+      <InputArea
+        label="You Pay"
+        inputId="input-amount"
+        inputValue={inputAmount}
+        onInputChange={setInputAmount}
+        placeholder="0.0"
+        min="0"
+        step="0.001"
+        assetSelectorEnabled={true}
+        selectedAsset={assetIn}
+        onAssetChange={handleSelectAssetIn}
+        availableAssets={availableRunes}
+        showBtcInSelector={true}
+        isAssetsLoading={isLoadingRunes}
+        assetsError={currentRunesError}
+        showPercentageShortcuts={connected && !!assetIn}
+        onPercentageClick={handlePercentageClick}
+        availableBalance={
+          connected && assetIn ? (
+            assetIn.isBTC ? (
+              isBtcBalanceLoading ? (
                 <span className={styles.loadingText}>Loading{loadingDots}</span>
-              ) : runeBalancesError || swapRuneInfoError ? (
+              ) : btcBalanceError ? (
                 <span className={styles.errorText}>Error loading balance</span>
-              ) : (() => {
-                const rawBalance = getSpecificRuneBalance(assetIn.name);
-                if (rawBalance === null) return 'N/A';
+              ) : btcBalanceSats !== undefined ? (
+                `${(btcBalanceSats / 100_000_000).toLocaleString(undefined, { maximumFractionDigits: 8 })}`
+              ) : (
+                'N/A' // Should not happen if connected
+              )
+            ) : isRuneBalancesLoading || isSwapRuneInfoLoading ? (
+              <span className={styles.loadingText}>Loading{loadingDots}</span>
+            ) : runeBalancesError || swapRuneInfoError ? (
+              <span className={styles.errorText}>Error loading balance</span>
+            ) : (() => {
+              const rawBalance = getSpecificRuneBalance(assetIn.name);
+              if (rawBalance === null) return 'N/A';
 
-                try {
-                  const balanceNum = parseFloat(rawBalance);
-                  if (isNaN(balanceNum)) return 'Invalid Balance';
+              try {
+                const balanceNum = parseFloat(rawBalance);
+                if (isNaN(balanceNum)) return 'Invalid Balance';
 
-                  const decimals = swapRuneInfo?.decimals ?? 0;
-                  const displayValue = balanceNum / (10 ** decimals);
-                  return `${displayValue.toLocaleString(undefined, { maximumFractionDigits: decimals })}`;
-                } catch (error) {
-                  console.error("Error formatting rune balance:", error);
-                  return 'Formatting Error';
-                }
-              })()}
-            </span>
-          )}
-          {!connected && (<span className={styles.availableBalance}></span>)}
-        </div>
-        <div className={styles.inputRow}>
-          <input
-            type="number"
-            id="input-amount"
-            placeholder="0.0"
-            value={inputAmount}
-            onChange={(e) => setInputAmount(e.target.value)}
-            className={styles.amountInput}
-            min="0"
-            step="0.001"
-          />
-          {renderAssetSelector(
-            assetIn,
-            handleSelectAssetIn,
-            false,
-            assetOut?.isBTC ? 'selectRune' : 'selectBtcOrRune',
-            assetOut,
-            availableRunes,
-            isLoadingRunes,
-            currentRunesError,
-            searchQuery,
-            handleSearchChange,
-            false // Input asset is never preselected
-          )}
-        </div>
-        {inputUsdValue && (
-          <div className={styles.usdValueText}>≈ {inputUsdValue}</div>
-        )}
-      </div>
+                const decimals = swapRuneInfo?.decimals ?? 0;
+                const displayValue = balanceNum / (10 ** decimals);
+                return `${displayValue.toLocaleString(undefined, { maximumFractionDigits: decimals })}`;
+              } catch (error) {
+                console.error("Error formatting rune balance:", error);
+                return 'Formatting Error';
+              }
+            })()
+          ) : null
+        }
+        usdValue={inputUsdValue || undefined}
+      />
 
       {/* Swap Direction Button */}
       <div className={styles.swapIconContainer}>
@@ -1351,57 +1093,28 @@ export function SwapTab({
       </div>
 
       {/* Output Area */}
-      <div className={styles.inputArea}>
-        <label htmlFor="output-amount" className={styles.inputLabel}>
-          You Receive (Estimated)
-        </label>
-        <div className={styles.inputRow}>
-          <input
-            type="text"
-            id="output-amount"
-            placeholder="0.0"
-            value={(() => {
-              if (swapState.isQuoteLoading) {
-                return `Loading${loadingDots}`;
-              }
-              return outputAmount;
-            })()}
-            readOnly
-            className={styles.amountInputReadOnly}
-          />
-          {renderAssetSelector(
-            assetOut,
-            handleSelectAssetOut,
-            false,
-            assetIn?.isBTC ? 'selectRune' : 'selectBtcOrRune',
-            assetIn,
-            availableRunes,
-            isLoadingRunes,
-            currentRunesError,
-            searchQuery,
-            handleSearchChange,
-            isPreselectedRuneLoading // Output asset can be preselected from URL
-          )}
-        </div>
-        {outputUsdValue && (
-          <div className={styles.usdValueText}>≈ {outputUsdValue}</div>
-        )}
-        {quoteError && !swapState.isQuoteLoading && (
-          <div className={`errorText ${styles.messageWithIcon}`} style={{paddingTop: '0.25rem', width: '100%'}}>
-            <Image
-              src="/icons/msg_error-0.png"
-              alt="Error"
-              className={styles.messageIcon}
-              width={16}
-              height={16}
-            />
-            <span>{quoteError}</span>
-            <div className="smallText" style={{whiteSpace: 'normal', wordBreak: 'break-word'}}>
-              Please retry the swap, reconnect your wallet, or try a different amount.
-            </div>
+      <InputArea
+        label="You Receive (Estimated)"
+        inputId="output-amount"
+        inputValue={swapState.isQuoteLoading ? `Loading${loadingDots}` : outputAmount}
+        placeholder="0.0"
+        readOnly={true}
+        assetSelectorEnabled={true}
+        selectedAsset={assetOut}
+        onAssetChange={handleSelectAssetOut}
+        availableAssets={availableRunes}
+        showBtcInSelector={true}
+        isAssetsLoading={isLoadingRunes}
+        assetsError={currentRunesError}
+        isPreselectedAssetLoading={isPreselectedRuneLoading}
+        usdValue={outputUsdValue || undefined}
+        errorMessage={quoteError && !swapState.isQuoteLoading ? quoteError : undefined}
+        bottomContent={quoteError && !swapState.isQuoteLoading ? (
+          <div className="smallText" style={{whiteSpace: 'normal', wordBreak: 'break-word'}}>
+            Please retry the swap, reconnect your wallet, or try a different amount.
           </div>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       {/* Show Price Chart button - Moved here */}
       {!showPriceChart && (

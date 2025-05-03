@@ -103,39 +103,38 @@ export default function PortfolioTab() {
     setIsAuthenticating(true);
     setAuthError(null);
     try {
-      console.log('[Liquidium] Starting authentication flow');
       if (!address || !paymentAddress) {
         setAuthError('Wallet connection required for authentication');
-        console.log('[Liquidium] Wallet not connected');
+        
         setIsAuthenticating(false);
         return;
       }
       if (!signMessage) {
         setAuthError('Your wallet does not support message signing');
-        console.log('[Liquidium] signMessage not available');
+        
         setIsAuthenticating(false);
         return;
       }
       // Step 1: Get challenge from backend
-      console.log('[Liquidium] Fetching challenge from backend');
+      
       const challengeRes = await fetch(`/api/liquidium/challenge?ordinalsAddress=${encodeURIComponent(address)}&paymentAddress=${encodeURIComponent(paymentAddress)}`);
       const challengeData = await challengeRes.json();
       if (!challengeRes.ok) {
         setAuthError(challengeData?.error || 'Failed to get challenge');
-        console.log('[Liquidium] Challenge error:', challengeData);
+        
         setIsAuthenticating(false);
         return;
       }
       const { ordinals, payment } = challengeData.data;
       // Step 2: Sign messages
-      console.log('[Liquidium] Signing challenge messages');
+      
       const ordinalsSignature = await signMessage(ordinals.message, address);
       let paymentSignature: string | undefined;
       if (payment) {
         paymentSignature = await signMessage(payment.message, paymentAddress);
       }
       // Step 3: Submit signatures to backend
-      console.log('[Liquidium] Submitting signatures to backend');
+      
       const authRes = await fetch('/api/liquidium/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -151,21 +150,21 @@ export default function PortfolioTab() {
       const authData = await authRes.json();
       if (!authRes.ok) {
         setAuthError(authData?.error || 'Authentication failed');
-        console.log('[Liquidium] Auth error:', authData);
+        
         setIsAuthenticating(false);
         return;
       }
       setLiquidiumAuthenticated(true);
-      console.log('[Liquidium] Authentication successful');
+      
       // Fetch loans after auth
       fetchLiquidiumLoans();
     } catch (err: unknown) {
       if (err instanceof Error) {
         setAuthError(err.message || 'Unknown error');
-        console.log('[Liquidium] Auth exception:', err);
+        
       } else {
         setAuthError('Unknown error');
-        console.log('[Liquidium] Auth exception:', err);
+        
       }
     } finally {
       setIsAuthenticating(false);
@@ -177,26 +176,23 @@ export default function PortfolioTab() {
     setIsLoadingLiquidium(true);
     setLiquidiumError(null);
     try {
-      console.log('[Liquidium] Fetching loans from backend');
       const res = await fetch(`/api/liquidium/portfolio?address=${encodeURIComponent(address || '')}`);
       const data = await res.json();
       if (!res.ok) {
         setLiquidiumError(data?.error || 'Failed to fetch loans');
         setLiquidiumLoans([]);
-        console.log('[Liquidium] Loan fetch error:', data);
+        
         return;
       }
       setLiquidiumLoans(data.data || []);
-      console.log('[Liquidium] Loans fetched:', data.data);
+      
     } catch (err: unknown) {
       if (err instanceof Error) {
         setLiquidiumError(err.message || 'Unknown error');
         setLiquidiumLoans([]);
-        console.log('[Liquidium] Loan fetch exception:', err);
       } else {
         setLiquidiumError('Unknown error');
         setLiquidiumLoans([]);
-        console.log('[Liquidium] Loan fetch exception:', err);
       }
     } finally {
       setIsLoadingLiquidium(false);
@@ -209,26 +205,25 @@ export default function PortfolioTab() {
     const checkAuth = async () => {
       setIsCheckingAuth(true);
       try {
-        console.log('[Liquidium] Checking if already authenticated...');
         const res = await fetch(`/api/liquidium/portfolio?address=${encodeURIComponent(address)}`);
         if (res.status === 200) {
           setLiquidiumAuthenticated(true);
           const data = await res.json();
           setLiquidiumLoans(data.data || []);
-          console.log('[Liquidium] Already authenticated, loans loaded:', data.data);
+          
         } else if (res.status === 401) {
           setLiquidiumAuthenticated(false);
           setLiquidiumLoans([]);
-          console.log('[Liquidium] Not authenticated, show connect button');
+          
         } else {
           setLiquidiumAuthenticated(false);
           setLiquidiumLoans([]);
-          console.log('[Liquidium] Unexpected status from portfolio:', res.status);
+          
         }
-      } catch (err) {
+      } catch {
         setLiquidiumAuthenticated(false);
         setLiquidiumLoans([]);
-        console.log('[Liquidium] Error checking auth:', err);
+        
       } finally {
         setIsCheckingAuth(false);
       }
@@ -250,10 +245,9 @@ export default function PortfolioTab() {
     } catch (err: unknown) {
       if (err instanceof Error) {
         setLiquidiumError(err.message || 'Failed to repay loan');
-        console.error('Repay error:', err);
       } else {
         setLiquidiumError('Failed to repay loan');
-        console.error('Repay error:', err);
+        
       }
     } finally {
       setIsRepayingLoanId(null);
@@ -270,24 +264,19 @@ export default function PortfolioTab() {
     setRepayModal((m) => ({ ...m, loading: true, error: null }));
     try {
       // Log PSBT and repay info
-      console.log('[RepayModal] Repay info:', repayModal.repayInfo);
-      console.log('[RepayModal] PSBT (base64):', repayModal.repayInfo.psbt);
       // Convert base64 PSBT to hex if needed
       const psbtBase64 = repayModal.repayInfo.psbt;
       // If signPsbt expects hex, convert
       // LaserEyesContext signPsbt accepts base64, but log both for debugging
       const psbtHex = Buffer.from(psbtBase64, 'base64').toString('hex');
-      console.log('[RepayModal] PSBT (hex):', psbtHex);
       // Try both formats if unsure
-      let signResult = await signPsbt(psbtBase64, true, false);
+      let signResult = await signPsbt(psbtBase64, false, false);
       if (!signResult?.signedPsbtBase64 && psbtHex) {
-        signResult = await signPsbt(psbtHex, true, false);
+        signResult = await signPsbt(psbtHex, false, false);
       }
-      console.log('[RepayModal] signPsbt result:', signResult);
       const signedPsbt = signResult?.signedPsbtBase64 || signResult?.signedPsbtHex;
       if (!signedPsbt) throw new Error('Wallet did not return a signed PSBT');
       const submitResult = await submitRepayPsbt(repayModal.loan.id, signedPsbt, address);
-      console.log('[RepayModal] submitRepayPsbt result:', submitResult);
       if (submitResult.success && submitResult.data) {
         setRepayModal({ ...repayModal, loading: false, error: null });
         alert(`Repayment submitted! TxID: ${submitResult.data.repayment_transaction_id}`);
@@ -297,7 +286,6 @@ export default function PortfolioTab() {
         setRepayModal((m) => ({ ...m, loading: false, error: submitResult.error || 'Failed to submit repayment' }));
       }
     } catch (err: unknown) {
-      console.error('[RepayModal] Error in handleRepayModalConfirm:', err);
       setRepayModal((m) => ({ ...m, loading: false, error: err instanceof Error ? err.message : 'Failed to sign or submit repayment' }));
     }
   };
@@ -305,7 +293,7 @@ export default function PortfolioTab() {
   // Log repayModal state when opening modal
   useEffect(() => {
     if (repayModal.open) {
-      console.log('[RepayModal] Modal opened:', repayModal);
+      
     }
   }, [repayModal, repayModal.open]);
 
@@ -394,6 +382,8 @@ export default function PortfolioTab() {
     switch (status) {
       case 'ACTIVE':
         return styles.statusActive;
+      case 'ACTIVATING':
+        return styles.statusActivating;
       case 'REPAYING':
         return styles.statusRepaying;
       case 'DEFAULTED':
@@ -589,12 +579,22 @@ export default function PortfolioTab() {
                   <div className={styles.btcLabel}>BTC</div>
                 </div>
                 <div>
-                  {loan.loan_details.state === 'ACTIVE' && (
+                  {(loan.loan_details.state === 'ACTIVE') && (
                     <Button
                       onClick={() => handleRepay(loan)}
                       disabled={isRepayingLoanId === loan.id}
                     >
                       {isRepayingLoanId === loan.id ? 'Repaying...' : 'Repay'}
+                    </Button>
+                  )}
+                  {loan.loan_details.state === 'ACTIVATING' && (
+                    <Button disabled={true}>
+                      Activating...
+                    </Button>
+                  )}
+                  {loan.loan_details.state === 'REPAYING' && (
+                    <Button disabled={true}>
+                      Processing...
                     </Button>
                   )}
                 </div>

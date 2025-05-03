@@ -7,15 +7,13 @@ import { AppInterface } from '@/components/AppInterface';
 import styles from './page.module.css';
 
 // Define the tab type
-type ActiveTab = 'swap' | 'runesInfo' | 'yourTxs' | 'portfolio';
+type ActiveTab = 'swap' | 'runesInfo' | 'yourTxs' | 'portfolio' | 'borrow';
 
 export default function Home() {
   // Get URL parameters
   const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
   const tabParam = searchParams.get('tab') as ActiveTab | null;
-  const runeParam = searchParams.get('rune');
 
-  console.log('[Home] URL Parameters:', { tabParam, runeParam });
 
   // State for the active tab
   const [activeTab, setActiveTab] = useState<ActiveTab>(tabParam || 'swap');
@@ -24,7 +22,11 @@ export default function Home() {
   React.useEffect(() => {
     const handleTabChange = (event: CustomEvent) => {
       const { tab } = event.detail;
-      setActiveTab(tab as ActiveTab);
+      // Validate if the tab is one of the allowed ActiveTab types
+      const allowedTabs: ActiveTab[] = ['swap', 'runesInfo', 'yourTxs', 'portfolio', 'borrow'];
+      if (allowedTabs.includes(tab)) {
+        setActiveTab(tab as ActiveTab);
+      }
     };
 
     window.addEventListener('tabChange', handleTabChange as EventListener);
@@ -53,25 +55,31 @@ export default function Home() {
       <div className={styles.headerContainer}>
         {/* Tab Buttons */}
         <div className={styles.tabsInHeader}>
-          <button 
+          <button
             className={`${styles.pageTabButton} ${activeTab === 'swap' ? styles.pageTabActive : ''}`}
             onClick={() => handleTabChange('swap')}
           >
             Swap
           </button>
-          <button 
+          <button
+            className={`${styles.pageTabButton} ${activeTab === 'borrow' ? styles.pageTabActive : ''}`}
+            onClick={() => handleTabChange('borrow')}
+          >
+            Borrow
+          </button>
+          <button
             className={`${styles.pageTabButton} ${activeTab === 'runesInfo' ? styles.pageTabActive : ''}`}
             onClick={() => handleTabChange('runesInfo')}
           >
             Runes Info
           </button>
-          <button 
+          <button
             className={`${styles.pageTabButton} ${activeTab === 'yourTxs' ? styles.pageTabActive : ''}`}
             onClick={() => handleTabChange('yourTxs')}
           >
             Your TXs
           </button>
-          <button 
+          <button
             className={`${styles.pageTabButton} ${activeTab === 'portfolio' ? styles.pageTabActive : ''}`}
             onClick={() => handleTabChange('portfolio')}
           >
@@ -80,7 +88,7 @@ export default function Home() {
         </div>
 
         {/* Connect Wallet Button */}
-        <div className={styles.connectButtonContainer}> 
+        <div className={styles.connectButtonContainer}>
            <ConnectWalletButton />
         </div>
       </div>
@@ -89,7 +97,6 @@ export default function Home() {
       <AppInterface activeTab={activeTab} />
 
       {/* Optional: Add other content/components below */}
-      {/* <p className="pt-4 text-xs">Status: Ready</p> */}
     </div>
   );
 }
