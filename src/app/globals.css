@@ -3,9 +3,9 @@
   /* Colors */
   --win98-gray: #c0c0c0;
   --win98-blue: #000080;
-  --win98-dark-blue: #0000aa;
-  --win98-white: #ffffff;
-  --win98-black: #000000;
+  --win98-dark-blue: #00a;
+  --win98-white: #fff;
+  --win98-black: #000;
   --win98-dark-gray: #808080;
   --win98-light-gray: #dfdfdf;
   --win98-red: #b20000;
@@ -88,20 +88,17 @@ input {
   border: none;
   background-image: none;
   background-color: transparent;
-  -webkit-box-shadow: none;
-  -moz-box-shadow: none;
   box-shadow: none;
   outline: none;
 }
 
 /* Remove number input spinners */
 input[type="number"] {
-  -moz-appearance: textfield;
   appearance: textfield;
 }
+
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
   appearance: none;
   margin: 0;
 }

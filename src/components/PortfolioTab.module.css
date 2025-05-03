@@ -123,7 +123,7 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(192, 192, 192, 0.65);
+  background: rgb(192 192 192 / 65%);
   z-index: 10000;
   display: flex;
   align-items: center;
@@ -155,7 +155,7 @@
 }
 
 /* Mobile Responsiveness */
-@media (max-width: 640px) {
+@media (width <= 640px) {
   /* Runes portfolio grid */
   .grid4col,
   .listHeader,
@@ -317,10 +317,12 @@
   top: 2px;
   background: var(--win98-light-gray);
 }
+
 /* Add style for temporarily disabled repay button */
 .repayButtonDisabled {
   opacity: 0.5;
   cursor: not-allowed;
+
   /* Keep Win98 style consistent */
   filter: grayscale(50%);
 }

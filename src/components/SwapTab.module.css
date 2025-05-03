@@ -30,7 +30,7 @@
 }
 
 .swapButton {
-  composes: baseButton; /* Inherit base button styles */
+  composes: basebutton; /* Inherit base button styles */
   width: 100%;
   font-weight: 700;
 }
@@ -87,7 +87,7 @@
 }
 
 .swapIconButton {
-  composes: baseButton; /* Inherit base button styles */
+  composes: basebutton; /* Inherit base button styles */
   padding: var(--space-1);
   line-height: 1;
 }
@@ -104,7 +104,7 @@
 }
 
 .showPriceChartButton {
-  composes: baseButton; /* Inherit base button styles */
+  composes: basebutton; /* Inherit base button styles */
   width: 100%;
   padding: var(--space-2);
   margin-top: var(--space-2);

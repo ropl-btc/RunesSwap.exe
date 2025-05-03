@@ -105,7 +105,7 @@
 /* Asset selector styles moved to InputArea.module.css */
 
 /* Mobile Responsiveness */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .successButtons {
     flex-direction: column;
     gap: var(--space-2);

@@ -74,7 +74,7 @@
 }
 
 .amountInputReadOnly {
-  composes: amountInput; /* Inherit base input styles */
+  composes: amountinput; /* Inherit base input styles */
   color: var(--win98-dark-gray);
 }
 
@@ -139,7 +139,7 @@
 }
 
 .listboxButton {
-  composes: baseButton; /* Inherit base button styles */
+  composes: basebutton; /* Inherit base button styles */
   position: relative;
   width: 100%;
   cursor: default;
@@ -230,7 +230,7 @@
 
 .listboxOptionCheckContainer {
   position: absolute;
-  inset: 0 0 0 0; /* top, right, bottom, left */
+  inset: 0; /* top, right, bottom, left */
   display: flex;
   align-items: center;
   padding-left: var(--space-2);
@@ -251,7 +251,7 @@
 }
 
 .listboxError {
-  composes: listboxLoadingOrEmpty;
+  composes: listboxloadingorempty;
   color: var(--win98-red);
   display: flex;
   align-items: center;
@@ -319,7 +319,7 @@
 }
 
 /* Mobile Responsiveness */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .inputRow {
     flex-direction: column;
     align-items: stretch;

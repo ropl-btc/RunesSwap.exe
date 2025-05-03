@@ -319,7 +319,7 @@
 }
 
 /* Mobile Responsiveness */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .container {
     width: 100%;
     padding: 0;
@@ -335,10 +335,10 @@
     font-size: var(--font-size-normal);
   }
 
-  .containerWithChart .runesInfoContainer,
-  .containerWithChart .swapContainer,
   .swapContainer,
   .runesInfoContainer,
+  .containerWithChart .runesInfoContainer,
+  .containerWithChart .swapContainer,
   .priceChartContainer {
     max-width: 100%;
     width: 100%;
@@ -362,7 +362,7 @@
 }
 
 /* Desktop Footer */
-@media (min-width: 769px) {
+@media (width >= 769px) {
   .btcPriceFooter {
     position: fixed;
     bottom: 0;

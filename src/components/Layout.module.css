@@ -123,7 +123,7 @@
 }
 
 /* Responsive adjustments */
-@media (min-width: 769px) {
+@media (width >= 769px) {
   /* For desktop, set max height to screen height minus footer */
   .window {
     max-height: calc(100vh - 100px); /* 100px for footer and spacing */
@@ -131,13 +131,13 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .container {
     padding: 5px;
   }
 
   .window {
     min-height: max(fit-content, -webkit-fill-available);
-    margin: 0 auto 20px auto;
+    margin: 0 auto 20px;
   }
 }

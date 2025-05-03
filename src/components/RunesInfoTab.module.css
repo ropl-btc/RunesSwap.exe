@@ -139,7 +139,7 @@
 .hintText {
   color: var(--win98-dark-gray);
   white-space: normal;
-  word-break: break-word;
+  overflow-wrap: break-word;
   font-size: inherit;
   margin-top: 0;
   padding: 0;
@@ -234,7 +234,7 @@
 }
 
 /* Mobile Responsiveness */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .narrowRightPanel {
     width: 100%;
     max-width: 100%;

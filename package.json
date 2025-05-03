@@ -44,6 +44,8 @@
     "husky": "^9.1.7",
     "lint-staged": "^15.5.1",
     "prettier": "^3.5.3",
+    "stylelint": "^16.19.1",
+    "stylelint-config-standard": "^38.0.0",
     "typescript": "^5"
   },
   "packageManager": "pnpm@10.8.0"
