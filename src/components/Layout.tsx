@@ -1,24 +1,28 @@
-'use client';
+"use client";
 
-import React, { useRef, useState } from 'react';
-import Image from 'next/image';
-import styles from './Layout.module.css';
-import FooterComponent from './FooterComponent';
-import { useQuery } from '@tanstack/react-query';
-import { useBackground } from '@/context/BackgroundContext';
-import TitleText from './TitleText';
+import React, { useRef, useState } from "react";
+import Image from "next/image";
+import styles from "./Layout.module.css";
+import FooterComponent from "./FooterComponent";
+import { useQuery } from "@tanstack/react-query";
+import { useBackground } from "@/context/BackgroundContext";
+import TitleText from "./TitleText";
 
-const COINGECKO_BTC_PRICE_URL = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd';
+const COINGECKO_BTC_PRICE_URL =
+  "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd";
 const getBtcPrice = async (): Promise<number> => {
   const response = await fetch(COINGECKO_BTC_PRICE_URL);
   if (!response.ok) {
     if (response.status === 429) {
-      throw new Error('Rate limit exceeded for CoinGecko API');
+      throw new Error("Rate limit exceeded for CoinGecko API");
     }
-    throw new Error(`Failed to fetch BTC price from CoinGecko: ${response.status}`);
+    throw new Error(
+      `Failed to fetch BTC price from CoinGecko: ${response.status}`,
+    );
   }
   const data = await response.json();
-  if (!data.bitcoin || !data.bitcoin.usd) throw new Error('Invalid response format from CoinGecko');
+  if (!data.bitcoin || !data.bitcoin.usd)
+    throw new Error("Invalid response format from CoinGecko");
   return data.bitcoin.usd;
 };
 
@@ -27,13 +31,14 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
-  const { backgroundImage, setBackgroundImage, clearBackgroundImage } = useBackground();
+  const { backgroundImage, setBackgroundImage, clearBackgroundImage } =
+    useBackground();
   const {
     data: btcPriceUsd,
     isLoading: isBtcPriceLoading,
     error: btcPriceError,
   } = useQuery<number, Error>({
-    queryKey: ['btcPriceUsd'],
+    queryKey: ["btcPriceUsd"],
     queryFn: getBtcPrice,
     refetchInterval: 60000,
     staleTime: 30000,
@@ -48,7 +53,7 @@ export function Layout({ children }: LayoutProps) {
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      alert('Image is too large. Please select an image under 2MB.');
+      alert("Image is too large. Please select an image under 2MB.");
       return;
     }
 
@@ -63,11 +68,18 @@ export function Layout({ children }: LayoutProps) {
   };
 
   return (
-    <div className={styles.container} style={backgroundImage ? {
-      backgroundImage: `url(${backgroundImage})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-    } : {}}>
+    <div
+      className={styles.container}
+      style={
+        backgroundImage
+          ? {
+              backgroundImage: `url(${backgroundImage})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }
+          : {}
+      }
+    >
       {/* Background settings */}
       <button
         className={styles.bgSettingsButton}
@@ -101,7 +113,7 @@ export function Layout({ children }: LayoutProps) {
               type="file"
               accept="image/*"
               onChange={handleFileUpload}
-              style={{ display: 'none' }}
+              style={{ display: "none" }}
             />
           </div>
         </div>
@@ -111,13 +123,18 @@ export function Layout({ children }: LayoutProps) {
       <div className={styles.window}>
         <div className={styles.titleBar}>
           <span className={styles.titleBarRow}>
-            <Image src="/icons/runesswap_logo.png" alt="RunesSwap.app Logo" width={18} height={18} style={{ imageRendering: 'pixelated' }} priority />
+            <Image
+              src="/icons/runesswap_logo.png"
+              alt="RunesSwap.app Logo"
+              width={18}
+              height={18}
+              style={{ imageRendering: "pixelated" }}
+              priority
+            />
             <TitleText />
           </span>
         </div>
-        <div className={styles.content}>
-          {children}
-        </div>
+        <div className={styles.content}>{children}</div>
       </div>
       <FooterComponent
         btcPriceUsd={btcPriceUsd}

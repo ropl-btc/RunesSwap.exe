@@ -1,32 +1,32 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
-import { getOrdiscanClient } from '@/lib/serverUtils';
+import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
+import { getOrdiscanClient } from "@/lib/serverUtils";
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const prefix = searchParams.get('prefix');
+    const prefix = searchParams.get("prefix");
 
     if (!prefix) {
       return NextResponse.json(
-        { error: 'Missing required parameter: prefix' },
-        { status: 400 }
+        { error: "Missing required parameter: prefix" },
+        { status: 400 },
       );
     }
 
     // First, try to find the rune in our database by exact ID
     const { data: existingRune, error: dbError } = await supabase
-      .from('runes')
-      .select('*')
-      .eq('id', prefix)
+      .from("runes")
+      .select("*")
+      .eq("id", prefix)
       .limit(1);
 
     // If not found by exact ID, try to find by prefix
     if (!existingRune || existingRune.length === 0) {
       const { data: prefixRune, error: prefixDbError } = await supabase
-        .from('runes')
-        .select('*')
-        .ilike('id', `${prefix}:%`)
+        .from("runes")
+        .select("*")
+        .ilike("id", `${prefix}:%`)
         .limit(1);
 
       if (prefixDbError) {
@@ -54,8 +54,8 @@ export async function GET(request: NextRequest) {
 
       // First, try to get all runes from our database to see if we can find a match
       const { data: allRunes, error: allRunesError } = await supabase
-        .from('runes')
-        .select('name, id')
+        .from("runes")
+        .select("name, id")
         .limit(1000);
 
       if (allRunesError) {
@@ -66,47 +66,49 @@ export async function GET(request: NextRequest) {
       let matchingRune = null;
 
       // First try exact match
-      matchingRune = allRunes?.find(rune => rune.id === prefix);
+      matchingRune = allRunes?.find((rune) => rune.id === prefix);
 
       // If no exact match, try prefix match
-      if (!matchingRune && prefix.includes(':')) {
-        const prefixPart = prefix.split(':')[0];
-        matchingRune = allRunes?.find(rune => rune.id.startsWith(prefixPart + ':'));
+      if (!matchingRune && prefix.includes(":")) {
+        const prefixPart = prefix.split(":")[0];
+        matchingRune = allRunes?.find((rune) =>
+          rune.id.startsWith(prefixPart + ":"),
+        );
       }
 
       if (matchingRune) {
         // Fetch the rune data from Ordiscan
-        const runeData = await ordiscan.rune.getInfo({ name: matchingRune.name });
+        const runeData = await ordiscan.rune.getInfo({
+          name: matchingRune.name,
+        });
 
         if (runeData) {
           // Store in Supabase for future use
           const dataToInsert = {
             ...runeData,
-            last_updated_at: new Date().toISOString()
+            last_updated_at: new Date().toISOString(),
           };
 
-          await supabase
-            .from('runes')
-            .upsert([dataToInsert]);
+          await supabase.from("runes").upsert([dataToInsert]);
 
           return NextResponse.json(runeData);
         }
       }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       // Error handled by returning not found
     }
 
     // If all attempts fail, return not found
     return NextResponse.json(
-      { error: 'Rune not found with the given prefix' },
-      { status: 404 }
+      { error: "Rune not found with the given prefix" },
+      { status: 404 },
     );
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }

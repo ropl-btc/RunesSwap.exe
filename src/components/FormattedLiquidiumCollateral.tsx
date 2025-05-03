@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import Image from 'next/image';
-import { FormattedRuneAmount } from './FormattedRuneAmount';
-import styles from './PortfolioTab.module.css';
+import React, { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import Image from "next/image";
+import { FormattedRuneAmount } from "./FormattedRuneAmount";
+import styles from "./PortfolioTab.module.css";
 
 interface FormattedLiquidiumCollateralProps {
   runeId: string;
@@ -15,10 +15,12 @@ interface FormattedLiquidiumCollateralProps {
 export function FormattedLiquidiumCollateral({
   runeId,
   runeAmount,
-  runeDivisibility
+  runeDivisibility,
 }: FormattedLiquidiumCollateralProps) {
   const [runeName, setRuneName] = useState<string | null>(null);
-  const [formattedRuneName, setFormattedRuneName] = useState<string | null>(null);
+  const [formattedRuneName, setFormattedRuneName] = useState<string | null>(
+    null,
+  );
   const [runeIdForQuery, setRuneIdForQuery] = useState<string | null>(null);
 
   // Use the full rune_id for querying
@@ -29,16 +31,16 @@ export function FormattedLiquidiumCollateral({
   }, [runeId]);
 
   // Fetch rune info to get the actual rune name
-  const {
-    data: runeInfo
-  } = useQuery({
-    queryKey: ['runeInfoById', runeIdForQuery],
+  const { data: runeInfo } = useQuery({
+    queryKey: ["runeInfoById", runeIdForQuery],
     queryFn: async () => {
       // Try to fetch by the full rune_id
       if (runeIdForQuery) {
         try {
           // We'll try to find a rune with this ID in our database
-          const response = await fetch(`/api/ordiscan/rune-info-by-id?prefix=${encodeURIComponent(runeIdForQuery)}`);
+          const response = await fetch(
+            `/api/ordiscan/rune-info-by-id?prefix=${encodeURIComponent(runeIdForQuery)}`,
+          );
           if (response.ok) {
             const data = await response.json();
             if (data) {
@@ -46,7 +48,7 @@ export function FormattedLiquidiumCollateral({
             }
           }
         } catch (error) {
-          console.error('Error fetching rune by ID:', error);
+          console.error("Error fetching rune by ID:", error);
         }
       }
       return null;
@@ -78,7 +80,7 @@ export function FormattedLiquidiumCollateral({
     const factor = Math.pow(10, divisibility);
     const formattedValue = (amount / factor).toLocaleString(undefined, {
       minimumFractionDigits: 0,
-      maximumFractionDigits: divisibility
+      maximumFractionDigits: divisibility,
     });
 
     return formattedValue;
@@ -100,7 +102,7 @@ export function FormattedLiquidiumCollateral({
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               if (target) {
-                target.style.display = 'none';
+                target.style.display = "none";
               }
             }}
           />
@@ -112,9 +114,7 @@ export function FormattedLiquidiumCollateral({
               rawAmount={String(runeAmount)}
             />
           </div>
-          <div className={styles.collateralName}>
-            {displayName}
-          </div>
+          <div className={styles.collateralName}>{displayName}</div>
         </div>
       </div>
     );
@@ -126,9 +126,7 @@ export function FormattedLiquidiumCollateral({
       <div className={styles.collateralAmount}>
         {formattedAmount(runeAmount, runeDivisibility)}
       </div>
-      <div className={styles.collateralName}>
-        {runeId}
-      </div>
+      <div className={styles.collateralName}>{runeId}</div>
     </div>
   );
 }

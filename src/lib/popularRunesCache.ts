@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase } from "./supabase";
 
 export interface CachedPopularRune {
   id: string;
@@ -16,13 +16,15 @@ export interface CachedPopularRune {
  * Fetch popular runes from cache
  * @returns Cached popular runes if present and not expired
  */
-export async function getCachedPopularRunes(): Promise<Record<string, unknown>[] | null> {
+export async function getCachedPopularRunes(): Promise<
+  Record<string, unknown>[] | null
+> {
   try {
     // Check for cached popular runes
     const { data, error } = await supabase
-      .from('popular_runes_cache')
-      .select('*')
-      .order('created_at', { ascending: false })
+      .from("popular_runes_cache")
+      .select("*")
+      .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
     if (error) {
@@ -43,7 +45,7 @@ export async function getCachedPopularRunes(): Promise<Record<string, unknown>[]
     }
 
     return data.runes_data as Record<string, unknown>[];
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     return null;
   }
@@ -53,19 +55,19 @@ export async function getCachedPopularRunes(): Promise<Record<string, unknown>[]
  * Store popular runes in cache
  * @param runesData The popular runes data to cache
  */
-export async function cachePopularRunes(runesData: Record<string, unknown>[]): Promise<void> {
+export async function cachePopularRunes(
+  runesData: Record<string, unknown>[],
+): Promise<void> {
   try {
-    await supabase
-      .from('popular_runes_cache')
-      .insert([
-        {
-          runes_data: runesData,
-          created_at: new Date().toISOString()
-        }
-      ]);
+    await supabase.from("popular_runes_cache").insert([
+      {
+        runes_data: runesData,
+        created_at: new Date().toISOString(),
+      },
+    ]);
 
     // Errors in caching are non-critical
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     // Errors in caching are non-critical
   }

@@ -1,16 +1,14 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import Image from 'next/image';
-import styles from './AppInterface.module.css'; // Reuse styles for now
-import {
-  RuneActivityEvent
-} from '@/types/ordiscan'; // Import types
-import { fetchRuneActivityFromApi } from '@/lib/apiClient'; // Import API functions
-import { FormattedRuneAmount } from './FormattedRuneAmount'; // Import component
-import { FormattedRuneName } from './FormattedRuneName'; // Import the new component
-import { interpretRuneTransaction } from '@/utils/transactionHelpers'; // Import the new utility function
+import React from "react";
+import { useQuery } from "@tanstack/react-query";
+import Image from "next/image";
+import styles from "./AppInterface.module.css"; // Reuse styles for now
+import { RuneActivityEvent } from "@/types/ordiscan"; // Import types
+import { fetchRuneActivityFromApi } from "@/lib/apiClient"; // Import API functions
+import { FormattedRuneAmount } from "./FormattedRuneAmount"; // Import component
+import { FormattedRuneName } from "./FormattedRuneName"; // Import the new component
+import { interpretRuneTransaction } from "@/utils/transactionHelpers"; // Import the new utility function
 
 interface YourTxsTabProps {
   connected: boolean;
@@ -25,7 +23,7 @@ export function YourTxsTab({ connected, address }: YourTxsTabProps) {
     error: runeActivityError,
     // Add pagination state/controls later if needed
   } = useQuery<RuneActivityEvent[], Error>({
-    queryKey: ['runeActivityApi', address],
+    queryKey: ["runeActivityApi", address],
     queryFn: () => fetchRuneActivityFromApi(address!), // Use API function
     enabled: !!connected && !!address, // Only fetch when connected and address exists
     staleTime: 60 * 1000, // Stale after 1 minute
@@ -36,10 +34,14 @@ export function YourTxsTab({ connected, address }: YourTxsTabProps) {
     <div className={styles.yourTxsTabContainer}>
       <h1 className="heading">Your Rune Transactions</h1>
       {!connected || !address ? (
-        <p className={styles.hintText}>Connect your wallet to view your transactions.</p>
+        <p className={styles.hintText}>
+          Connect your wallet to view your transactions.
+        </p>
       ) : isRuneActivityLoading ? (
         <div className={styles.listboxLoadingOrEmpty}>
-          <span className={styles.loadingText}>Loading your transactions...</span>
+          <span className={styles.loadingText}>
+            Loading your transactions...
+          </span>
         </div>
       ) : runeActivityError ? (
         <div className={`${styles.listboxError} ${styles.messageWithIcon}`}>
@@ -50,17 +52,24 @@ export function YourTxsTab({ connected, address }: YourTxsTabProps) {
             width={16}
             height={16}
           />
-          <span>Error loading transactions: {runeActivityError instanceof Error ? runeActivityError.message : String(runeActivityError)}</span>
+          <span>
+            Error loading transactions:{" "}
+            {runeActivityError instanceof Error
+              ? runeActivityError.message
+              : String(runeActivityError)}
+          </span>
         </div>
       ) : !runeActivity || runeActivity.length === 0 ? (
-        <p className={styles.hintText}>No recent rune transactions found for this address.</p>
+        <p className={styles.hintText}>
+          No recent rune transactions found for this address.
+        </p>
       ) : (
         <div className={styles.txListContainer}>
           {runeActivity.map((tx: RuneActivityEvent) => {
             // Get transaction interpretation using the utility function
             const { action, runeName, runeAmountRaw } = address
               ? interpretRuneTransaction(tx, address)
-              : { action: 'Unknown', runeName: 'N/A', runeAmountRaw: 'N/A' };
+              : { action: "Unknown", runeName: "N/A", runeAmountRaw: "N/A" };
 
             return (
               <div key={tx.txid} className={styles.txListItem}>
@@ -71,7 +80,8 @@ export function YourTxsTab({ connected, address }: YourTxsTabProps) {
                     rel="noopener noreferrer"
                     className={styles.txLinkBold}
                   >
-                    TXID: {tx.txid.substring(0, 8)}...{tx.txid.substring(tx.txid.length - 8)}
+                    TXID: {tx.txid.substring(0, 8)}...
+                    {tx.txid.substring(tx.txid.length - 8)}
                   </a>
                   <span className={styles.txTimestamp}>
                     {new Date(tx.timestamp).toLocaleString()}
@@ -80,7 +90,7 @@ export function YourTxsTab({ connected, address }: YourTxsTabProps) {
                 <div className={styles.txDetails}>
                   <div className={styles.txDetailRow}>
                     <span>Action:</span>
-                    <span style={{ fontWeight: 'bold' }}>{action}</span>
+                    <span style={{ fontWeight: "bold" }}>{action}</span>
                   </div>
                   <div className={styles.txDetailRow}>
                     <span>Rune:</span>
@@ -91,7 +101,10 @@ export function YourTxsTab({ connected, address }: YourTxsTabProps) {
                   <div className={styles.txDetailRow}>
                     <span>Amount:</span>
                     <span>
-                      <FormattedRuneAmount runeName={runeName} rawAmount={runeAmountRaw} />
+                      <FormattedRuneAmount
+                        runeName={runeName}
+                        rawAmount={runeAmountRaw}
+                      />
                     </span>
                   </div>
                 </div>

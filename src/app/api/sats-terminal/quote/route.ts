@@ -1,11 +1,18 @@
-import { NextRequest } from 'next/server';
-import type { QuoteParams } from 'satsterminal-sdk';
-import { getSatsTerminalClient } from '@/lib/serverUtils';
-import { z } from 'zod';
-import { createSuccessResponse, createErrorResponse, handleApiError, validateRequest } from '@/lib/apiUtils';
+import { NextRequest } from "next/server";
+import type { QuoteParams } from "satsterminal-sdk";
+import { getSatsTerminalClient } from "@/lib/serverUtils";
+import { z } from "zod";
+import {
+  createSuccessResponse,
+  createErrorResponse,
+  handleApiError,
+  validateRequest,
+} from "@/lib/apiUtils";
 
 const quoteParamsSchema = z.object({
-  btcAmount: z.union([z.string().min(1), z.number().positive()]).transform(val => String(val)), // Require non-empty string or positive number, always transform to string
+  btcAmount: z
+    .union([z.string().min(1), z.number().positive()])
+    .transform((val) => String(val)), // Require non-empty string or positive number, always transform to string
   runeName: z.string().min(1),
   address: z.string().min(1),
   sell: z.boolean().optional(),
@@ -15,10 +22,10 @@ const quoteParamsSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const validation = await validateRequest(request, quoteParamsSchema, 'body');
+  const validation = await validateRequest(request, quoteParamsSchema, "body");
   if (!validation.success) return validation.errorResponse;
   const validatedParams = validation.data;
-  console.log('[QUOTE DEBUG] Params received in API:', validatedParams);
+  console.log("[QUOTE DEBUG] Params received in API:", validatedParams);
   // Ensure btcAmount is a string for the SDK
   validatedParams.btcAmount = String(validatedParams.btcAmount);
 
@@ -31,22 +38,30 @@ export async function POST(request: NextRequest) {
     };
 
     const quoteResponse = await terminal.fetchQuote(quoteParams);
-    
+
     // Validate the response
-    if (!quoteResponse || typeof quoteResponse !== 'object') {
-      return createErrorResponse('Invalid quote response', 'Quote data is malformed', 500);
+    if (!quoteResponse || typeof quoteResponse !== "object") {
+      return createErrorResponse(
+        "Invalid quote response",
+        "Quote data is malformed",
+        500,
+      );
     }
-    
+
     return createSuccessResponse(quoteResponse);
   } catch (error) {
-    const errorInfo = handleApiError(error, 'Failed to fetch quote');
-    
+    const errorInfo = handleApiError(error, "Failed to fetch quote");
+
     // Special handling for liquidity errors (maintain 404 status)
     const errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.toLowerCase().includes('liquidity')) {
-      return createErrorResponse('No liquidity available', errorMessage, 404);
+    if (errorMessage.toLowerCase().includes("liquidity")) {
+      return createErrorResponse("No liquidity available", errorMessage, 404);
     }
-    
-    return createErrorResponse(errorInfo.message, errorInfo.details, errorInfo.status);
+
+    return createErrorResponse(
+      errorInfo.message,
+      errorInfo.details,
+      errorInfo.status,
+    );
   }
-} 
+}

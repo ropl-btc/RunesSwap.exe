@@ -1,16 +1,20 @@
-import { NextRequest } from 'next/server';
-import { createSuccessResponse, createErrorResponse, validateRequest } from '@/lib/apiUtils';
-import { z } from 'zod';
+import { NextRequest } from "next/server";
+import {
+  createSuccessResponse,
+  createErrorResponse,
+  validateRequest,
+} from "@/lib/apiUtils";
+import { z } from "zod";
 
 // Define the schema for the query parameters
 const QuerySchema = z.object({
-  slug: z.string().min(1).max(100)
+  slug: z.string().min(1).max(100),
 });
 
 // Define the response type for price history
 export interface PriceHistoryDataPoint {
   timestamp: number; // Unix timestamp in milliseconds
-  price: number;     // Price in USD
+  price: number; // Price in USD
 }
 
 export interface PriceHistoryResponse {
@@ -30,7 +34,7 @@ export async function GET(request: NextRequest) {
     // Extract and validate the query parameters
     // const { searchParams } = new URL(request.url);
     // const slug = searchParams.get('slug');
-    const validation = await validateRequest(request, QuerySchema, 'query');
+    const validation = await validateRequest(request, QuerySchema, "query");
     if (!validation.success) {
       return validation.errorResponse;
     }
@@ -39,13 +43,13 @@ export async function GET(request: NextRequest) {
 
     // Format the rune name for the API call
     // Try with different formats to ensure we get data
-    const formattedSlug = originalSlug.replace(/[•.]/g, '').toUpperCase();
+    const formattedSlug = originalSlug.replace(/[•.]/g, "").toUpperCase();
 
     // Define a mapping for known runes that might have formatting issues
     const knownRunes: Record<string, string> = {
-      'LIQUIDIUM•TOKEN': 'LIQUIDIUMTOKEN',
-      'LIQUIDIUMTOKEN': 'LIQUIDIUMTOKEN',
-      'LIQUIDIUM': 'LIQUIDIUMTOKEN'
+      "LIQUIDIUM•TOKEN": "LIQUIDIUMTOKEN",
+      LIQUIDIUMTOKEN: "LIQUIDIUMTOKEN",
+      LIQUIDIUM: "LIQUIDIUMTOKEN",
     };
 
     // Check if we have a direct mapping first
@@ -54,8 +58,8 @@ export async function GET(request: NextRequest) {
     // If not a direct match, try partial matching for known runes
     if (!knownRunes[originalSlug]) {
       // Check if it includes any known rune names
-      if (originalSlug.toUpperCase().includes('LIQUIDIUM')) {
-        apiSlug = 'LIQUIDIUMTOKEN';
+      if (originalSlug.toUpperCase().includes("LIQUIDIUM")) {
+        apiSlug = "LIQUIDIUMTOKEN";
       }
     }
 
@@ -65,17 +69,21 @@ export async function GET(request: NextRequest) {
     // Check if API key is set
     const apiKey = process.env.RUNES_FLOOR_API_KEY;
     if (!apiKey) {
-      return createErrorResponse('API key not configured', 'Missing RUNES_FLOOR_API_KEY environment variable', 500);
+      return createErrorResponse(
+        "API key not configured",
+        "Missing RUNES_FLOOR_API_KEY environment variable",
+        500,
+      );
     }
 
     // Fetch data from the external API
     const response = await fetch(apiUrl, {
       headers: {
-        'X-API-Key': apiKey
+        "X-API-Key": apiKey,
       },
       next: {
-        revalidate: 300 // Cache for 5 minutes
-      }
+        revalidate: 300, // Cache for 5 minutes
+      },
     });
 
     if (!response.ok) {
@@ -84,14 +92,14 @@ export async function GET(request: NextRequest) {
         return createSuccessResponse({
           slug: formattedSlug,
           prices: [],
-          available: false
+          available: false,
         });
       }
 
       return createErrorResponse(
         `Failed to fetch price history (${response.status})`,
         `Status: ${response.status}`,
-        500
+        500,
       );
     }
 
@@ -103,16 +111,18 @@ export async function GET(request: NextRequest) {
       return createSuccessResponse({
         slug: formattedSlug,
         prices: [],
-        available: false
+        available: false,
       });
     }
 
     // Transform the data into our desired format
     // The API returns an array of price points directly
-    const prices: PriceHistoryDataPoint[] = data.map((item: PriceDataPoint) => ({
-      timestamp: new Date(item.date).getTime(), // Convert date string to timestamp
-      price: item.floor_value || 0 // Get price from floor_value
-    }));
+    const prices: PriceHistoryDataPoint[] = data.map(
+      (item: PriceDataPoint) => ({
+        timestamp: new Date(item.date).getTime(), // Convert date string to timestamp
+        price: item.floor_value || 0, // Get price from floor_value
+      }),
+    );
 
     // Make sure the available flag is set correctly
     const available = prices.length > 0;
@@ -121,13 +131,15 @@ export async function GET(request: NextRequest) {
     return createSuccessResponse({
       slug: formattedSlug,
       prices,
-      available
+      available,
     });
   } catch (error: unknown) {
     return createErrorResponse(
-      error instanceof Error ? error.message : 'Unknown error occurred',
-      error instanceof Error ? error.stack || 'No stack trace available' : 'Unknown error details',
-      500
+      error instanceof Error ? error.message : "Unknown error occurred",
+      error instanceof Error
+        ? error.stack || "No stack trace available"
+        : "Unknown error details",
+      500,
     );
   }
 }

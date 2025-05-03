@@ -1,87 +1,93 @@
-'use client';
+"use client";
 
-
-import React, { useState } from 'react';
-import { ConnectWalletButton } from '@/components/ConnectWalletButton';
-import { AppInterface } from '@/components/AppInterface';
-import styles from './page.module.css';
+import React, { useState } from "react";
+import { ConnectWalletButton } from "@/components/ConnectWalletButton";
+import { AppInterface } from "@/components/AppInterface";
+import styles from "./page.module.css";
 
 // Define the tab type
-type ActiveTab = 'swap' | 'runesInfo' | 'yourTxs' | 'portfolio' | 'borrow';
+type ActiveTab = "swap" | "runesInfo" | "yourTxs" | "portfolio" | "borrow";
 
 export default function Home() {
   // Get URL parameters
-  const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
-  const tabParam = searchParams.get('tab') as ActiveTab | null;
-
+  const searchParams = new URLSearchParams(
+    typeof window !== "undefined" ? window.location.search : "",
+  );
+  const tabParam = searchParams.get("tab") as ActiveTab | null;
 
   // State for the active tab
-  const [activeTab, setActiveTab] = useState<ActiveTab>(tabParam || 'swap');
+  const [activeTab, setActiveTab] = useState<ActiveTab>(tabParam || "swap");
 
   // Listen for tab change events
   React.useEffect(() => {
     const handleTabChange = (event: CustomEvent) => {
       const { tab } = event.detail;
       // Validate if the tab is one of the allowed ActiveTab types
-      const allowedTabs: ActiveTab[] = ['swap', 'runesInfo', 'yourTxs', 'portfolio', 'borrow'];
+      const allowedTabs: ActiveTab[] = [
+        "swap",
+        "runesInfo",
+        "yourTxs",
+        "portfolio",
+        "borrow",
+      ];
       if (allowedTabs.includes(tab)) {
         setActiveTab(tab as ActiveTab);
       }
     };
 
-    window.addEventListener('tabChange', handleTabChange as EventListener);
-    return () => window.removeEventListener('tabChange', handleTabChange as EventListener);
+    window.addEventListener("tabChange", handleTabChange as EventListener);
+    return () =>
+      window.removeEventListener("tabChange", handleTabChange as EventListener);
   }, []);
 
   // Update URL when tab changes
   const handleTabChange = (tab: ActiveTab) => {
     setActiveTab(tab);
     const newUrl = new URL(window.location.href);
-    newUrl.searchParams.set('tab', tab);
+    newUrl.searchParams.set("tab", tab);
     // Preserve the rune parameter if it exists and we're switching to swap tab
-    const runeParam = searchParams.get('rune');
-    if (tab === 'swap' && runeParam) {
-      newUrl.searchParams.set('rune', runeParam);
+    const runeParam = searchParams.get("rune");
+    if (tab === "swap" && runeParam) {
+      newUrl.searchParams.set("rune", runeParam);
     } else {
-      newUrl.searchParams.delete('rune');
+      newUrl.searchParams.delete("rune");
     }
-    window.history.pushState({}, '', newUrl.toString());
+    window.history.pushState({}, "", newUrl.toString());
   };
 
   return (
     <div className={styles.mainContainer}>
-
       {/* New Header Container */}
       <div className={styles.headerContainer}>
         {/* Tab Buttons */}
         <div className={styles.tabsInHeader}>
           <button
-            className={`${styles.pageTabButton} ${activeTab === 'swap' ? styles.pageTabActive : ''}`}
-            onClick={() => handleTabChange('swap')}
+            className={`${styles.pageTabButton} ${activeTab === "swap" ? styles.pageTabActive : ""}`}
+            onClick={() => handleTabChange("swap")}
           >
             Swap
           </button>
           <button
-            className={`${styles.pageTabButton} ${activeTab === 'borrow' ? styles.pageTabActive : ''}`}
-            onClick={() => handleTabChange('borrow')}
+            className={`${styles.pageTabButton} ${activeTab === "borrow" ? styles.pageTabActive : ""}`}
+            onClick={() => handleTabChange("borrow")}
           >
             Borrow
           </button>
           <button
-            className={`${styles.pageTabButton} ${activeTab === 'runesInfo' ? styles.pageTabActive : ''}`}
-            onClick={() => handleTabChange('runesInfo')}
+            className={`${styles.pageTabButton} ${activeTab === "runesInfo" ? styles.pageTabActive : ""}`}
+            onClick={() => handleTabChange("runesInfo")}
           >
             Runes Info
           </button>
           <button
-            className={`${styles.pageTabButton} ${activeTab === 'yourTxs' ? styles.pageTabActive : ''}`}
-            onClick={() => handleTabChange('yourTxs')}
+            className={`${styles.pageTabButton} ${activeTab === "yourTxs" ? styles.pageTabActive : ""}`}
+            onClick={() => handleTabChange("yourTxs")}
           >
             Your TXs
           </button>
           <button
-            className={`${styles.pageTabButton} ${activeTab === 'portfolio' ? styles.pageTabActive : ''}`}
-            onClick={() => handleTabChange('portfolio')}
+            className={`${styles.pageTabButton} ${activeTab === "portfolio" ? styles.pageTabActive : ""}`}
+            onClick={() => handleTabChange("portfolio")}
           >
             Portfolio
           </button>
@@ -89,7 +95,7 @@ export default function Home() {
 
         {/* Connect Wallet Button */}
         <div className={styles.connectButtonContainer}>
-           <ConnectWalletButton />
+          <ConnectWalletButton />
         </div>
       </div>
 

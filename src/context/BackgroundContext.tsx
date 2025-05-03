@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from "react";
 
 interface BackgroundContextType {
   backgroundImage: string | null;
@@ -10,13 +10,17 @@ interface BackgroundContextType {
 
 const BackgroundContext = createContext<BackgroundContextType | null>(null);
 
-export function BackgroundProvider({ children }: { children: React.ReactNode }) {
+export function BackgroundProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
 
   // Load background from localStorage on mount and save when it changes
   useEffect(() => {
     try {
-      const savedBackground = localStorage.getItem('runesswap-background');
+      const savedBackground = localStorage.getItem("runesswap-background");
       if (savedBackground) setBackgroundImage(savedBackground);
     } catch {
       // Ignore errors (e.g., localStorage not available)
@@ -26,9 +30,9 @@ export function BackgroundProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     try {
       if (backgroundImage) {
-        localStorage.setItem('runesswap-background', backgroundImage);
+        localStorage.setItem("runesswap-background", backgroundImage);
       } else {
-        localStorage.removeItem('runesswap-background');
+        localStorage.removeItem("runesswap-background");
       }
     } catch {
       // Ignore errors
@@ -36,11 +40,13 @@ export function BackgroundProvider({ children }: { children: React.ReactNode }) 
   }, [backgroundImage]);
 
   return (
-    <BackgroundContext.Provider value={{
-      backgroundImage,
-      setBackgroundImage,
-      clearBackgroundImage: () => setBackgroundImage(null)
-    }}>
+    <BackgroundContext.Provider
+      value={{
+        backgroundImage,
+        setBackgroundImage,
+        clearBackgroundImage: () => setBackgroundImage(null),
+      }}
+    >
       {children}
     </BackgroundContext.Provider>
   );
@@ -48,6 +54,7 @@ export function BackgroundProvider({ children }: { children: React.ReactNode }) 
 
 export const useBackground = () => {
   const context = useContext(BackgroundContext);
-  if (!context) throw new Error('useBackground must be used within a BackgroundProvider');
+  if (!context)
+    throw new Error("useBackground must be used within a BackgroundProvider");
   return context;
-}
+};

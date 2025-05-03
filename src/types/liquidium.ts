@@ -44,9 +44,19 @@ export interface LiquidiumLoanOffer {
 
 // Explicit Enum for Loan State
 export type LoanStateEnum =
-  | "OFFERED" | "ACCEPTED" | "ACTIVATING" | "ACTIVE" | "REPAYING"
-  | "REPAID" | "DEFAULTED" | "CLAIMING" | "CLAIMED" | "LIQUIDATING"
-  | "LIQUIDATED" | "CANCELLED" | "FAILED";
+  | "OFFERED"
+  | "ACCEPTED"
+  | "ACTIVATING"
+  | "ACTIVE"
+  | "REPAYING"
+  | "REPAID"
+  | "DEFAULTED"
+  | "CLAIMING"
+  | "CLAIMED"
+  | "LIQUIDATING"
+  | "LIQUIDATED"
+  | "CANCELLED"
+  | "FAILED";
 
 export interface LiquidiumLoanDetails {
   state: LoanStateEnum; // Example: "ACTIVE"

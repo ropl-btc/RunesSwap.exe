@@ -1,11 +1,11 @@
-import React, { ReactNode, useState, Fragment } from 'react';
-import Image from 'next/image';
-import { Listbox, Transition } from '@headlessui/react';
-import { ChevronUpDownIcon, CheckIcon } from '@heroicons/react/24/solid';
-import styles from './InputArea.module.css';
-import { Asset, BTC_ASSET } from '@/types/common';
-import { fetchRunesFromApi } from '@/lib/apiClient';
-import type { Rune } from '@/types/satsTerminal';
+import React, { ReactNode, useState, Fragment } from "react";
+import Image from "next/image";
+import { Listbox, Transition } from "@headlessui/react";
+import { ChevronUpDownIcon, CheckIcon } from "@heroicons/react/24/solid";
+import styles from "./InputArea.module.css";
+import { Asset, BTC_ASSET } from "@/types/common";
+import { fetchRunesFromApi } from "@/lib/apiClient";
+import type { Rune } from "@/types/satsTerminal";
 
 interface InputAreaProps {
   // Label/Title
@@ -57,11 +57,11 @@ export const InputArea: React.FC<InputAreaProps> = ({
   inputId,
   inputValue,
   onInputChange,
-  placeholder = '0.0',
+  placeholder = "0.0",
   readOnly = false,
   disabled = false,
-  min = '0',
-  step = '0.001',
+  min = "0",
+  step = "0.001",
   assetSelectorEnabled = false,
   selectedAsset = null,
   onAssetChange,
@@ -80,17 +80,22 @@ export const InputArea: React.FC<InputAreaProps> = ({
   bottomContent,
 }) => {
   // State for search functionality
-  const [searchQuery, setSearchQuery] = useState('');
-  const [loadingDots, setLoadingDots] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [loadingDots, setLoadingDots] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<Asset[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
 
   // Loading dots animation
   React.useEffect(() => {
-    if (isAssetsLoading || isPreselectedAssetLoading || isSearching || (inputValue && inputValue.includes('Loading'))) {
+    if (
+      isAssetsLoading ||
+      isPreselectedAssetLoading ||
+      isSearching ||
+      (inputValue && inputValue.includes("Loading"))
+    ) {
       const interval = setInterval(() => {
-        setLoadingDots(prev => prev === '...' ? '' : prev + '.');
+        setLoadingDots((prev) => (prev === "..." ? "" : prev + "."));
       }, 500);
       return () => clearInterval(interval);
     }
@@ -98,8 +103,10 @@ export const InputArea: React.FC<InputAreaProps> = ({
 
   // Function to check if a string is a valid image src
   const isValidImageSrc = (src?: string | null): src is string => {
-    if (!src || typeof src !== 'string') return false;
-    return src.startsWith('http') || src.startsWith('/') || src.startsWith('data:');
+    if (!src || typeof src !== "string") return false;
+    return (
+      src.startsWith("http") || src.startsWith("/") || src.startsWith("data:")
+    );
   };
 
   // Handle search input change
@@ -122,7 +129,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
       const results: Rune[] = await fetchRunesFromApi(query);
 
       // Map results to Asset type for consistency
-      const mappedResults: Asset[] = results.map(rune => ({
+      const mappedResults: Asset[] = results.map((rune) => ({
         id: rune.id,
         name: rune.name,
         imageURI: rune.imageURI,
@@ -131,7 +138,9 @@ export const InputArea: React.FC<InputAreaProps> = ({
 
       setSearchResults(mappedResults);
     } catch (error: unknown) {
-      setSearchError(error instanceof Error ? error.message : 'Failed to search');
+      setSearchError(
+        error instanceof Error ? error.message : "Failed to search",
+      );
       setSearchResults([]);
     } finally {
       setIsSearching(false);
@@ -158,7 +167,9 @@ export const InputArea: React.FC<InputAreaProps> = ({
             <Listbox.Button className={styles.listboxButton}>
               <span className={styles.listboxButtonText}>
                 {isPreselectedAssetLoading ? (
-                  <span className={styles.loadingText}>Loading Rune{loadingDots}</span>
+                  <span className={styles.loadingText}>
+                    Loading Rune{loadingDots}
+                  </span>
                 ) : (
                   <>
                     {isValidImageSrc(selectedAsset?.imageURI) ? (
@@ -172,17 +183,24 @@ export const InputArea: React.FC<InputAreaProps> = ({
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           if (target) {
-                            target.style.display = 'none';
+                            target.style.display = "none";
                           }
                         }}
                       />
                     ) : null}
-                    {isAssetsLoading ? `Loading${loadingDots}` : selectedAsset ? selectedAsset.name : 'Select Asset'}
+                    {isAssetsLoading
+                      ? `Loading${loadingDots}`
+                      : selectedAsset
+                        ? selectedAsset.name
+                        : "Select Asset"}
                   </>
                 )}
               </span>
               <span className={styles.listboxButtonIconContainer}>
-                <ChevronUpDownIcon className={styles.listboxButtonIcon} aria-hidden="true" />
+                <ChevronUpDownIcon
+                  className={styles.listboxButtonIcon}
+                  aria-hidden="true"
+                />
               </span>
             </Listbox.Button>
             <Transition
@@ -213,9 +231,15 @@ export const InputArea: React.FC<InputAreaProps> = ({
                 </div>
 
                 {/* Loading and error states */}
-                {isLoadingAssets && <div className={styles.listboxLoadingOrEmpty}>Loading Runes{loadingDots}</div>}
+                {isLoadingAssets && (
+                  <div className={styles.listboxLoadingOrEmpty}>
+                    Loading Runes{loadingDots}
+                  </div>
+                )}
                 {!isLoadingAssets && currentError && (
-                  <div className={`${styles.listboxError} ${styles.messageWithIcon}`}>
+                  <div
+                    className={`${styles.listboxError} ${styles.messageWithIcon}`}
+                  >
                     <Image
                       src="/icons/msg_error-0.png"
                       alt="Error"
@@ -226,47 +250,62 @@ export const InputArea: React.FC<InputAreaProps> = ({
                     <span>{currentError}</span>
                   </div>
                 )}
-                {!isLoadingAssets && !currentError && displayedAssets.length === 0 && (
-                  <div className={styles.listboxLoadingOrEmpty}>
-                    {searchQuery ? 'No matching runes found' : 'No runes available'}
-                  </div>
-                )}
+                {!isLoadingAssets &&
+                  !currentError &&
+                  displayedAssets.length === 0 && (
+                    <div className={styles.listboxLoadingOrEmpty}>
+                      {searchQuery
+                        ? "No matching runes found"
+                        : "No runes available"}
+                    </div>
+                  )}
 
                 {/* BTC option (conditionally shown) */}
-                {showBtcInSelector && (searchQuery.trim() === '' || BTC_ASSET.name.toLowerCase().includes(searchQuery.trim().toLowerCase())) && (
-                  <Listbox.Option
-                    key={BTC_ASSET.id}
-                    className={({ active }) =>
-                      `${styles.listboxOption} ${active ? styles.listboxOptionActive : styles.listboxOptionInactive}`
-                    }
-                    value={BTC_ASSET}
-                  >
-                    {({ selected }) => (
-                      <>
-                        <span className={styles.runeOptionContent}>
-                          {isValidImageSrc(BTC_ASSET.imageURI) ? (
-                            <Image
-                              src={BTC_ASSET.imageURI}
-                              alt=""
-                              className={styles.runeImage}
-                              width={24}
-                              height={24}
-                              aria-hidden="true"
-                            />
-                          ) : null}
-                          <span className={`${styles.listboxOptionText} ${selected ? styles.listboxOptionTextSelected : styles.listboxOptionTextUnselected}`}>
-                            {BTC_ASSET.name}
+                {showBtcInSelector &&
+                  (searchQuery.trim() === "" ||
+                    BTC_ASSET.name
+                      .toLowerCase()
+                      .includes(searchQuery.trim().toLowerCase())) && (
+                    <Listbox.Option
+                      key={BTC_ASSET.id}
+                      className={({ active }) =>
+                        `${styles.listboxOption} ${active ? styles.listboxOptionActive : styles.listboxOptionInactive}`
+                      }
+                      value={BTC_ASSET}
+                    >
+                      {({ selected }) => (
+                        <>
+                          <span className={styles.runeOptionContent}>
+                            {isValidImageSrc(BTC_ASSET.imageURI) ? (
+                              <Image
+                                src={BTC_ASSET.imageURI}
+                                alt=""
+                                className={styles.runeImage}
+                                width={24}
+                                height={24}
+                                aria-hidden="true"
+                              />
+                            ) : null}
+                            <span
+                              className={`${styles.listboxOptionText} ${selected ? styles.listboxOptionTextSelected : styles.listboxOptionTextUnselected}`}
+                            >
+                              {BTC_ASSET.name}
+                            </span>
                           </span>
-                        </span>
-                        {selected && (
-                          <span className={styles.listboxOptionCheckContainer}>
-                            <CheckIcon className={styles.listboxOptionCheckIcon} aria-hidden="true" />
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </Listbox.Option>
-                )}
+                          {selected && (
+                            <span
+                              className={styles.listboxOptionCheckContainer}
+                            >
+                              <CheckIcon
+                                className={styles.listboxOptionCheckIcon}
+                                aria-hidden="true"
+                              />
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </Listbox.Option>
+                  )}
 
                 {/* Rune options */}
                 {displayedAssets
@@ -293,18 +332,25 @@ export const InputArea: React.FC<InputAreaProps> = ({
                                 onError={(e) => {
                                   const target = e.target as HTMLImageElement;
                                   if (target) {
-                                    target.style.display = 'none';
+                                    target.style.display = "none";
                                   }
                                 }}
                               />
                             ) : null}
-                            <span className={`${styles.listboxOptionText} ${selected ? styles.listboxOptionTextSelected : styles.listboxOptionTextUnselected}`}>
+                            <span
+                              className={`${styles.listboxOptionText} ${selected ? styles.listboxOptionTextSelected : styles.listboxOptionTextUnselected}`}
+                            >
                               {asset.name}
                             </span>
                           </span>
                           {selected && (
-                            <span className={styles.listboxOptionCheckContainer}>
-                              <CheckIcon className={styles.listboxOptionCheckIcon} aria-hidden="true" />
+                            <span
+                              className={styles.listboxOptionCheckContainer}
+                            >
+                              <CheckIcon
+                                className={styles.listboxOptionCheckIcon}
+                                aria-hidden="true"
+                              />
                             </span>
                           )}
                         </>
@@ -322,7 +368,9 @@ export const InputArea: React.FC<InputAreaProps> = ({
   return (
     <div className={styles.inputArea}>
       <div className={styles.inputHeader}>
-        <label htmlFor={inputId} className={styles.inputLabel}>{label}</label>
+        <label htmlFor={inputId} className={styles.inputLabel}>
+          {label}
+        </label>
 
         {/* Percentage shortcuts and available balance */}
         {(showPercentageShortcuts || availableBalance) && (
@@ -337,7 +385,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
                 >
                   25%
                 </button>
-                {' | '}
+                {" | "}
                 <button
                   className={styles.percentageButton}
                   onClick={() => onPercentageClick(0.5)}
@@ -346,7 +394,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
                 >
                   50%
                 </button>
-                {' | '}
+                {" | "}
                 <button
                   className={styles.percentageButton}
                   onClick={() => onPercentageClick(0.75)}
@@ -355,7 +403,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
                 >
                   75%
                 </button>
-                {' | '}
+                {" | "}
                 <button
                   className={styles.percentageButton}
                   onClick={() => onPercentageClick(1)}
@@ -364,14 +412,10 @@ export const InputArea: React.FC<InputAreaProps> = ({
                 >
                   Max
                 </button>
-                {availableBalance ? ' • ' : ''}
+                {availableBalance ? " • " : ""}
               </span>
             )}
-            {availableBalance && (
-              <>
-                Available: {availableBalance}
-              </>
-            )}
+            {availableBalance && <>Available: {availableBalance}</>}
           </span>
         )}
       </div>
@@ -382,7 +426,9 @@ export const InputArea: React.FC<InputAreaProps> = ({
           id={inputId}
           placeholder={placeholder}
           value={inputValue}
-          onChange={onInputChange ? (e) => onInputChange(e.target.value) : undefined}
+          onChange={
+            onInputChange ? (e) => onInputChange(e.target.value) : undefined
+          }
           className={readOnly ? styles.amountInputReadOnly : styles.amountInput}
           readOnly={readOnly}
           disabled={disabled}
@@ -395,7 +441,10 @@ export const InputArea: React.FC<InputAreaProps> = ({
 
       {/* USD Value and Min-Max Range */}
       {(usdValue || minMaxRange) && (
-        <div className={styles.usdValueText} style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <div
+          className={styles.usdValueText}
+          style={{ display: "flex", justifyContent: "space-between" }}
+        >
           <div>{usdValue && `≈ ${usdValue}`}</div>
           <div>{minMaxRange}</div>
         </div>
@@ -403,7 +452,10 @@ export const InputArea: React.FC<InputAreaProps> = ({
 
       {/* Error Message */}
       {errorMessage && (
-        <div className={`${styles.errorText} ${styles.messageWithIcon}`} style={{paddingTop: '0.25rem', width: '100%'}}>
+        <div
+          className={`${styles.errorText} ${styles.messageWithIcon}`}
+          style={{ paddingTop: "0.25rem", width: "100%" }}
+        >
           <Image
             src="/icons/msg_error-0.png"
             alt="Error"

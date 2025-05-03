@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import Image from 'next/image';
-import styles from './BorrowTab.module.css';
-import Button from './Button'; // Reuse Button component
-import { Asset } from '@/types/common';
-import { FormattedRuneAmount } from './FormattedRuneAmount'; // Reuse FormattedRuneAmount
-import { InputArea } from './InputArea';
+import React, { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import Image from "next/image";
+import styles from "./BorrowTab.module.css";
+import Button from "./Button"; // Reuse Button component
+import { Asset } from "@/types/common";
+import { FormattedRuneAmount } from "./FormattedRuneAmount"; // Reuse FormattedRuneAmount
+import { InputArea } from "./InputArea";
 import {
   fetchPopularFromApi,
   fetchRuneBalancesFromApi,
@@ -21,10 +21,13 @@ import {
   LiquidiumBorrowQuoteResponse,
   LiquidiumBorrowQuoteOffer,
   LiquidiumPrepareBorrowResponse,
-  LiquidiumSubmitBorrowResponse
-} from '@/lib/apiClient';
-import { type RuneBalance as OrdiscanRuneBalance, type RuneMarketInfo as OrdiscanRuneMarketInfo } from '@/types/ordiscan';
-import { type RuneData } from '@/lib/runesData';
+  LiquidiumSubmitBorrowResponse,
+} from "@/lib/apiClient";
+import {
+  type RuneBalance as OrdiscanRuneBalance,
+  type RuneMarketInfo as OrdiscanRuneMarketInfo,
+} from "@/types/ordiscan";
+import { type RuneData } from "@/lib/runesData";
 
 interface BorrowTabProps {
   connected: boolean;
@@ -32,7 +35,14 @@ interface BorrowTabProps {
   paymentAddress: string | null;
   publicKey: string | null;
   paymentPublicKey: string | null;
-  signPsbt: (tx: string, finalize?: boolean, broadcast?: boolean) => Promise<{ signedPsbtHex?: string; signedPsbtBase64?: string; txId?: string; } | undefined>;
+  signPsbt: (
+    tx: string,
+    finalize?: boolean,
+    broadcast?: boolean,
+  ) => Promise<
+    | { signedPsbtHex?: string; signedPsbtBase64?: string; txId?: string }
+    | undefined
+  >;
   btcPriceUsd: number | undefined;
   isBtcPriceLoading: boolean;
   btcPriceError: Error | null;
@@ -51,7 +61,7 @@ export function BorrowTab({
 }: BorrowTabProps) {
   // --- State ---
   const [collateralAsset, setCollateralAsset] = useState<Asset | null>(null);
-  const [collateralAmount, setCollateralAmount] = useState(''); // Amount of Rune to use as collateral
+  const [collateralAmount, setCollateralAmount] = useState(""); // Amount of Rune to use as collateral
   // State for rune fetching/searching
   const [isPopularLoading, setIsPopularLoading] = useState(false); // Local state for popular runes
   const [popularRunes, setPopularRunes] = useState<Asset[]>([]);
@@ -71,7 +81,9 @@ export function BorrowTab({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loanProcessError, setLoanProcessError] = useState<string | null>(null);
   const [loanTxId, setLoanTxId] = useState<string | null>(null);
-  const [prepareData, setPrepareData] = useState<LiquidiumPrepareBorrowResponse['data'] | null>(null);
+  const [prepareData, setPrepareData] = useState<
+    LiquidiumPrepareBorrowResponse["data"] | null
+  >(null);
 
   // --- Data Fetching ---
   // Fetch popular runes on mount using API
@@ -83,9 +95,9 @@ export function BorrowTab({
       try {
         // Define the hardcoded asset
         const liquidiumToken: Asset = {
-          id: 'liquidiumtoken',
-          name: 'LIQUIDIUM•TOKEN',
-          imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
+          id: "liquidiumtoken",
+          name: "LIQUIDIUM•TOKEN",
+          imageURI: "https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN",
           isBTC: false,
         };
         const response = await fetchPopularFromApi();
@@ -96,11 +108,22 @@ export function BorrowTab({
           const fetchedRunes: Asset[] = response
             .map((collection: Record<string, unknown>) => ({
               id: (collection?.rune_id as string) || `unknown_${Math.random()}`, // Use rune_id if available
-              name: ((collection?.slug as string) || collection?.rune as string || 'Unknown').replace(/-/g, '•'), // Use slug or rune name
-              imageURI: collection?.icon_content_url_data as string || collection?.imageURI as string,
+              name: (
+                (collection?.slug as string) ||
+                (collection?.rune as string) ||
+                "Unknown"
+              ).replace(/-/g, "•"), // Use slug or rune name
+              imageURI:
+                (collection?.icon_content_url_data as string) ||
+                (collection?.imageURI as string),
               isBTC: false,
             }))
-            .filter(rune => rune.id !== liquidiumToken.id && rune.name.replace(/•/g, '') !== liquidiumToken.name.replace(/•/g, ''));
+            .filter(
+              (rune) =>
+                rune.id !== liquidiumToken.id &&
+                rune.name.replace(/•/g, "") !==
+                  liquidiumToken.name.replace(/•/g, ""),
+            );
           mappedRunes = [liquidiumToken, ...fetchedRunes];
         }
         setPopularRunes(mappedRunes);
@@ -109,11 +132,15 @@ export function BorrowTab({
           setCollateralAsset(mappedRunes[0]);
         }
       } catch (error) {
-        setPopularError(error instanceof Error ? error.message : 'Failed to fetch popular runes');
+        setPopularError(
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch popular runes",
+        );
         const liquidiumTokenOnError: Asset = {
-          id: 'liquidiumtoken',
-          name: 'LIQUIDIUM•TOKEN',
-          imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
+          id: "liquidiumtoken",
+          name: "LIQUIDIUM•TOKEN",
+          imageURI: "https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN",
           isBTC: false,
         };
         setPopularRunes([liquidiumTokenOnError]);
@@ -129,10 +156,10 @@ export function BorrowTab({
   }, []); // Run only once
 
   // Query for Rune Balances
-  const {
-    data: runeBalances,
-    isLoading: isRuneBalancesLoading,
-  } = useQuery<OrdiscanRuneBalance[], Error>({
+  const { data: runeBalances, isLoading: isRuneBalancesLoading } = useQuery<
+    OrdiscanRuneBalance[],
+    Error
+  >({
     queryKey: [QUERY_KEYS.RUNE_BALANCES, address],
     queryFn: () => fetchRuneBalancesFromApi(address!),
     enabled: !!connected && !!address,
@@ -140,22 +167,27 @@ export function BorrowTab({
   });
 
   // Query for Collateral Rune Info (for decimals)
-  const {
-    data: collateralRuneInfo,
-    isLoading: isCollateralRuneInfoLoading,
-  } = useQuery<RuneData | null, Error>({
-    queryKey: [QUERY_KEYS.RUNE_INFO, collateralAsset?.name],
-    queryFn: () => collateralAsset && !collateralAsset.isBTC ? fetchRuneInfoFromApi(collateralAsset.name) : Promise.resolve(null),
-    enabled: !!collateralAsset && !collateralAsset.isBTC,
-    staleTime: Infinity,
-  });
+  const { data: collateralRuneInfo, isLoading: isCollateralRuneInfoLoading } =
+    useQuery<RuneData | null, Error>({
+      queryKey: [QUERY_KEYS.RUNE_INFO, collateralAsset?.name],
+      queryFn: () =>
+        collateralAsset && !collateralAsset.isBTC
+          ? fetchRuneInfoFromApi(collateralAsset.name)
+          : Promise.resolve(null),
+      enabled: !!collateralAsset && !collateralAsset.isBTC,
+      staleTime: Infinity,
+    });
 
   // Query for Collateral Rune Market Info (for USD value)
-  const {
-    data: collateralRuneMarketInfo,
-  } = useQuery<OrdiscanRuneMarketInfo | null, Error>({
+  const { data: collateralRuneMarketInfo } = useQuery<
+    OrdiscanRuneMarketInfo | null,
+    Error
+  >({
     queryKey: [QUERY_KEYS.RUNE_MARKET, collateralAsset?.name],
-    queryFn: () => collateralAsset && !collateralAsset.isBTC ? fetchRuneMarketFromApi(collateralAsset.name) : Promise.resolve(null),
+    queryFn: () =>
+      collateralAsset && !collateralAsset.isBTC
+        ? fetchRuneMarketFromApi(collateralAsset.name)
+        : Promise.resolve(null),
     enabled: !!collateralAsset && !collateralAsset.isBTC,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -168,25 +200,29 @@ export function BorrowTab({
         setBorrowRangeError(null);
         return;
       }
-  
+
       try {
         // Get the actual rune ID from collateralRuneInfo if available
         let runeIdForApi = collateralAsset.id;
-  
-        if (collateralRuneInfo?.id && collateralRuneInfo.id.includes(':')) {
+
+        if (collateralRuneInfo?.id && collateralRuneInfo.id.includes(":")) {
           runeIdForApi = collateralRuneInfo.id;
         }
-  
+
         const result = await fetchBorrowRangesFromApi(runeIdForApi, address);
-  
+
         if (result.success && result.data) {
           const { minAmount, maxAmount } = result.data;
-  
+
           // Convert raw values to formatted values based on decimals
           const decimals = collateralRuneInfo?.decimals ?? 0;
-          const minFormatted = (Number(minAmount) / (10 ** decimals)).toFixed(decimals > 0 ? 2 : 0);
-          const maxFormatted = (Number(maxAmount) / (10 ** decimals)).toFixed(decimals > 0 ? 2 : 0);
-  
+          const minFormatted = (Number(minAmount) / 10 ** decimals).toFixed(
+            decimals > 0 ? 2 : 0,
+          );
+          const maxFormatted = (Number(maxAmount) / 10 ** decimals).toFixed(
+            decimals > 0 ? 2 : 0,
+          );
+
           setMinMaxRange(`Min: ${minFormatted} - Max: ${maxFormatted}`);
           setBorrowRangeError(null);
         } else {
@@ -194,43 +230,43 @@ export function BorrowTab({
           setBorrowRangeError(null);
         }
       } catch (error) {
-        console.error('[BorrowTab] Error fetching min-max range:', error);
+        console.error("[BorrowTab] Error fetching min-max range:", error);
         const errorMessage =
           error instanceof Error ? error.message : String(error);
         setMinMaxRange(null);
         // Detect "No valid ranges found" error
         if (
-          errorMessage.includes('No valid ranges found') ||
-          errorMessage.includes('Could not find valid borrow ranges for this rune')
+          errorMessage.includes("No valid ranges found") ||
+          errorMessage.includes(
+            "Could not find valid borrow ranges for this rune",
+          )
         ) {
           setBorrowRangeError(
-            'This rune is not currently available for borrowing on Liquidium.'
+            "This rune is not currently available for borrowing on Liquidium.",
           );
         } else {
           setBorrowRangeError(null);
         }
       }
     };
-  
+
     fetchMinMaxRange();
   }, [collateralAsset, address, collateralRuneInfo]);
 
-
-
   // --- Helper Functions ---
-  const getSpecificRuneBalance = (runeName: string | undefined): string | null => {
+  const getSpecificRuneBalance = (
+    runeName: string | undefined,
+  ): string | null => {
     if (!runeName || !runeBalances) return null;
-    const formattedRuneName = runeName.replace(/•/g, '');
-    const found = runeBalances.find(rb => rb.name === formattedRuneName);
-    return found ? found.balance : '0';
+    const formattedRuneName = runeName.replace(/•/g, "");
+    const found = runeBalances.find((rb) => rb.name === formattedRuneName);
+    return found ? found.balance : "0";
   };
-
-
 
   // --- Handlers ---
   const handleSelectCollateral = (asset: Asset) => {
     setCollateralAsset(asset);
-    setCollateralAmount('');
+    setCollateralAmount("");
     setQuotes([]);
     setQuotesError(null);
     setSelectedQuoteId(null);
@@ -243,7 +279,6 @@ export function BorrowTab({
     if (!collateralAsset || !collateralAmount || !address) {
       return;
     }
-
 
     setIsQuotesLoading(true);
     setQuotesError(null);
@@ -262,76 +297,83 @@ export function BorrowTab({
         // Use BigInt for precise calculation
         const multiplier = BigInt(10 ** decimals);
         const amountFloat = parseFloat(collateralAmount);
-        const amountBigInt = BigInt(Math.floor(amountFloat * Number(multiplier)));
+        const amountBigInt = BigInt(
+          Math.floor(amountFloat * Number(multiplier)),
+        );
         rawAmount = amountBigInt.toString();
       } catch {
         // Fallback calculation
-        rawAmount = String(Math.floor(parseFloat(collateralAmount) * (10 ** decimals)));
-        
+        rawAmount = String(
+          Math.floor(parseFloat(collateralAmount) * 10 ** decimals),
+        );
       }
 
       // Get the actual rune ID from collateralRuneInfo if available
       // This ensures we're using the correct ID format (e.g., "810010:907")
       let runeIdForApi = collateralAsset.id;
 
-      if (collateralRuneInfo?.id && collateralRuneInfo.id.includes(':')) {
+      if (collateralRuneInfo?.id && collateralRuneInfo.id.includes(":")) {
         runeIdForApi = collateralRuneInfo.id;
       } else {
-        
       }
 
-      const result: LiquidiumBorrowQuoteResponse = await fetchBorrowQuotesFromApi(
-        runeIdForApi, // Use the correct rune ID format for the API call
-        rawAmount,
-        address
-      );
-
+      const result: LiquidiumBorrowQuoteResponse =
+        await fetchBorrowQuotesFromApi(
+          runeIdForApi, // Use the correct rune ID format for the API call
+          rawAmount,
+          address,
+        );
 
       if (result?.runeDetails) {
-          // Extract min-max range if available
-          if (result.runeDetails.valid_ranges?.rune_amount?.ranges?.length > 0) {
-            const ranges = result.runeDetails.valid_ranges.rune_amount.ranges;
+        // Extract min-max range if available
+        if (result.runeDetails.valid_ranges?.rune_amount?.ranges?.length > 0) {
+          const ranges = result.runeDetails.valid_ranges.rune_amount.ranges;
 
-            // Find global min and max across all ranges
-            let globalMin = BigInt(ranges[0].min);
-            let globalMax = BigInt(ranges[0].max);
+          // Find global min and max across all ranges
+          let globalMin = BigInt(ranges[0].min);
+          let globalMax = BigInt(ranges[0].max);
 
-            // Compare with other ranges to find global min and max
-            for (let i = 1; i < ranges.length; i++) {
-              const currentMin = BigInt(ranges[i].min);
-              const currentMax = BigInt(ranges[i].max);
+          // Compare with other ranges to find global min and max
+          for (let i = 1; i < ranges.length; i++) {
+            const currentMin = BigInt(ranges[i].min);
+            const currentMax = BigInt(ranges[i].max);
 
-              if (currentMin < globalMin) globalMin = currentMin;
-              if (currentMax > globalMax) globalMax = currentMax;
-            }
-
-            // Convert raw values to formatted values based on decimals
-            const decimals = collateralRuneInfo?.decimals ?? 0;
-            const minFormatted = (Number(globalMin) / (10 ** decimals)).toFixed(decimals > 0 ? 2 : 0);
-            const maxFormatted = (Number(globalMax) / (10 ** decimals)).toFixed(decimals > 0 ? 2 : 0);
-
-            setMinMaxRange(`Min: ${minFormatted} - Max: ${maxFormatted}`);
-          } else {
-            setMinMaxRange(null);
+            if (currentMin < globalMin) globalMin = currentMin;
+            if (currentMax > globalMax) globalMax = currentMax;
           }
 
-          // Process offers
-          if (result.runeDetails.offers) {
-            setQuotes(result.runeDetails.offers);
-            if (result.runeDetails.offers.length === 0) {
-              setQuotesError('No loan offers available for this amount.');
-            }
-          } else {
-            setQuotes([]);
-            setQuotesError('No loan offers found or invalid response.');
-          }
-      } else {
-          setQuotes([]);
-          setQuotesError('No loan offers found or invalid response.');
+          // Convert raw values to formatted values based on decimals
+          const decimals = collateralRuneInfo?.decimals ?? 0;
+          const minFormatted = (Number(globalMin) / 10 ** decimals).toFixed(
+            decimals > 0 ? 2 : 0,
+          );
+          const maxFormatted = (Number(globalMax) / 10 ** decimals).toFixed(
+            decimals > 0 ? 2 : 0,
+          );
+
+          setMinMaxRange(`Min: ${minFormatted} - Max: ${maxFormatted}`);
+        } else {
           setMinMaxRange(null);
+        }
+
+        // Process offers
+        if (result.runeDetails.offers) {
+          setQuotes(result.runeDetails.offers);
+          if (result.runeDetails.offers.length === 0) {
+            setQuotesError("No loan offers available for this amount.");
+          }
+        } else {
+          setQuotes([]);
+          setQuotesError("No loan offers found or invalid response.");
+        }
+      } else {
+        setQuotes([]);
+        setQuotesError("No loan offers found or invalid response.");
+        setMinMaxRange(null);
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch quotes.';
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to fetch quotes.";
       setQuotesError(errorMessage);
       setQuotes([]);
       setMinMaxRange(null);
@@ -341,12 +383,20 @@ export function BorrowTab({
   };
 
   const handleStartLoan = async () => {
-
-    if (!selectedQuoteId || !collateralAsset || !collateralAmount || !address || !paymentAddress || !publicKey || !paymentPublicKey) {
-      setLoanProcessError("Missing required information (quote, asset, amount, or wallet details).");
+    if (
+      !selectedQuoteId ||
+      !collateralAsset ||
+      !collateralAmount ||
+      !address ||
+      !paymentAddress ||
+      !publicKey ||
+      !paymentPublicKey
+    ) {
+      setLoanProcessError(
+        "Missing required information (quote, asset, amount, or wallet details).",
+      );
       return;
     }
-
 
     setIsPreparing(true);
     setLoanProcessError(null);
@@ -363,30 +413,41 @@ export function BorrowTab({
         // Use BigInt for precise calculation
         const multiplier = BigInt(10 ** decimals);
         const amountFloat = parseFloat(collateralAmount);
-        const amountBigInt = BigInt(Math.floor(amountFloat * Number(multiplier)));
+        const amountBigInt = BigInt(
+          Math.floor(amountFloat * Number(multiplier)),
+        );
         rawTokenAmount = amountBigInt.toString();
       } catch {
         // Fallback calculation
-        rawTokenAmount = String(Math.floor(parseFloat(collateralAmount) * (10 ** decimals)));
-        
+        rawTokenAmount = String(
+          Math.floor(parseFloat(collateralAmount) * 10 ** decimals),
+        );
       }
 
       const feeRate = 5; // Use a default fee rate for MVP
 
-      const prepareResult: LiquidiumPrepareBorrowResponse = await prepareLiquidiumBorrow({
-        instant_offer_id: selectedQuoteId,
-        fee_rate: feeRate,
-        token_amount: rawTokenAmount,
-        borrower_payment_address: paymentAddress,
-        borrower_payment_pubkey: paymentPublicKey,
-        borrower_ordinal_address: address,
-        borrower_ordinal_pubkey: publicKey,
-        address: address, // Pass user address for JWT lookup
-      });
+      const prepareResult: LiquidiumPrepareBorrowResponse =
+        await prepareLiquidiumBorrow({
+          instant_offer_id: selectedQuoteId,
+          fee_rate: feeRate,
+          token_amount: rawTokenAmount,
+          borrower_payment_address: paymentAddress,
+          borrower_payment_pubkey: paymentPublicKey,
+          borrower_ordinal_address: address,
+          borrower_ordinal_pubkey: publicKey,
+          address: address, // Pass user address for JWT lookup
+        });
 
-
-      if (!prepareResult.success || !prepareResult.data?.base64_psbt || !prepareResult.data?.prepare_offer_id) {
-        throw new Error(typeof prepareResult.error === 'string' ? prepareResult.error : 'Failed to prepare loan transaction.');
+      if (
+        !prepareResult.success ||
+        !prepareResult.data?.base64_psbt ||
+        !prepareResult.data?.prepare_offer_id
+      ) {
+        throw new Error(
+          typeof prepareResult.error === "string"
+            ? prepareResult.error
+            : "Failed to prepare loan transaction.",
+        );
       }
 
       setPrepareData(prepareResult.data); // Store prepare data (PSBT, prepare_offer_id)
@@ -397,7 +458,6 @@ export function BorrowTab({
       const psbtToSign = prepareResult.data.base64_psbt;
       const signResult = await signPsbt(psbtToSign); // Assuming signPsbt handles base64
 
-
       if (!signResult?.signedPsbtBase64) {
         throw new Error("PSBT signing cancelled or failed.");
       }
@@ -407,22 +467,26 @@ export function BorrowTab({
       setIsSigning(false);
       setIsSubmitting(true);
 
-      const submitResult: LiquidiumSubmitBorrowResponse = await submitLiquidiumBorrow({
-        signed_psbt_base_64: signedPsbtBase64,
-        prepare_offer_id: prepareResult.data.prepare_offer_id,
-        address: address, // Pass user address for JWT lookup
-      });
-
+      const submitResult: LiquidiumSubmitBorrowResponse =
+        await submitLiquidiumBorrow({
+          signed_psbt_base_64: signedPsbtBase64,
+          prepare_offer_id: prepareResult.data.prepare_offer_id,
+          address: address, // Pass user address for JWT lookup
+        });
 
       if (!submitResult.success || !submitResult.data?.loan_transaction_id) {
-        throw new Error(typeof submitResult.error === 'string' ? submitResult.error : 'Failed to submit loan transaction.');
+        throw new Error(
+          typeof submitResult.error === "string"
+            ? submitResult.error
+            : "Failed to submit loan transaction.",
+        );
       }
 
       setLoanTxId(submitResult.data.loan_transaction_id);
       // Optionally clear form or show success message
-
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to start loan.';
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to start loan.";
       setLoanProcessError(errorMessage);
     } finally {
       setIsPreparing(false);
@@ -435,8 +499,17 @@ export function BorrowTab({
 
   // --- Render Logic ---
   const isLoading = isQuotesLoading || isPreparing || isSigning || isSubmitting;
-  const canGetQuotes = connected && collateralAsset && parseFloat(collateralAmount) > 0 && !isLoading;
-  const canStartLoan = connected && selectedQuoteId && prepareData === null && !isLoading && !loanTxId;
+  const canGetQuotes =
+    connected &&
+    collateralAsset &&
+    parseFloat(collateralAmount) > 0 &&
+    !isLoading;
+  const canStartLoan =
+    connected &&
+    selectedQuoteId &&
+    prepareData === null &&
+    !isLoading &&
+    !loanTxId;
 
   return (
     <div className={styles.borrowTabContainer}>
@@ -477,13 +550,15 @@ export function BorrowTab({
           if (isNaN(balanceNum)) return;
 
           const decimals = collateralRuneInfo?.decimals ?? 0;
-          const availableBalance = balanceNum / (10 ** decimals);
+          const availableBalance = balanceNum / 10 ** decimals;
 
           // Calculate percentage of available balance
-          const newAmount = percentage === 1 ? availableBalance : availableBalance * percentage;
+          const newAmount =
+            percentage === 1 ? availableBalance : availableBalance * percentage;
 
           // Format with appropriate decimal places
-          const formattedAmount = Math.floor(newAmount * 10**decimals) / 10**decimals;
+          const formattedAmount =
+            Math.floor(newAmount * 10 ** decimals) / 10 ** decimals;
 
           // Set the amount and reset quotes
           setCollateralAmount(formattedAmount.toString());
@@ -494,7 +569,9 @@ export function BorrowTab({
         }}
         availableBalance={
           connected && collateralAsset && !collateralAsset.isBTC ? (
-            isRuneBalancesLoading || isCollateralRuneInfoLoading ? 'Loading...' : (
+            isRuneBalancesLoading || isCollateralRuneInfoLoading ? (
+              "Loading..."
+            ) : (
               <FormattedRuneAmount
                 runeName={collateralAsset.name}
                 rawAmount={getSpecificRuneBalance(collateralAsset.name)}
@@ -502,13 +579,21 @@ export function BorrowTab({
             )
           ) : null
         }
-        usdValue={collateralAmount && parseFloat(collateralAmount) > 0 && collateralRuneMarketInfo?.price_in_usd ?
-          (parseFloat(collateralAmount) * collateralRuneMarketInfo.price_in_usd).toLocaleString(undefined, {
-            style: 'currency',
-            currency: 'USD',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          }) : undefined}
+        usdValue={
+          collateralAmount &&
+          parseFloat(collateralAmount) > 0 &&
+          collateralRuneMarketInfo?.price_in_usd
+            ? (
+                parseFloat(collateralAmount) *
+                collateralRuneMarketInfo.price_in_usd
+              ).toLocaleString(undefined, {
+                style: "currency",
+                currency: "USD",
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })
+            : undefined
+        }
         minMaxRange={minMaxRange || undefined}
       />
 
@@ -521,73 +606,132 @@ export function BorrowTab({
 
       {/* Get Quotes Button */}
       <Button onClick={handleGetQuotes} disabled={!canGetQuotes || isLoading}>
-        {isQuotesLoading ? 'Fetching Quotes...' : 'Get Loan Quotes'}
+        {isQuotesLoading ? "Fetching Quotes..." : "Get Loan Quotes"}
       </Button>
 
       {/* Display Quotes */}
       {quotesError && <div className="errorText">{quotesError}</div>}
       {quotes.length > 0 && (
-        <div className={styles.infoArea} style={{ marginTop: 'var(--space-4)', borderTop: 'none' }}>
-          <h2 className="heading" style={{ fontSize: 'var(--font-size-normal)', marginBottom: 'var(--space-2)' }}>Available Loan Offers:</h2>
+        <div
+          className={styles.infoArea}
+          style={{ marginTop: "var(--space-4)", borderTop: "none" }}
+        >
+          <h2
+            className="heading"
+            style={{
+              fontSize: "var(--font-size-normal)",
+              marginBottom: "var(--space-2)",
+            }}
+          >
+            Available Loan Offers:
+          </h2>
           {quotes.map((quote) => {
-              const principalBtc = (quote.loan_breakdown.principal_sats / 1e8).toFixed(8);
-              const repaymentBtc = (quote.loan_breakdown.total_repayment_sats / 1e8).toFixed(8);
-              const interestPercent = ((quote.loan_breakdown.interest_sats / quote.loan_breakdown.principal_sats) * 100).toFixed(2);
-              return (
-                  <div
-                      key={quote.offer_id}
-                      onClick={() => setSelectedQuoteId(quote.offer_id)}
-                      style={{
-                          border: selectedQuoteId === quote.offer_id ? '2px solid var(--win98-blue)' : '2px solid var(--win98-gray)',
-                          padding: 'var(--space-2)',
-                          marginBottom: 'var(--space-2)',
-                          cursor: 'pointer',
-                          backgroundColor: selectedQuoteId === quote.offer_id ? 'var(--win98-light-gray)' : 'var(--win98-white)',
-                      }}
-                      className={styles.inputArea} // Reuse inputArea style for border
-                  >
-                      <p><strong>Loan Amount:</strong> {principalBtc} BTC</p>
-                      <p><strong>LTV:</strong> {quote.ltv_rate}%</p>
-                      <p><strong>Term:</strong> {quote.loan_term_days ?? 'N/A'} days</p>
-                      <p><strong>Interest:</strong> {interestPercent}% ({quote.loan_breakdown.interest_sats} sats)</p>
-                      <p><strong>Total Repayment:</strong> {repaymentBtc} BTC</p>
-                      <p><strong>Due:</strong> {new Date(quote.loan_breakdown.loan_due_by_date).toLocaleDateString()}</p>
-                  </div>
-              )
+            const principalBtc = (
+              quote.loan_breakdown.principal_sats / 1e8
+            ).toFixed(8);
+            const repaymentBtc = (
+              quote.loan_breakdown.total_repayment_sats / 1e8
+            ).toFixed(8);
+            const interestPercent = (
+              (quote.loan_breakdown.interest_sats /
+                quote.loan_breakdown.principal_sats) *
+              100
+            ).toFixed(2);
+            return (
+              <div
+                key={quote.offer_id}
+                onClick={() => setSelectedQuoteId(quote.offer_id)}
+                style={{
+                  border:
+                    selectedQuoteId === quote.offer_id
+                      ? "2px solid var(--win98-blue)"
+                      : "2px solid var(--win98-gray)",
+                  padding: "var(--space-2)",
+                  marginBottom: "var(--space-2)",
+                  cursor: "pointer",
+                  backgroundColor:
+                    selectedQuoteId === quote.offer_id
+                      ? "var(--win98-light-gray)"
+                      : "var(--win98-white)",
+                }}
+                className={styles.inputArea} // Reuse inputArea style for border
+              >
+                <p>
+                  <strong>Loan Amount:</strong> {principalBtc} BTC
+                </p>
+                <p>
+                  <strong>LTV:</strong> {quote.ltv_rate}%
+                </p>
+                <p>
+                  <strong>Term:</strong> {quote.loan_term_days ?? "N/A"} days
+                </p>
+                <p>
+                  <strong>Interest:</strong> {interestPercent}% (
+                  {quote.loan_breakdown.interest_sats} sats)
+                </p>
+                <p>
+                  <strong>Total Repayment:</strong> {repaymentBtc} BTC
+                </p>
+                <p>
+                  <strong>Due:</strong>{" "}
+                  {new Date(
+                    quote.loan_breakdown.loan_due_by_date,
+                  ).toLocaleDateString()}
+                </p>
+              </div>
+            );
           })}
         </div>
       )}
 
-
       {/* Start Loan Button */}
       {selectedQuoteId && (
-          <Button onClick={handleStartLoan} disabled={!canStartLoan}>
-              {isPreparing ? 'Preparing...' : isSigning ? 'Waiting for Signature...' : isSubmitting ? 'Submitting...' : 'Start Loan'}
-          </Button>
+        <Button onClick={handleStartLoan} disabled={!canStartLoan}>
+          {isPreparing
+            ? "Preparing..."
+            : isSigning
+              ? "Waiting for Signature..."
+              : isSubmitting
+                ? "Submitting..."
+                : "Start Loan"}
+        </Button>
       )}
 
       {/* Display Loan Process Status/Error/Success */}
-       {loanProcessError && (
+      {loanProcessError && (
         <div className={`errorText ${styles.messageWithIcon}`}>
-          <Image src="/icons/msg_error-0.png" alt="Error" className={styles.messageIcon} width={16} height={16} />
+          <Image
+            src="/icons/msg_error-0.png"
+            alt="Error"
+            className={styles.messageIcon}
+            width={16}
+            height={16}
+          />
           <span>Error: {loanProcessError}</span>
         </div>
       )}
       {loanTxId && (
         <div className={`${styles.messageWithIcon} ${styles.successMessage}`}>
-          <Image src="/icons/check-0.png" alt="Success" className={styles.messageIcon} width={16} height={16} />
+          <Image
+            src="/icons/check-0.png"
+            alt="Success"
+            className={styles.messageIcon}
+            width={16}
+            height={16}
+          />
           <div className={styles.successContent}>
             <p className={styles.successTitle}>Loan started successfully!</p>
             <p className={styles.successDetails}>
-              Your loan has been initiated. It will appear in your portfolio shortly.
+              Your loan has been initiated. It will appear in your portfolio
+              shortly.
             </p>
             <div className={styles.successButtons}>
               <Button
                 onClick={() => {
                   // Navigate to the portfolio tab
-                  window.location.href = '/?tab=portfolio';
+                  window.location.href = "/?tab=portfolio";
                 }}
-                style={{ marginRight: 'var(--space-2)' }}
+                style={{ marginRight: "var(--space-2)" }}
               >
                 View Portfolio
               </Button>
@@ -607,7 +751,6 @@ export function BorrowTab({
           </div>
         </div>
       )}
-
     </div>
   );
 }

@@ -1,9 +1,14 @@
-import { NextRequest } from 'next/server';
-import { getOrdiscanClient } from '@/lib/serverUtils'; // <-- Import client utility
+import { NextRequest } from "next/server";
+import { getOrdiscanClient } from "@/lib/serverUtils"; // <-- Import client utility
 // Import the necessary types from the shared location
-import { RuneActivityEvent } from '@/types/ordiscan';
-import { createSuccessResponse, createErrorResponse, handleApiError, validateRequest } from '@/lib/apiUtils';
-import { z } from 'zod';
+import { RuneActivityEvent } from "@/types/ordiscan";
+import {
+  createSuccessResponse,
+  createErrorResponse,
+  handleApiError,
+  validateRequest,
+} from "@/lib/apiUtils";
+import { z } from "zod";
 
 // Define local types matching the ones in the lib (or import from shared location)
 // Commented out to avoid linter errors - might use later
@@ -35,7 +40,7 @@ export async function GET(request: NextRequest) {
 
   // Zod validation for 'address'
   const schema = z.object({ address: z.string().min(1) });
-  const validation = await validateRequest(request, schema, 'query');
+  const validation = await validateRequest(request, schema, "query");
   if (!validation.success) {
     return validation.errorResponse;
   }
@@ -53,11 +58,12 @@ export async function GET(request: NextRequest) {
     const ordiscan = getOrdiscanClient(); // <-- Use utility function
 
     // Use the method suggested by the linter
-    const activity: RuneActivityEvent[] = await ordiscan.address.getRunesActivity({ address: validAddress }); // <-- Corrected method name
+    const activity: RuneActivityEvent[] =
+      await ordiscan.address.getRunesActivity({ address: validAddress }); // <-- Corrected method name
 
     // Ensure we always return a valid array
     const validActivity = Array.isArray(activity) ? activity : [];
-    
+
     return createSuccessResponse(validActivity);
 
     // Remove old fetch logic:
@@ -67,9 +73,15 @@ export async function GET(request: NextRequest) {
     //   },
     // });
     // ... removed response handling and parsing ...
-
   } catch (error) {
-    const errorInfo = handleApiError(error, `Failed to fetch rune activity for address ${validAddress}`);
-    return createErrorResponse(errorInfo.message, errorInfo.details, errorInfo.status);
+    const errorInfo = handleApiError(
+      error,
+      `Failed to fetch rune activity for address ${validAddress}`,
+    );
+    return createErrorResponse(
+      errorInfo.message,
+      errorInfo.details,
+      errorInfo.status,
+    );
   }
-} 
+}

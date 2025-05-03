@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef } from 'react';
-import styles from './Layout.module.css';
+import { useState, useEffect, useRef } from "react";
+import styles from "./Layout.module.css";
 
 // Constants
 const DEFAULT_TITLE = "RunesSwap.app";
@@ -30,7 +30,7 @@ const FUNNY_TEXTS = [
   "Ctrl+Alt+Swap",
   "Liquidium is the best",
   "Over 4,000 BTC in loan volume on Liquidium",
-  "Liquidium did over 94k loans"
+  "Liquidium did over 94k loans",
 ];
 
 export function TitleText() {
@@ -78,7 +78,10 @@ export function TitleText() {
   }, [currentText]);
 
   return (
-    <span className={styles.titleText} style={{ opacity: isTransitioning ? 0 : 1 }}>
+    <span
+      className={styles.titleText}
+      style={{ opacity: isTransitioning ? 0 : 1 }}
+    >
       {currentText}
     </span>
   );

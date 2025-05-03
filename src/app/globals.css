@@ -1,38 +1,40 @@
 /* Win98 Theme Variables */
 :root {
   /* Colors */
-  --win98-gray: #C0C0C0;
+  --win98-gray: #c0c0c0;
   --win98-blue: #000080;
-  --win98-dark-blue: #0000AA;
-  --win98-white: #FFFFFF;
+  --win98-dark-blue: #0000aa;
+  --win98-white: #ffffff;
   --win98-black: #000000;
   --win98-dark-gray: #808080;
-  --win98-light-gray: #DFDFDF;
-  --win98-red: #B20000;
+  --win98-light-gray: #dfdfdf;
+  --win98-red: #b20000;
   --win98-green: #008000;
   --win98-dark-green: #006400;
 
   /* Typography - just 3 key sizes */
-  --font-size-small: 0.75rem;    /* 12px */
-  --font-size-normal: 0.875rem;  /* 14px */
-  --font-size-large: 1.25rem;    /* 20px */
+  --font-size-small: 0.75rem; /* 12px */
+  --font-size-normal: 0.875rem; /* 14px */
+  --font-size-large: 1.25rem; /* 20px */
 
   /* Spacing */
-  --space-1: 0.25rem;         /* 4px */
-  --space-2: 0.5rem;          /* 8px */
-  --space-3: 0.75rem;         /* 12px */
-  --space-4: 1rem;            /* 16px */
-  --space-6: 1.5rem;          /* 24px */
-  --space-8: 2rem;            /* 32px */
+  --space-1: 0.25rem; /* 4px */
+  --space-2: 0.5rem; /* 8px */
+  --space-3: 0.75rem; /* 12px */
+  --space-4: 1rem; /* 16px */
+  --space-6: 1.5rem; /* 24px */
+  --space-8: 2rem; /* 32px */
 
   /* Border properties */
   --win98-border-width: 2px;
 
   /* Border styles */
   --win98-border-outset: var(--win98-border-width) solid;
-  --win98-border-outset-colors: var(--win98-light-gray) var(--win98-dark-gray) var(--win98-dark-gray) var(--win98-light-gray);
+  --win98-border-outset-colors: var(--win98-light-gray) var(--win98-dark-gray)
+    var(--win98-dark-gray) var(--win98-light-gray);
   --win98-border-inset: var(--win98-border-width) solid;
-  --win98-border-inset-colors: var(--win98-dark-gray) var(--win98-light-gray) var(--win98-light-gray) var(--win98-dark-gray);
+  --win98-border-inset-colors: var(--win98-dark-gray) var(--win98-light-gray)
+    var(--win98-light-gray) var(--win98-dark-gray);
 
   /* Z-index layers - based on actual values used in the codebase */
   --z-dropdown: 20;
@@ -93,7 +95,7 @@ input {
 }
 
 /* Remove number input spinners */
-input[type=number] {
+input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }

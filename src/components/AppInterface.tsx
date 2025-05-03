@@ -1,52 +1,57 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react'; // Add useEffect
-import { useQuery } from '@tanstack/react-query';
-import { useSharedLaserEyes } from '@/context/LaserEyesContext';
-import styles from './AppInterface.module.css';
-import { fetchPopularFromApi, QUERY_KEYS } from '@/lib/apiClient';
-import { useSearchParams } from 'next/navigation';
+import React, { useState, useEffect } from "react"; // Add useEffect
+import { useQuery } from "@tanstack/react-query";
+import { useSharedLaserEyes } from "@/context/LaserEyesContext";
+import styles from "./AppInterface.module.css";
+import { fetchPopularFromApi, QUERY_KEYS } from "@/lib/apiClient";
+import { useSearchParams } from "next/navigation";
 
 // Import the tab components
-import SwapTab from './SwapTab';
-import RunesInfoTab from './RunesInfoTab';
-import YourTxsTab from './YourTxsTab';
-import PortfolioTab from './PortfolioTab';
-import BorrowTab from './BorrowTab'; // <-- Import BorrowTab
-import PriceChart from './PriceChart';
+import SwapTab from "./SwapTab";
+import RunesInfoTab from "./RunesInfoTab";
+import YourTxsTab from "./YourTxsTab";
+import PortfolioTab from "./PortfolioTab";
+import BorrowTab from "./BorrowTab"; // <-- Import BorrowTab
+import PriceChart from "./PriceChart";
 
 // CoinGecko API endpoint
-const COINGECKO_BTC_PRICE_URL = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd';
+const COINGECKO_BTC_PRICE_URL =
+  "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd";
 
 // Function to fetch BTC price
 const getBtcPrice = async (): Promise<number> => {
   const response = await fetch(COINGECKO_BTC_PRICE_URL);
   if (!response.ok) {
-    throw new Error('Failed to fetch BTC price from CoinGecko');
+    throw new Error("Failed to fetch BTC price from CoinGecko");
   }
   const data = await response.json();
   if (!data.bitcoin || !data.bitcoin.usd) {
-    throw new Error('Invalid response format from CoinGecko');
+    throw new Error("Invalid response format from CoinGecko");
   }
   return data.bitcoin.usd;
 };
 
 // --- Props Interface --- Update the activeTab type
 interface AppInterfaceProps {
-  activeTab: 'swap' | 'runesInfo' | 'yourTxs' | 'portfolio' | 'borrow'; // <-- Added 'borrow'
+  activeTab: "swap" | "runesInfo" | "yourTxs" | "portfolio" | "borrow"; // <-- Added 'borrow'
 }
 // --- End Props ---
 
 // --- Component ---
 export function AppInterface({ activeTab }: AppInterfaceProps) {
   const searchParams = useSearchParams();
-  const preSelectedRune = searchParams.get('rune');
+  const preSelectedRune = searchParams.get("rune");
 
   const [showSwapTabPriceChart, setShowSwapTabPriceChart] = useState(false);
-  const [showRunesInfoTabPriceChart, setShowRunesInfoTabPriceChart] = useState(false);
+  const [showRunesInfoTabPriceChart, setShowRunesInfoTabPriceChart] =
+    useState(false);
 
-  const [swapTabSelectedAsset, setSwapTabSelectedAsset] = useState(preSelectedRune || "LIQUIDIUM•TOKEN");
-  const [runesInfoTabSelectedAsset, setRunesInfoTabSelectedAsset] = useState("LIQUIDIUM•TOKEN");
+  const [swapTabSelectedAsset, setSwapTabSelectedAsset] = useState(
+    preSelectedRune || "LIQUIDIUM•TOKEN",
+  );
+  const [runesInfoTabSelectedAsset, setRunesInfoTabSelectedAsset] =
+    useState("LIQUIDIUM•TOKEN");
 
   useEffect(() => {
     if (preSelectedRune) {
@@ -60,7 +65,7 @@ export function AppInterface({ activeTab }: AppInterfaceProps) {
     publicKey,
     paymentAddress,
     paymentPublicKey,
-    signPsbt
+    signPsbt,
   } = useSharedLaserEyes();
 
   // Fetch BTC price using React Query
@@ -69,7 +74,7 @@ export function AppInterface({ activeTab }: AppInterfaceProps) {
     isLoading: isBtcPriceLoading,
     error: btcPriceError,
   } = useQuery<number, Error>({
-    queryKey: ['btcPriceUsd'],
+    queryKey: ["btcPriceUsd"],
     queryFn: getBtcPrice,
     refetchInterval: 60000, // Refetch every 60 seconds
     staleTime: 30000, // Consider data stale after 30 seconds
@@ -79,7 +84,7 @@ export function AppInterface({ activeTab }: AppInterfaceProps) {
   const {
     data: popularRunes,
     isLoading: isPopularRunesLoading,
-    error: popularRunesError
+    error: popularRunesError,
   } = useQuery<Record<string, unknown>[], Error>({
     queryKey: [QUERY_KEYS.POPULAR_RUNES],
     queryFn: () => {
@@ -93,21 +98,24 @@ export function AppInterface({ activeTab }: AppInterfaceProps) {
     retry: false, // Don't retry on failure
   });
 
-  const togglePriceChart = React.useCallback((assetName?: string, shouldToggle: boolean = true) => {
-    if (activeTab === 'swap') {
-      if (assetName) setSwapTabSelectedAsset(assetName);
-      if (shouldToggle) setShowSwapTabPriceChart(prev => !prev);
-    } else if (activeTab === 'runesInfo') {
-      if (assetName) setRunesInfoTabSelectedAsset(assetName);
-      if (shouldToggle) setShowRunesInfoTabPriceChart(prev => !prev);
-    }
-    // No price chart planned for Borrow tab in MVP
-  }, [activeTab]);
+  const togglePriceChart = React.useCallback(
+    (assetName?: string, shouldToggle: boolean = true) => {
+      if (activeTab === "swap") {
+        if (assetName) setSwapTabSelectedAsset(assetName);
+        if (shouldToggle) setShowSwapTabPriceChart((prev) => !prev);
+      } else if (activeTab === "runesInfo") {
+        if (assetName) setRunesInfoTabSelectedAsset(assetName);
+        if (shouldToggle) setShowRunesInfoTabPriceChart((prev) => !prev);
+      }
+      // No price chart planned for Borrow tab in MVP
+    },
+    [activeTab],
+  );
 
   useEffect(() => {
     const handleTabChangeEvent = (event: CustomEvent) => {
       const { tab, rune } = event.detail;
-      if (tab === 'swap' && rune) {
+      if (tab === "swap" && rune) {
         setSwapTabSelectedAsset(rune);
         if (showSwapTabPriceChart) {
           togglePriceChart(rune, false);
@@ -115,19 +123,27 @@ export function AppInterface({ activeTab }: AppInterfaceProps) {
       }
       // Handle other tab changes if needed
     };
-    window.addEventListener('tabChange', handleTabChangeEvent as EventListener);
-    return () => window.removeEventListener('tabChange', handleTabChangeEvent as EventListener);
+    window.addEventListener("tabChange", handleTabChangeEvent as EventListener);
+    return () =>
+      window.removeEventListener(
+        "tabChange",
+        handleTabChangeEvent as EventListener,
+      );
   }, [showSwapTabPriceChart, togglePriceChart]);
 
-  const isPriceChartVisible = (activeTab === 'swap' && showSwapTabPriceChart) ||
-                             (activeTab === 'runesInfo' && showRunesInfoTabPriceChart);
+  const isPriceChartVisible =
+    (activeTab === "swap" && showSwapTabPriceChart) ||
+    (activeTab === "runesInfo" && showRunesInfoTabPriceChart);
 
-  const selectedAssetForActiveTab = activeTab === 'swap' ? swapTabSelectedAsset :
-                                   activeTab === 'runesInfo' ? runesInfoTabSelectedAsset :
-                                   ""; // No specific asset needed for borrow chart yet
+  const selectedAssetForActiveTab =
+    activeTab === "swap"
+      ? swapTabSelectedAsset
+      : activeTab === "runesInfo"
+        ? runesInfoTabSelectedAsset
+        : ""; // No specific asset needed for borrow chart yet
   const renderActiveTab = () => {
     switch (activeTab) {
-      case 'swap':
+      case "swap":
         return (
           <SwapTab
             connected={connected}
@@ -148,25 +164,25 @@ export function AppInterface({ activeTab }: AppInterfaceProps) {
           />
         );
       // --- Add Borrow Tab Case ---
-      case 'borrow':
+      case "borrow":
         return (
-            <BorrowTab
-                connected={connected}
-                address={address}
-                paymentAddress={paymentAddress} // Needed for prepare
-                publicKey={publicKey}           // Needed for prepare
-                paymentPublicKey={paymentPublicKey} // Needed for prepare
-                signPsbt={signPsbt}             // Needed for submit
-                btcPriceUsd={btcPriceUsd}
-                isBtcPriceLoading={isBtcPriceLoading}
-                btcPriceError={btcPriceError}
-                cachedPopularRunes={popularRunes || []} // Pass popular runes
-                isPopularRunesLoading={isPopularRunesLoading}
-                popularRunesError={popularRunesError}
-            />
+          <BorrowTab
+            connected={connected}
+            address={address}
+            paymentAddress={paymentAddress} // Needed for prepare
+            publicKey={publicKey} // Needed for prepare
+            paymentPublicKey={paymentPublicKey} // Needed for prepare
+            signPsbt={signPsbt} // Needed for submit
+            btcPriceUsd={btcPriceUsd}
+            isBtcPriceLoading={isBtcPriceLoading}
+            btcPriceError={btcPriceError}
+            cachedPopularRunes={popularRunes || []} // Pass popular runes
+            isPopularRunesLoading={isPopularRunesLoading}
+            popularRunesError={popularRunesError}
+          />
         );
       // --- End Borrow Tab Case ---
-      case 'runesInfo':
+      case "runesInfo":
         return (
           <RunesInfoTab
             cachedPopularRunes={popularRunes || []}
@@ -176,40 +192,44 @@ export function AppInterface({ activeTab }: AppInterfaceProps) {
             showPriceChart={showRunesInfoTabPriceChart}
           />
         );
-      case 'yourTxs':
+      case "yourTxs":
         return <YourTxsTab connected={connected} address={address} />;
-      case 'portfolio':
+      case "portfolio":
         return <PortfolioTab />;
       default:
         // Optionally render SwapTab as default or null
         return (
-            <SwapTab
-              connected={connected}
-              address={address}
-              paymentAddress={paymentAddress}
-              publicKey={publicKey}
-              paymentPublicKey={paymentPublicKey}
-              signPsbt={signPsbt}
-              btcPriceUsd={btcPriceUsd}
-              isBtcPriceLoading={isBtcPriceLoading}
-              btcPriceError={btcPriceError}
-              cachedPopularRunes={popularRunes || []}
-              isPopularRunesLoading={isPopularRunesLoading}
-              popularRunesError={popularRunesError}
-              onShowPriceChart={togglePriceChart}
-              showPriceChart={showSwapTabPriceChart}
-              preSelectedRune={preSelectedRune}
-            />
-          );
+          <SwapTab
+            connected={connected}
+            address={address}
+            paymentAddress={paymentAddress}
+            publicKey={publicKey}
+            paymentPublicKey={paymentPublicKey}
+            signPsbt={signPsbt}
+            btcPriceUsd={btcPriceUsd}
+            isBtcPriceLoading={isBtcPriceLoading}
+            btcPriceError={btcPriceError}
+            cachedPopularRunes={popularRunes || []}
+            isPopularRunesLoading={isPopularRunesLoading}
+            popularRunesError={popularRunesError}
+            onShowPriceChart={togglePriceChart}
+            showPriceChart={showSwapTabPriceChart}
+            preSelectedRune={preSelectedRune}
+          />
+        );
     }
   };
 
   return (
-    <div className={`${styles.container} ${isPriceChartVisible ? styles.containerWithChart : ''}`}>
+    <div
+      className={`${styles.container} ${isPriceChartVisible ? styles.containerWithChart : ""}`}
+    >
       {/* Conditionally render layout based on whether price chart is needed */}
-      {(activeTab === 'swap' || activeTab === 'runesInfo') ? (
+      {activeTab === "swap" || activeTab === "runesInfo" ? (
         <div className={styles.appLayout}>
-          <div className={`${styles.swapContainer} ${isPriceChartVisible ? styles.narrowSwapContainer : ''}`}>
+          <div
+            className={`${styles.swapContainer} ${isPriceChartVisible ? styles.narrowSwapContainer : ""}`}
+          >
             {renderActiveTab()}
           </div>
           {isPriceChartVisible && (

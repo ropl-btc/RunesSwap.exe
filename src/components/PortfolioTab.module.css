@@ -19,12 +19,17 @@
 }
 
 /* List Components */
-.listContainer, .listHeader, .portfolioTotals, .liquidiumHeader, .liquidiumItem {
+.listContainer,
+.listHeader,
+.portfolioTotals,
+.liquidiumHeader,
+.liquidiumItem {
   width: 100%;
   border: none;
 }
 
-.listHeader, .portfolioTotals {
+.listHeader,
+.portfolioTotals {
   padding: var(--space-2) 0;
 }
 
@@ -33,7 +38,8 @@
   overflow-y: auto;
 }
 
-.listItem, .liquidiumItem {
+.listItem,
+.liquidiumItem {
   align-items: center;
   padding: var(--space-2) 0;
 }
@@ -51,17 +57,24 @@
   border-radius: 4px;
 }
 
-.runeNameText, .collateralDetails {
+.runeNameText,
+.collateralDetails {
   display: flex;
   flex-direction: column;
 }
 
 /* Typography */
-.runeFullName, .collateralAmount, .dateDisplay, .btcAmount {
+.runeFullName,
+.collateralAmount,
+.dateDisplay,
+.btcAmount {
   font-weight: 500;
 }
 
-.runeTicker, .collateralName, .btcLabel, .timeDisplay {
+.runeTicker,
+.collateralName,
+.btcLabel,
+.timeDisplay {
   color: var(--win98-dark-gray);
   font-size: var(--font-size-small);
 }
@@ -91,12 +104,14 @@
   color: #856404;
 }
 
-.statusRepaying, .statusRepaid {
+.statusRepaying,
+.statusRepaid {
   background-color: #d1ecf1;
   color: #0c5460;
 }
 
-.statusDefaulted, .statusLiquidated {
+.statusDefaulted,
+.statusLiquidated {
   background-color: #f8d7da;
   color: #721c24;
 }
@@ -108,7 +123,7 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(192,192,192,0.65);
+  background: rgba(192, 192, 192, 0.65);
   z-index: 10000;
   display: flex;
   align-items: center;
@@ -142,13 +157,17 @@
 /* Mobile Responsiveness */
 @media (max-width: 640px) {
   /* Runes portfolio grid */
-  .grid4col, .listHeader, .listItem, .portfolioTotals {
+  .grid4col,
+  .listHeader,
+  .listItem,
+  .portfolioTotals {
     grid-template-columns: 2fr 1fr;
     gap: 0.5rem;
   }
 
   /* Liquidium loans grid */
-  .liquidiumHeader, .liquidiumItem {
+  .liquidiumHeader,
+  .liquidiumItem {
     display: grid;
     grid-template-columns: auto auto auto;
     grid-template-rows: auto auto;
@@ -157,7 +176,8 @@
   }
 
   /* Header visibility */
-  .listHeader > div, .liquidiumHeader > div {
+  .listHeader > div,
+  .liquidiumHeader > div {
     display: none;
   }
 
@@ -223,7 +243,8 @@
   }
 
   /* General styling */
-  .listItem, .liquidiumItem {
+  .listItem,
+  .liquidiumItem {
     padding: 0.75rem 0.5rem;
   }
 

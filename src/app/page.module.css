@@ -47,7 +47,6 @@
   /* Empty for future use */
 }
 
-
 /* Docs Page */
 .container {
   max-width: 800px;
@@ -146,7 +145,6 @@
 .backToHome a:active {
   border-color: var(--win98-border-inset-colors);
 }
-
 
 /* Mobile Responsiveness */
 @media (max-width: 640px) {

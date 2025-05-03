@@ -1,4 +1,4 @@
-import type { RuneBalance as OrdiscanRuneBalance } from 'ordiscan';
+import type { RuneBalance as OrdiscanRuneBalance } from "ordiscan";
 
 // Re-export the RuneBalance type from the SDK for consistency if needed elsewhere
 export type RuneBalance = OrdiscanRuneBalance;
@@ -34,7 +34,7 @@ export interface RuneMarketInfo {
 // --- Types for Address Rune Activity ---
 export interface RunestoneMessage {
   rune: string;
-  type: 'ETCH' | 'MINT' | 'TRANSFER';
+  type: "ETCH" | "MINT" | "TRANSFER";
 }
 
 export interface RunicInput {
@@ -57,4 +57,4 @@ export interface RuneActivityEvent {
   inputs: RunicInput[];
   outputs: RunicOutput[];
   timestamp: string; // ISO datetime string
-} 
+}

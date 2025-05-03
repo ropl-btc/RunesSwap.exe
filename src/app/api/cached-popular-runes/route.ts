@@ -1,6 +1,13 @@
-import { createSuccessResponse, createErrorResponse, handleApiError } from '@/lib/apiUtils';
-import { getCachedPopularRunes, cachePopularRunes } from '@/lib/popularRunesCache';
-import { getSatsTerminalClient } from '@/lib/serverUtils';
+import {
+  createSuccessResponse,
+  createErrorResponse,
+  handleApiError,
+} from "@/lib/apiUtils";
+import {
+  getCachedPopularRunes,
+  cachePopularRunes,
+} from "@/lib/popularRunesCache";
+import { getSatsTerminalClient } from "@/lib/serverUtils";
 
 export async function GET() {
   try {
@@ -15,8 +22,12 @@ export async function GET() {
     const popularResponse = await terminal.popularCollections({});
 
     // Validate response structure
-    if (!popularResponse || typeof popularResponse !== 'object') {
-      return createErrorResponse('Invalid response from SatsTerminal', 'Popular collections data is malformed', 500);
+    if (!popularResponse || typeof popularResponse !== "object") {
+      return createErrorResponse(
+        "Invalid response from SatsTerminal",
+        "Popular collections data is malformed",
+        500,
+      );
     }
 
     // Cache the fresh data
@@ -26,7 +37,14 @@ export async function GET() {
 
     return createSuccessResponse(popularResponse);
   } catch (error) {
-    const errorInfo = handleApiError(error, 'Failed to fetch cached popular collections');
-    return createErrorResponse(errorInfo.message, errorInfo.details, errorInfo.status);
+    const errorInfo = handleApiError(
+      error,
+      "Failed to fetch cached popular collections",
+    );
+    return createErrorResponse(
+      errorInfo.message,
+      errorInfo.details,
+      errorInfo.status,
+    );
   }
 }

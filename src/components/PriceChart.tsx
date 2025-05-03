@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { fetchRunePriceHistoryFromApi, QUERY_KEYS } from '@/lib/apiClient';
-import styles from './AppInterface.module.css';
+import React, { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchRunePriceHistoryFromApi, QUERY_KEYS } from "@/lib/apiClient";
+import styles from "./AppInterface.module.css";
 import {
   ResponsiveContainer,
   LineChart,
@@ -9,28 +9,35 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  CartesianGrid
-} from 'recharts';
-import hourglassIcon from '/public/icons/windows_hourglass.png';
-import Image from 'next/image';
+  CartesianGrid,
+} from "recharts";
+import hourglassIcon from "/public/icons/windows_hourglass.png";
+import Image from "next/image";
 
 interface PriceChartProps {
   assetName: string;
-  timeFrame?: '24h' | '7d' | '30d' | 'all';
+  timeFrame?: "24h" | "7d" | "30d" | "all";
   onClose?: () => void;
   btcPriceUsd?: number; // BTC price in USD
 }
 
-const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', onClose, btcPriceUsd }) => {
-  const [selectedTimeframe, setSelectedTimeframe] = useState<'24h' | '7d' | '30d' | 'all'>(timeFrame);
+const PriceChart: React.FC<PriceChartProps> = ({
+  assetName,
+  timeFrame = "24h",
+  onClose,
+  btcPriceUsd,
+}) => {
+  const [selectedTimeframe, setSelectedTimeframe] = useState<
+    "24h" | "7d" | "30d" | "all"
+  >(timeFrame);
   const [showTooltip, setShowTooltip] = useState(false);
   const [btcPriceLoadingTimeout, setBtcPriceLoadingTimeout] = useState(false);
-  
+
   // Fetch price history data using React Query
   const {
     data: priceHistoryData,
     isLoading,
-    isError
+    isError,
   } = useQuery({
     queryKey: [QUERY_KEYS.RUNE_PRICE_HISTORY, assetName],
     queryFn: () => fetchRunePriceHistoryFromApi(assetName),
@@ -39,28 +46,31 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
     refetchOnWindowFocus: false, // Don't refetch on window focus
     retry: 2, // Retry failed requests twice
   });
-  
+
   // TEMPORARY FIX: The external API only returns data points when the price changes, so there are gaps in the time series.
   // This helper forward-fills missing hourly data points so the chart is visually continuous.
   // Ideally, the API should provide a complete time series and this workaround can be removed.
   function fillMissingHours(
     sortedData: { timestamp: number; price: number }[],
     hours: number,
-    endTimestamp: number
+    endTimestamp: number,
   ) {
     const filled: { timestamp: number; price: number }[] = [];
     let lastPrice = sortedData.length ? sortedData[0].price : undefined;
     let dataIdx = 0;
     for (let i = hours - 1; i >= 0; i--) {
       const ts = endTimestamp - i * 60 * 60 * 1000;
-      while (dataIdx < sortedData.length && sortedData[dataIdx].timestamp <= ts) {
+      while (
+        dataIdx < sortedData.length &&
+        sortedData[dataIdx].timestamp <= ts
+      ) {
         lastPrice = sortedData[dataIdx].price;
         dataIdx++;
       }
-      if (typeof lastPrice === 'number') {
+      if (typeof lastPrice === "number") {
         filled.push({
           timestamp: ts,
-          price: lastPrice
+          price: lastPrice,
         });
       }
     }
@@ -75,11 +85,14 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
 
     // Sort data by timestamp ascending (keep price in sats)
     const sortedData = priceHistoryData.prices
-      .map(point => ({
+      .map((point) => ({
         ...point,
         price: point.price, // price is in sats
       }))
-      .filter((point): point is { timestamp: number; price: number } => typeof point.price === 'number')
+      .filter(
+        (point): point is { timestamp: number; price: number } =>
+          typeof point.price === "number",
+      )
       .sort((a, b) => a.timestamp - b.timestamp);
 
     // Determine time window
@@ -87,27 +100,29 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
     let windowStart: number;
     let hours = 0;
     switch (selectedTimeframe) {
-      case '24h':
+      case "24h":
         hours = 24;
         windowStart = now - 24 * 60 * 60 * 1000;
         break;
-      case '7d':
+      case "7d":
         hours = 7 * 24;
         windowStart = now - 7 * 24 * 60 * 60 * 1000;
         break;
-      case '30d':
+      case "30d":
         hours = 30 * 24;
         windowStart = now - 30 * 24 * 60 * 60 * 1000;
         break;
-      case 'all':
+      case "all":
         windowStart = sortedData[0]?.timestamp || now;
         now = sortedData[sortedData.length - 1]?.timestamp || now;
         break;
     }
 
     let filtered;
-    if (selectedTimeframe === 'all') {
-      filtered = sortedData.filter(point => point.timestamp >= windowStart && point.timestamp <= now);
+    if (selectedTimeframe === "all") {
+      filtered = sortedData.filter(
+        (point) => point.timestamp >= windowStart && point.timestamp <= now,
+      );
     } else {
       filtered = fillMissingHours(sortedData, hours, now);
     }
@@ -115,15 +130,22 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
     return {
       filteredPriceData: filtered,
       startTime: filtered.length > 0 ? new Date(filtered[0].timestamp) : null,
-      endTime: filtered.length > 0 ? new Date(filtered[filtered.length - 1].timestamp) : null
+      endTime:
+        filtered.length > 0
+          ? new Date(filtered[filtered.length - 1].timestamp)
+          : null,
     };
   }, [priceHistoryData, selectedTimeframe]);
 
   // Debug logging for price history data
   useEffect(() => {
     if (filteredPriceData.length > 0 && startTime && endTime) {
-      console.log(`[PriceChart] ${selectedTimeframe} data range: ${startTime.toLocaleString()} to ${endTime.toLocaleString()}`);
-      console.log(`[PriceChart] Number of data points: ${filteredPriceData.length}`);
+      console.log(
+        `[PriceChart] ${selectedTimeframe} data range: ${startTime.toLocaleString()} to ${endTime.toLocaleString()}`,
+      );
+      console.log(
+        `[PriceChart] Number of data points: ${filteredPriceData.length}`,
+      );
     }
   }, [filteredPriceData, startTime, endTime, selectedTimeframe]);
 
@@ -131,24 +153,28 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
   const getCustomTicks = React.useMemo(() => {
     if (!startTime || !endTime || filteredPriceData.length === 0) return [];
 
-    const dataTimestamps = filteredPriceData.map(p => p.timestamp);
+    const dataTimestamps = filteredPriceData.map((p) => p.timestamp);
 
     switch (selectedTimeframe) {
-      case '24h': {
+      case "24h": {
         // Use available data points for ticks, spaced every ~3-4 points (hourly granularity)
         const tickCount = Math.min(8, dataTimestamps.length);
         if (tickCount <= 2) return dataTimestamps;
         const step = Math.floor(dataTimestamps.length / (tickCount - 1));
-        return dataTimestamps.filter((_, i) => i % step === 0 || i === dataTimestamps.length - 1);
+        return dataTimestamps.filter(
+          (_, i) => i % step === 0 || i === dataTimestamps.length - 1,
+        );
       }
-      case '7d':
-      case '30d':
-      case 'all': {
+      case "7d":
+      case "30d":
+      case "all": {
         // For longer timeframes, space ticks evenly across available data
         const tickCount = 6;
         if (dataTimestamps.length <= tickCount) return dataTimestamps;
         const step = Math.floor(dataTimestamps.length / (tickCount - 1));
-        return dataTimestamps.filter((_, i) => i % step === 0 || i === dataTimestamps.length - 1);
+        return dataTimestamps.filter(
+          (_, i) => i % step === 0 || i === dataTimestamps.length - 1,
+        );
       }
     }
   }, [startTime, endTime, filteredPriceData, selectedTimeframe]);
@@ -164,9 +190,27 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
   // If BTC price is not available, show loading spinner
   if (btcPriceUsd === undefined) {
     return (
-      <div className={styles.priceChartInner} style={{ position: 'relative', width: '100%', height: 320, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Image src={hourglassIcon.src || '/icons/windows_hourglass.png'} alt="Loading..." width={48} height={48} style={{ marginRight: 12 }} />
-        <span style={{ fontSize: '1.2rem', color: '#000080', fontWeight: 'bold' }}>
+      <div
+        className={styles.priceChartInner}
+        style={{
+          position: "relative",
+          width: "100%",
+          height: 320,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Image
+          src={hourglassIcon.src || "/icons/windows_hourglass.png"}
+          alt="Loading..."
+          width={48}
+          height={48}
+          style={{ marginRight: 12 }}
+        />
+        <span
+          style={{ fontSize: "1.2rem", color: "#000080", fontWeight: "bold" }}
+        >
           {btcPriceLoadingTimeout
             ? "Unable to load BTC price. Chart may be inaccurate."
             : "Loading BTC price..."}
@@ -181,22 +225,22 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
       <div>
         <div className={styles.priceChartHeader}>
           <h3 className={styles.priceChartTitle}>{assetName} Price</h3>
-          <div 
-            className={styles.infoIconContainer} 
+          <div
+            className={styles.infoIconContainer}
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
             onClick={() => setShowTooltip(!showTooltip)}
           >
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              width="16" 
-              height="16" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
               className={styles.infoIcon}
             >
               <circle cx="12" cy="12" r="10"></circle>
@@ -205,15 +249,16 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
             </svg>
             {showTooltip && (
               <div className={styles.tooltipBox}>
-                Price history might be inaccurate and should only serve as an estimation.
+                Price history might be inaccurate and should only serve as an
+                estimation.
               </div>
             )}
           </div>
         </div>
-        <div style={{ position: 'relative', width: '100%', height: 320 }}>
+        <div style={{ position: "relative", width: "100%", height: 320 }}>
           <ResponsiveContainer width="100%" height={320}>
-            <LineChart 
-              data={filteredPriceData} 
+            <LineChart
+              data={filteredPriceData}
               margin={{ top: 30, right: 10, left: 0, bottom: 25 }}
             >
               <CartesianGrid stroke="#C0C0C0" strokeDasharray="3 3" />
@@ -221,47 +266,61 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
                 dataKey="timestamp"
                 type="number"
                 domain={[
-                  startTime?.getTime() || 'dataMin', 
-                  endTime?.getTime() || 'dataMax'
+                  startTime?.getTime() || "dataMin",
+                  endTime?.getTime() || "dataMax",
                 ]}
                 ticks={getCustomTicks}
-                tickFormatter={ts => {
+                tickFormatter={(ts) => {
                   const date = new Date(ts);
                   switch (selectedTimeframe) {
-                    case '24h':
+                    case "24h":
                       // Show HH:00 format for 24 hour view
                       return `${date.getHours()}:00`;
-                    case '7d':
+                    case "7d":
                       // Show day and month for 7d view
-                      return date.toLocaleDateString([], { month: 'numeric', day: 'numeric' });
-                    case '30d':
-                    case 'all':
-                      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                      return date.toLocaleDateString([], {
+                        month: "numeric",
+                        day: "numeric",
+                      });
+                    case "30d":
+                    case "all":
+                      return date.toLocaleDateString([], {
+                        month: "short",
+                        day: "numeric",
+                      });
                     default:
                       return date.toLocaleString();
                   }
                 }}
-                tick={{ fill: '#000', fontSize: 10 }}
-                axisLine={{ stroke: '#000' }}
-                tickLine={{ stroke: '#000' }}
+                tick={{ fill: "#000", fontSize: 10 }}
+                axisLine={{ stroke: "#000" }}
+                tickLine={{ stroke: "#000" }}
                 minTickGap={15}
               />
               <YAxis
                 dataKey="price"
-                tickFormatter={v => v.toLocaleString('en-US') + ' sats'}
-                tick={{ fill: '#000', fontSize: 10 }}
-                axisLine={{ stroke: '#000' }}
-                tickLine={{ stroke: '#000' }}
+                tickFormatter={(v) => v.toLocaleString("en-US") + " sats"}
+                tick={{ fill: "#000", fontSize: 10 }}
+                axisLine={{ stroke: "#000" }}
+                tickLine={{ stroke: "#000" }}
                 width={80}
-                domain={['dataMin', 'dataMax']}
+                domain={["dataMin", "dataMax"]}
               />
               <Tooltip
-                contentStyle={{ background: '#fff', border: '1px solid #000080', fontSize: 12 }}
-                labelFormatter={ts => {
+                contentStyle={{
+                  background: "#fff",
+                  border: "1px solid #000080",
+                  fontSize: 12,
+                }}
+                labelFormatter={(ts) => {
                   const date = new Date(ts as number);
                   // Snap to last full hour
                   date.setMinutes(0, 0, 0);
-                  const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+                  const time = date.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false,
+                  });
                   const day = date.toLocaleDateString();
                   return `${time} · ${day}`;
                 }}
@@ -269,8 +328,10 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
                   // value is sats
                   const usd = btcPriceUsd ? (value / 1e8) * btcPriceUsd : null;
                   return [
-                    `${value.toLocaleString('en-US')} sats`,
-                    usd !== null ? `≈ $${usd.toLocaleString('en-US', { maximumFractionDigits: 6 })}` : ''
+                    `${value.toLocaleString("en-US")} sats`,
+                    usd !== null
+                      ? `≈ $${usd.toLocaleString("en-US", { maximumFractionDigits: 6 })}`
+                      : "",
                   ];
                 }}
               />
@@ -286,101 +347,104 @@ const PriceChart: React.FC<PriceChartProps> = ({ assetName, timeFrame = '24h', o
           </ResponsiveContainer>
 
           {/* Show message when chart data is not available */}
-          {(!isLoading && filteredPriceData.length === 0) && (
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              backgroundColor: 'rgba(240, 240, 240, 0.7)',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              fontSize: '1.4rem',
-              fontWeight: 'bold',
-              color: '#000080',
-              textShadow: '1px 1px 2px white'
-            }}>
+          {!isLoading && filteredPriceData.length === 0 && (
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                backgroundColor: "rgba(240, 240, 240, 0.7)",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                fontSize: "1.4rem",
+                fontWeight: "bold",
+                color: "#000080",
+                textShadow: "1px 1px 2px white",
+              }}
+            >
               Price Chart Not Available
             </div>
           )}
 
           {/* Show loading indicator */}
           {isLoading && (
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              backgroundColor: 'rgba(240, 240, 240, 0.7)',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              fontSize: '1.4rem',
-              fontWeight: 'bold',
-              color: '#000080',
-              textShadow: '1px 1px 2px white'
-            }}>
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                backgroundColor: "rgba(240, 240, 240, 0.7)",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                fontSize: "1.4rem",
+                fontWeight: "bold",
+                color: "#000080",
+                textShadow: "1px 1px 2px white",
+              }}
+            >
               Loading...
             </div>
           )}
 
           {/* Show error message */}
           {isError && (
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              backgroundColor: 'rgba(240, 240, 240, 0.7)',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              fontSize: '1.4rem',
-              fontWeight: 'bold',
-              color: '#CC0000',
-              textShadow: '1px 1px 2px white'
-            }}>
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                backgroundColor: "rgba(240, 240, 240, 0.7)",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                fontSize: "1.4rem",
+                fontWeight: "bold",
+                color: "#CC0000",
+                textShadow: "1px 1px 2px white",
+              }}
+            >
               Error loading price data
             </div>
           )}
         </div>
         <div className={styles.timeframeSelectorBottom}>
-          <button 
-            className={`${styles.timeframeButton} ${selectedTimeframe === '24h' ? styles.timeframeButtonActive : ''}`} 
-            onClick={() => setSelectedTimeframe('24h')}
+          <button
+            className={`${styles.timeframeButton} ${selectedTimeframe === "24h" ? styles.timeframeButtonActive : ""}`}
+            onClick={() => setSelectedTimeframe("24h")}
           >
             24h
           </button>
-          <button 
-            className={`${styles.timeframeButton} ${selectedTimeframe === '7d' ? styles.timeframeButtonActive : ''}`} 
-            onClick={() => setSelectedTimeframe('7d')}
+          <button
+            className={`${styles.timeframeButton} ${selectedTimeframe === "7d" ? styles.timeframeButtonActive : ""}`}
+            onClick={() => setSelectedTimeframe("7d")}
           >
             7d
           </button>
-          <button 
-            className={`${styles.timeframeButton} ${selectedTimeframe === '30d' ? styles.timeframeButtonActive : ''}`} 
-            onClick={() => setSelectedTimeframe('30d')}
+          <button
+            className={`${styles.timeframeButton} ${selectedTimeframe === "30d" ? styles.timeframeButtonActive : ""}`}
+            onClick={() => setSelectedTimeframe("30d")}
           >
             30d
           </button>
-          <button 
-            className={`${styles.timeframeButton} ${selectedTimeframe === 'all' ? styles.timeframeButtonActive : ''}`} 
-            onClick={() => setSelectedTimeframe('all')}
+          <button
+            className={`${styles.timeframeButton} ${selectedTimeframe === "all" ? styles.timeframeButtonActive : ""}`}
+            onClick={() => setSelectedTimeframe("all")}
           >
             90d
           </button>
         </div>
       </div>
-      
+
       {/* Collapse Chart button */}
-      <button 
-        className={styles.collapseChartButton}
-        onClick={onClose}
-      >
+      <button className={styles.collapseChartButton} onClick={onClose}>
         Collapse Price Chart
       </button>
     </div>

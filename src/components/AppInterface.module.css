@@ -295,7 +295,9 @@
   position: absolute;
   visibility: hidden;
   opacity: 0;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease;
   top: 100%;
   right: 0;
   width: 200px;
@@ -315,7 +317,6 @@
   visibility: visible;
   opacity: 1;
 }
-
 
 /* Mobile Responsiveness */
 @media (max-width: 768px) {

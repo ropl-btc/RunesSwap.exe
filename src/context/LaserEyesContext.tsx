@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { createContext, useContext } from 'react';
-import type { ProviderType } from '@omnisat/lasereyes'; // Import ProviderType
+import { createContext, useContext } from "react";
+import type { ProviderType } from "@omnisat/lasereyes"; // Import ProviderType
 // REMOVED: import type { LaserEyesData } from '@omnisat/lasereyes'; // Assuming LaserEyes exports a type for its hook return value
 
 // Define the shape of the context data based on current usage
@@ -15,11 +15,18 @@ interface ILaserEyesContext {
   provider?: string; // Keep this as string for display?
   connect: (providerName: ProviderType) => Promise<void>; // Use ProviderType
   disconnect: () => void;
-  signPsbt: (tx: string, finalize?: boolean, broadcast?: boolean) => Promise<{
-    signedPsbtHex?: string;
-    signedPsbtBase64?: string;
-    txId?: string;
-   } | undefined>;
+  signPsbt: (
+    tx: string,
+    finalize?: boolean,
+    broadcast?: boolean,
+  ) => Promise<
+    | {
+        signedPsbtHex?: string;
+        signedPsbtBase64?: string;
+        txId?: string;
+      }
+    | undefined
+  >;
   // Add signMessage function for Liquidium API authentication
   signMessage?: (message: string, address?: string) => Promise<string>;
   // Wallet availability properties
@@ -34,7 +41,9 @@ const LaserEyesContext = createContext<ILaserEyesContext | null>(null);
 export const useSharedLaserEyes = () => {
   const context = useContext(LaserEyesContext);
   if (!context) {
-    throw new Error('useSharedLaserEyes must be used within a LaserEyesProvider via SharedLaserEyesProvider');
+    throw new Error(
+      "useSharedLaserEyes must be used within a LaserEyesProvider via SharedLaserEyesProvider",
+    );
   }
   return context;
 };

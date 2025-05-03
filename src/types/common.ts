@@ -11,4 +11,9 @@ export interface Asset {
 /**
  * Represents Bitcoin (BTC) as a selectable asset.
  */
-export const BTC_ASSET: Asset = { id: 'BTC', name: 'BTC', imageURI: '/Bitcoin.svg', isBTC: true }; 
+export const BTC_ASSET: Asset = {
+  id: "BTC",
+  name: "BTC",
+  imageURI: "/Bitcoin.svg",
+  isBTC: true,
+};
