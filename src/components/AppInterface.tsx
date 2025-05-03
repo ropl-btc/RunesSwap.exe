@@ -87,9 +87,7 @@ export function AppInterface({ activeTab }: AppInterfaceProps) {
     error: popularRunesError,
   } = useQuery<Record<string, unknown>[], Error>({
     queryKey: [QUERY_KEYS.POPULAR_RUNES],
-    queryFn: () => {
-      return fetchPopularFromApi();
-    },
+    queryFn: () => fetchPopularFromApi(),
     staleTime: Infinity, // Data never goes stale, so React Query won't refetch
     gcTime: 365 * 24 * 60 * 60 * 1000, // Keep in cache for a year
     refetchOnMount: false, // Don't refetch when component mounts

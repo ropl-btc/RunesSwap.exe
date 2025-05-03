@@ -613,11 +613,7 @@ export function SwapTab({
   ); // <-- Empty dependency array ensures it's created only once
 
   // Clean up the debounced function on component unmount
-  useEffect(() => {
-    return () => {
-      debouncedSearch.cancel();
-    };
-  }, [debouncedSearch]);
+  useEffect(() => () => debouncedSearch.cancel(), [debouncedSearch]);
 
   // Search functionality now handled by InputArea component
 

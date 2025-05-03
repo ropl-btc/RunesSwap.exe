@@ -137,7 +137,6 @@ const PriceChart: React.FC<PriceChartProps> = ({
     };
   }, [priceHistoryData, selectedTimeframe]);
 
-
   // Replace getCustomTicks logic with a simpler, data-driven approach
   const getCustomTicks = React.useMemo(() => {
     if (!startTime || !endTime || filteredPriceData.length === 0) return [];

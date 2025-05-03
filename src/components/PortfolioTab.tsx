@@ -462,9 +462,7 @@ export default function PortfolioTab() {
   };
 
   // Helper function to format sats to BTC
-  const formatSatsToBtc = (sats: number): string => {
-    return (sats / 1e8).toFixed(8);
-  };
+  const formatSatsToBtc = (sats: number): string => (sats / 1e8).toFixed(8);
 
   return (
     <div className={styles.container}>

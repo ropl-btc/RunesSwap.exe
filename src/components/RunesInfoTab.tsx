@@ -236,11 +236,7 @@ export function RunesInfoTab({
   ); // <-- Empty dependency array ensures it's created only once
 
   // Clean up the debounced function on component unmount
-  useEffect(() => {
-    return () => {
-      debouncedSearch.cancel();
-    };
-  }, [debouncedSearch]);
+  useEffect(() => () => debouncedSearch.cancel(), [debouncedSearch]);
 
   // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
