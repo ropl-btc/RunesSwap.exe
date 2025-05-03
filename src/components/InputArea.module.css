@@ -74,7 +74,7 @@
 }
 
 .amountInputReadOnly {
-  composes: amountinput; /* Inherit base input styles */
+  composes: amountInput; /* Inherit base input styles */
   color: var(--win98-dark-gray);
 }
 
@@ -139,7 +139,7 @@
 }
 
 .listboxButton {
-  composes: basebutton; /* Inherit base button styles */
+  composes: baseButton; /* Inherit base button styles */
   position: relative;
   width: 100%;
   cursor: default;
@@ -251,7 +251,7 @@
 }
 
 .listboxError {
-  composes: listboxloadingorempty;
+  composes: listboxLoadingOrEmpty;
   color: var(--win98-red);
   display: flex;
   align-items: center;

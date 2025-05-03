@@ -7,6 +7,7 @@
       {
         "ignoreProperties": ["composes"]
       }
-    ]
+    ],
+    "value-keyword-case": null
   }
 }
