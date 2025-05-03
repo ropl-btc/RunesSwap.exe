@@ -580,9 +580,12 @@ export default function PortfolioTab() {
                 </div>
                 <div>
                   {(loan.loan_details.state === 'ACTIVE') && (
+                    // Temporarily disable repay button due to lasereyes issue
                     <Button
                       onClick={() => handleRepay(loan)}
-                      disabled={isRepayingLoanId === loan.id}
+                      disabled={true}
+                      className={styles.repayButtonDisabled}
+                      //disabled={isRepayingLoanId === loan.id}
                     >
                       {isRepayingLoanId === loan.id ? 'Repaying...' : 'Repay'}
                     </Button>

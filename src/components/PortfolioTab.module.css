@@ -296,3 +296,10 @@
   top: 2px;
   background: var(--win98-light-gray);
 }
+/* Add style for temporarily disabled repay button */
+.repayButtonDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  /* Keep Win98 style consistent */
+  filter: grayscale(50%);
+}
