@@ -148,7 +148,7 @@ export const SwapButton: React.FC<SwapButtonProps> = ({
 
   // Determine when button should be disabled
   const isDisabled =
-    txId || // Always disable if we have a txId (successful swap)
+    !!txId || // Always disable if we have a txId (successful swap)
     (quoteExpired && isQuoteLoading && !isUserCanceled) || // Allow action even if loading if it's a user cancel
     (!quoteExpired &&
       (!connected ||

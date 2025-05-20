@@ -565,7 +565,6 @@ export function SwapTab({
 
   // --- Asset Selection Logic ---
   const handleSelectAssetIn = (selectedAsset: Asset) => {
-
     // If user tries to select the same asset that's already in the output,
     // swap the assets instead of blocking the selection
     if (assetOut && selectedAsset.id === assetOut.id) {
@@ -950,7 +949,7 @@ export function SwapTab({
       }
       // Only update state if this is the latest request
       if (requestId === latestQuoteRequestId.current) {
-        setQuote(quoteResponse);
+        setQuote(quoteResponse ?? null);
         setQuoteTimestamp(Date.now());
         let calculatedOutputAmount = "";
         let calculatedRate = null;
@@ -1485,8 +1484,40 @@ export function SwapTab({
             ? Math.ceil(recommendedFeeRates.fastestFee * 1.3) // 30% more than fastest
             : 35; // fallback high value
 
-          const retryParams = {
-            ...psbtParams,
+          const orders: RuneOrder[] = (quote.selectedOrders || []).map(
+            (order) => {
+              const patchedOrder: Partial<RuneOrder> = {
+                ...order,
+                price:
+                  typeof order.price === "string"
+                    ? Number(order.price)
+                    : order.price,
+                formattedAmount:
+                  typeof order.formattedAmount === "string"
+                    ? Number(order.formattedAmount)
+                    : order.formattedAmount,
+                slippage:
+                  order.slippage !== undefined &&
+                  typeof order.slippage === "string"
+                    ? Number(order.slippage)
+                    : order.slippage,
+              };
+              if ("side" in order && order.side)
+                (patchedOrder as Record<string, unknown>)["side"] = String(
+                  order.side,
+                ).toLowerCase() as "buy" | "sell";
+              return patchedOrder as RuneOrder;
+            },
+          );
+
+          const retryParams: GetPSBTParams = {
+            orders,
+            address,
+            publicKey,
+            paymentAddress,
+            paymentPublicKey,
+            runeName: runeAsset.name,
+            sell: !isBtcToRune,
             feeRate: highPriorityFeeRate,
           };
 
@@ -1563,7 +1594,10 @@ export function SwapTab({
             );
           }
 
-          console.info("Transaction successful with higher fee rate!", finalTxId);
+          console.info(
+            "Transaction successful with higher fee rate!",
+            finalTxId,
+          );
           dispatchSwap({ type: "SWAP_SUCCESS", txId: finalTxId });
 
           // Prevent further operations
@@ -1779,7 +1813,7 @@ export function SwapTab({
                   const decimals = swapRuneInfo?.decimals ?? 0;
                   const displayValue = balanceNum / 10 ** decimals;
                   return `${displayValue.toLocaleString(undefined, { maximumFractionDigits: decimals })}`;
-                } catch (formattingError) {
+                } catch {
                   // Formatting error occurred
                   return "Formatting Error";
                 }
