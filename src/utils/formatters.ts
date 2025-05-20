@@ -25,8 +25,7 @@ export function formatNumberString(
     const withCommas = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     const result = decPart ? `${withCommas}.${decPart}` : withCommas;
     return isNegative ? `-${result}` : result;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
+  } catch {
     return defaultDisplay;
   }
 }

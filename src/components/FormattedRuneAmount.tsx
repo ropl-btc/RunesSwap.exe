@@ -64,8 +64,7 @@ export function FormattedRuneAmount({
       // Format even if 0 decimals for consistency (e.g., add commas)
       const amountNum = BigInt(rawAmount); // Use BigInt for potentially large raw amounts
       return <span>{amountNum.toLocaleString()}</span>;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
+    } catch {
       return <span>{rawAmount} (Invalid Raw)</span>; // Fallback for invalid rawAmount
     }
   }
@@ -92,8 +91,7 @@ export function FormattedRuneAmount({
         })}
       </span>
     );
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
+  } catch {
     return <span>{rawAmount} (Formatting Error)</span>; // Fallback
   }
 }

@@ -14,7 +14,6 @@ type ConfirmParams = z.infer<typeof confirmPsbtParamsSchema>;
 const confirmPsbtParamsSchema = z
   .object({
     orders: z.array(runeOrderSchema),
-    // TODO: Use a Bitcoin address validation library for full validation (e.g., bitcoinjs-lib)
     address: z
       .string()
       .regex(

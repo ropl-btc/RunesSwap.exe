@@ -43,8 +43,7 @@ export async function getCachedPopularRunesWithExpiry(): Promise<{
       cachedData: data.runes_data as Record<string, unknown>[],
       isExpired,
     };
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
+  } catch {
     return { cachedData: null, isExpired: true };
   }
 }
@@ -65,8 +64,7 @@ export async function getCachedPopularRunes(): Promise<
     }
 
     return null;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -87,8 +85,7 @@ export async function cachePopularRunes(
     ]);
 
     // Errors in caching are non-critical
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
+  } catch {
     // Errors in caching are non-critical
   }
 }
