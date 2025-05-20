@@ -64,33 +64,3 @@ export async function getRuneData(runeName: string): Promise<RuneData | null> {
   }
 }
 
-// This function is now only used server-side by the API route
-// The client should use the updateRuneDataViaApi function from apiClient.ts
-export async function updateRuneData(
-  runeName: string,
-): Promise<RuneData | null> {
-  try {
-    const ordiscan = getOrdiscanClient();
-    const runeData = await ordiscan.rune.getInfo({ name: runeName });
-
-    if (!runeData) {
-      return null;
-    }
-
-    // Update in Supabase - ensure we're using the correct field names
-    const dataToUpdate = {
-      ...runeData,
-      last_updated_at: new Date().toISOString(),
-    };
-
-    await supabase.from("runes").upsert([dataToUpdate]).select();
-
-    // Update errors are non-critical - we can still return the data
-    // even if updating the DB fails
-
-    return runeData as RuneData;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
-    return null;
-  }
-}
