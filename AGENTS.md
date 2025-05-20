@@ -97,6 +97,15 @@ When adding new features:
 3. Implement or update React components.
 4. Write Jest tests for new utilities or routes.
 5. Run `pnpm lint` and `pnpm test` before committing.
+6. Run `pnpm build` to verify the project compiles successfully.
 
 This AGENTS.md should provide enough context to navigate the codebase and run common tasks. Refer to `README.md` and `CLAUDE.md` for more detailed documentation.
 
+
+## Component Guidelines
+
+When implementing complex features, prefer splitting large components into smaller ones. 
+Stateful logic can be moved to custom hooks under `src/hooks`, while reusable UI pieces 
+should live in their own components inside `src/components`. Existing examples include
+`AssetSelector` and `AmountHelpers` extracted from `InputArea`, and the `usePriceHistory`
+hook powering `PriceChart`.
