@@ -255,7 +255,7 @@ export function BorrowTab({
       const divisorBigInt = BigInt(10 ** decimals);
 
       // Scale by 100 for two decimal places of precision
-      const scaledAmount = (rawAmountBigInt * 100n) / divisorBigInt;
+      const scaledAmount = (rawAmountBigInt * BigInt(100)) / divisorBigInt;
 
       // Convert to number for formatting (safe now that we've scaled down)
       const scaledNumber = Number(scaledAmount) / 100;
