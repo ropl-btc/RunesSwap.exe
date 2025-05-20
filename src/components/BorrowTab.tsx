@@ -668,7 +668,8 @@ export function BorrowTab({
                   <strong>Loan Amount:</strong> {principalBtc} BTC
                 </p>
                 <p>
-                  <strong>LTV:</strong> {Number(quote.ltv_rate).toFixed(2)}%
+                  <strong>LTV:</strong>{" "}
+                  {(Number(quote.ltv_rate) * 100).toFixed(2)}%
                 </p>
                 <p>
                   <strong>Term:</strong> {quote.loan_term_days ?? "N/A"} days
