@@ -3,6 +3,8 @@ import {
   fetchPopularFromApi,
   fetchRuneInfoFromApi,
   fetchBtcBalanceFromApi,
+  fetchRuneActivityFromApi,
+  fetchRunePriceHistoryFromApi,
   QUERY_KEYS,
 } from "./apiClient";
 
@@ -269,6 +271,70 @@ describe("apiClient", () => {
       expect(fetch).toHaveBeenCalledWith(
         "/api/ordiscan/btc-balance?address=bc1qtest",
       );
+    });
+  });
+
+  describe("fetchRuneActivityFromApi", () => {
+    it("throws error when JSON parsing fails on error response", async () => {
+      (fetch as jest.Mock).mockImplementationOnce(() =>
+        Promise.resolve({
+          ok: false,
+          status: 500,
+          statusText: "Internal Error",
+          json: () => Promise.reject(new Error("Invalid")),
+        } as Response),
+      );
+
+      await expect(fetchRuneActivityFromApi("addr")).rejects.toThrow(
+        "Failed to fetch rune activity: Server responded with status 500",
+      );
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/ordiscan/rune-activity?address=addr",
+      );
+    });
+
+    it("throws parse error for malformed success response", async () => {
+      (fetch as jest.Mock).mockImplementationOnce(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          json: () => Promise.reject(new Error("Invalid")),
+        } as Response),
+      );
+
+      await expect(fetchRuneActivityFromApi("addr")).rejects.toThrow(
+        "Failed to parse successful API response.",
+      );
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/ordiscan/rune-activity?address=addr",
+      );
+    });
+  });
+
+  describe("fetchRunePriceHistoryFromApi", () => {
+    it("returns default response for empty rune name", async () => {
+      const result = await fetchRunePriceHistoryFromApi("");
+      expect(result).toEqual({ slug: "", prices: [], available: false });
+      expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it("formats slug for LIQUIDIUM runes", async () => {
+      const mockHistory = {
+        slug: "LIQUIDIUMTOKEN",
+        prices: [],
+        available: true,
+      };
+      (fetch as jest.Mock).mockImplementationOnce(() =>
+        mockFetchResponse({ success: true, data: mockHistory }),
+      );
+
+      const result = await fetchRunePriceHistoryFromApi("LIQUIDIUM•TOKEN");
+
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/rune-price-history?slug=LIQUIDIUMTOKEN",
+      );
+      expect(result).toEqual(mockHistory);
     });
   });
 });
