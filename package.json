@@ -27,7 +27,7 @@
     "react-markdown": "^9.0.1",
     "recharts": "^2.15.3",
     "remark-gfm": "^4.0.0",
-    "satsterminal-sdk": "^1.6.7",
+    "satsterminal-sdk": "^1.6.13",
     "use-debounce": "^10.0.4",
     "zod": "^3.24.2",
     "zustand": "^5.0.3"
