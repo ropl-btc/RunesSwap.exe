@@ -20,6 +20,11 @@ describe("truncateTxid", () => {
     const longTxid = "abcdef1234567890abcdef1234567890";
     expect(truncateTxid(longTxid, 4)).toBe("abcd...7890");
   });
+
+  it("returns original when length threshold is met", () => {
+    const txid = "a".repeat(19); // 2*8 + 3
+    expect(truncateTxid(txid)).toBe(txid);
+  });
 });
 
 describe("formatNumberString", () => {
@@ -43,5 +48,9 @@ describe("formatNumberString", () => {
 
   it("allows custom default display", () => {
     expect(formatNumberString(undefined, "none")).toBe("none");
+  });
+
+  it("formats decimal and negative numbers", () => {
+    expect(formatNumberString("-1234.56")).toBe("-1,234.56");
   });
 });
