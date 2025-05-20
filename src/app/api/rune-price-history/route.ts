@@ -4,6 +4,7 @@ import {
   createErrorResponse,
   validateRequest,
 } from "@/lib/apiUtils";
+import { normalizeRuneName } from "@/utils/runeUtils";
 import { z } from "zod";
 
 // Define the schema for the query parameters
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     // Format the rune name for the API call
     // Try with different formats to ensure we get data
-    const formattedSlug = originalSlug.replace(/[•.]/g, "").toUpperCase();
+    const formattedSlug = normalizeRuneName(originalSlug).toUpperCase();
 
     // Define a mapping for known runes that might have formatting issues
     const knownRunes: Record<string, string> = {

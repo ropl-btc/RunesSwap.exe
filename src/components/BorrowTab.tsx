@@ -24,6 +24,7 @@ import {
   LiquidiumPrepareBorrowResponse,
   LiquidiumSubmitBorrowResponse,
 } from "@/lib/apiClient";
+import { normalizeRuneName } from "@/utils/runeUtils";
 import {
   type RuneBalance as OrdiscanRuneBalance,
   type RuneMarketInfo as OrdiscanRuneMarketInfo,
@@ -120,8 +121,8 @@ export function BorrowTab({
             .filter(
               (rune) =>
                 rune.id !== liquidiumToken.id &&
-                rune.name.replace(/•/g, "") !==
-                  liquidiumToken.name.replace(/•/g, ""),
+                normalizeRuneName(rune.name) !==
+                  normalizeRuneName(liquidiumToken.name),
             );
           mappedRunes = [liquidiumToken, ...fetchedRunes];
         }
@@ -273,7 +274,7 @@ export function BorrowTab({
     runeName: string | undefined,
   ): string | null => {
     if (!runeName || !runeBalances) return null;
-    const formattedRuneName = runeName.replace(/•/g, "");
+    const formattedRuneName = normalizeRuneName(runeName);
     const found = runeBalances.find((rb) => rb.name === formattedRuneName);
     return found ? found.balance : "0";
   };

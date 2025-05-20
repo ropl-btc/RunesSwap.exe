@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import { getOrdiscanClient } from "./serverUtils";
+import { normalizeRuneName } from "@/utils/runeUtils";
 
 export interface RuneMarketData {
   price_in_sats: number;
@@ -12,7 +13,7 @@ export async function getRuneMarketData(
   runeName: string,
 ): Promise<RuneMarketData | null> {
   try {
-    const normalizedName = runeName.replace(/•/g, "");
+    const normalizedName = normalizeRuneName(runeName);
 
     // First, try to get from Supabase
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
