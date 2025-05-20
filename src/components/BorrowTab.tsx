@@ -81,9 +81,6 @@ export function BorrowTab({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loanProcessError, setLoanProcessError] = useState<string | null>(null);
   const [loanTxId, setLoanTxId] = useState<string | null>(null);
-  const [prepareData, setPrepareData] = useState<
-    LiquidiumPrepareBorrowResponse["data"] | null
-  >(null);
 
   // --- Data Fetching ---
   // Fetch popular runes on mount using API
@@ -401,7 +398,6 @@ export function BorrowTab({
     setIsPreparing(true);
     setLoanProcessError(null);
     setLoanTxId(null);
-    setPrepareData(null);
 
     try {
       // 1. Prepare Loan
@@ -450,7 +446,7 @@ export function BorrowTab({
         );
       }
 
-      setPrepareData(prepareResult.data); // Store prepare data (PSBT, prepare_offer_id)
+      // We have the prepared data for signing
 
       // 2. Sign PSBT
       setIsPreparing(false);
@@ -459,7 +455,7 @@ export function BorrowTab({
       const signResult = await signPsbt(psbtToSign); // Assuming signPsbt handles base64
 
       if (!signResult?.signedPsbtBase64) {
-        throw new Error("PSBT signing cancelled or failed.");
+        throw new Error("User canceled the request");
       }
       const signedPsbtBase64 = signResult.signedPsbtBase64;
 
@@ -504,12 +500,7 @@ export function BorrowTab({
     collateralAsset &&
     parseFloat(collateralAmount) > 0 &&
     !isLoading;
-  const canStartLoan =
-    connected &&
-    selectedQuoteId &&
-    prepareData === null &&
-    !isLoading &&
-    !loanTxId;
+  const canStartLoan = connected && selectedQuoteId && !isLoading && !loanTxId;
 
   return (
     <div className={styles.borrowTabContainer}>
