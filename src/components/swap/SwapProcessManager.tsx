@@ -37,12 +37,9 @@ export function swapProcessReducer(
   state: SwapProcessState,
   action: SwapProcessAction,
 ): SwapProcessState {
-  console.log(`SwapProcess: ${action.type}`, action);
-  // Add some additional context about the current state for better debugging
-  if (action.type !== "RESET_SWAP") {
-    console.log(
-      `Current swap state before action: isSwapping=${state.isSwapping}, swapStep=${state.swapStep}, quoteExpired=${state.quoteExpired}, isQuoteLoading=${state.isQuoteLoading}`,
-    );
+  // Log actions that contain errors or significant state changes
+  if (action.type === "SWAP_ERROR" || action.type === "FETCH_QUOTE_ERROR") {
+    console.error(`SwapProcess: ${action.type}`, action);
   }
   switch (action.type) {
     case "RESET_SWAP":
@@ -116,7 +113,7 @@ export function swapProcessReducer(
         swapStep: "error",
       };
     case "SWAP_SUCCESS":
-      console.log("Setting swap state to SUCCESS with txId:", action.txId);
+      console.info("Swap completed successfully with txId:", action.txId);
       return {
         ...state,
         isSwapping: false,
@@ -161,11 +158,8 @@ export function useSwapProcessManager({
 
   // Special handling for successful swaps - ensure the success state persists
   useEffect(() => {
-    if (swapState.swapStep === "success" && swapState.txId) {
-      console.log("Swap success state detected, ensuring it persists");
-      // This is a successful swap - we want to ensure the UI shows this
-      // The success state should persist until the user manually resets (e.g., by starting a new swap)
-    }
+    // Success state persists until the user manually resets
+    // (e.g., by starting a new swap)
   }, [swapState.swapStep, swapState.txId]);
 
   return { swapState, dispatchSwap };

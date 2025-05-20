@@ -102,7 +102,6 @@ export async function GET() {
  */
 async function refreshPopularRunesInBackground(): Promise<void> {
   try {
-    console.log("Starting background refresh of popular runes...");
     const terminal = getSatsTerminalClient();
     const popularResponse = await terminal.popularCollections({});
 
@@ -113,9 +112,6 @@ async function refreshPopularRunesInBackground(): Promise<void> {
       Array.isArray(popularResponse)
     ) {
       await cachePopularRunes(popularResponse);
-      console.log(
-        `Successfully refreshed popular runes: ${popularResponse.length} items`,
-      );
     } else {
       console.warn("Invalid response format from SatsTerminal API");
     }

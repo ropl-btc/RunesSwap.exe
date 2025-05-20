@@ -565,21 +565,10 @@ export function SwapTab({
 
   // --- Asset Selection Logic ---
   const handleSelectAssetIn = (selectedAsset: Asset) => {
-    console.log("handleSelectAssetIn called with:", {
-      selectedAsset: selectedAsset
-        ? `${selectedAsset.name} (${selectedAsset.isBTC ? "BTC" : "RUNE"})`
-        : "null",
-      currentAssetOut: assetOut
-        ? `${assetOut.name} (${assetOut.isBTC ? "BTC" : "RUNE"})`
-        : "null",
-    });
 
     // If user tries to select the same asset that's already in the output,
     // swap the assets instead of blocking the selection
     if (assetOut && selectedAsset.id === assetOut.id) {
-      console.log(
-        "Same asset selected for input as output - triggering swap direction",
-      );
       handleSwapDirection();
       return;
     }
@@ -590,15 +579,10 @@ export function SwapTab({
       if (!assetOut || assetOut.isBTC) {
         // Set to first available rune or null if none
         const newAssetOut = popularRunes.length > 0 ? popularRunes[0] : null;
-        console.log(
-          "Selected BTC as input, setting output to:",
-          newAssetOut ? `${newAssetOut.name} (Rune)` : "null",
-        );
         setAssetOut(newAssetOut);
       }
     } else {
       // If selected asset is a Rune, ensure output is BTC
-      console.log("Selected Rune as input, setting output to BTC");
       setAssetOut(BTC_ASSET);
     }
     // Clear amounts and quote when assets change
@@ -611,21 +595,9 @@ export function SwapTab({
   };
 
   const handleSelectAssetOut = (selectedAsset: Asset) => {
-    console.log("handleSelectAssetOut called with:", {
-      selectedAsset: selectedAsset
-        ? `${selectedAsset.name} (${selectedAsset.isBTC ? "BTC" : "RUNE"})`
-        : "null",
-      currentAssetIn: assetIn
-        ? `${assetIn.name} (${assetIn.isBTC ? "BTC" : "RUNE"})`
-        : "null",
-    });
-
     // If user tries to select the same asset that's already in the input,
     // swap the assets instead of blocking the selection
     if (assetIn && selectedAsset.id === assetIn.id) {
-      console.log(
-        "Same asset selected for output as input - triggering swap direction",
-      );
       handleSwapDirection();
       return;
     }
@@ -645,12 +617,6 @@ export function SwapTab({
         // Input was BTC (or null), now must be Rune
         const newAssetIn =
           popularRunes.length > 0 ? popularRunes[0] : BTC_ASSET; // Fallback needed if no popular runes
-        console.log(
-          "Selected BTC as output, setting input to:",
-          newAssetIn
-            ? `${newAssetIn.name} (${newAssetIn.isBTC ? "BTC" : "RUNE"})`
-            : "null",
-        );
         setAssetIn(newAssetIn);
         // Since input asset type changed, reset amounts
         setOutputAmount("");
@@ -658,7 +624,6 @@ export function SwapTab({
       // else: Input was already a Rune, keep it. Amount reset handled below.
     } else {
       // If the NEW output asset is a Rune, ensure input is BTC
-      console.log("Selected Rune as output, setting input to BTC");
       setAssetIn(BTC_ASSET);
       // Check if the input asset type *actually* changed
       if (!previousAssetIn || !previousAssetIn.isBTC) {
@@ -751,23 +716,8 @@ export function SwapTab({
 
   // --- Swap Direction Logic ---
   const handleSwapDirection = () => {
-    console.log("------------------------------------------------------------");
-    console.log("⚠️ Swap direction triggered:", {
-      before: {
-        assetIn: assetIn
-          ? `${assetIn.name} (${assetIn.isBTC ? "BTC" : "RUNE"})`
-          : "null",
-        assetOut: assetOut
-          ? `${assetOut.name} (${assetOut.isBTC ? "BTC" : "RUNE"})`
-          : "null",
-        inputAmount,
-        outputAmount,
-      },
-    });
-
     // Prevent double swaps
     if (swapInProgressRef.current) {
-      console.log("Swap already in progress, ignoring this request");
       return;
     }
 
@@ -776,7 +726,6 @@ export function SwapTab({
 
     // Ensure we have valid assets
     if (!assetIn || !assetOut) {
-      console.log("Cannot swap direction: missing assets");
       swapInProgressRef.current = false;
       return;
     }
@@ -790,19 +739,15 @@ export function SwapTab({
 
     if (assetIn.isBTC && !assetOut.isBTC) {
       // Currently BTC->RUNE, switch to RUNE->BTC
-      console.log("🔄 Switching from BTC->RUNE to RUNE->BTC");
       newAssetIn = assetOut; // The Rune
       newAssetOut = BTC_ASSET; // BTC
     } else if (!assetIn.isBTC && assetOut.isBTC) {
       // Currently RUNE->BTC, switch to BTC->RUNE
-      console.log("🔄 Switching from RUNE->BTC to BTC->RUNE");
       newAssetIn = BTC_ASSET; // BTC
       newAssetOut = assetIn; // The Rune
     } else {
       // Invalid current state - force a valid configuration
-      console.warn(
-        "⚠️ WARNING: Invalid current pair detected, forcing to BTC->RUNE",
-      );
+      console.warn("Invalid asset pair detected, forcing to BTC->RUNE");
 
       // Always default to BTC->Rune
       newAssetIn = BTC_ASSET;
@@ -817,7 +762,7 @@ export function SwapTab({
             : null;
 
       if (!runeAsset) {
-        console.error("❌ CRITICAL ERROR: No Rune asset available");
+        console.error("No Rune asset available for swap operation");
         swapInProgressRef.current = false;
         return;
       }
@@ -825,30 +770,9 @@ export function SwapTab({
       newAssetOut = runeAsset;
     }
 
-    console.log("🎯 TARGET swap configuration:", {
-      from: {
-        assetIn: assetIn
-          ? `${assetIn.name} (${assetIn.isBTC ? "BTC" : "RUNE"})`
-          : "null",
-        assetOut: assetOut
-          ? `${assetOut.name} (${assetOut.isBTC ? "BTC" : "RUNE"})`
-          : "null",
-      },
-      to: {
-        assetIn: newAssetIn
-          ? `${newAssetIn.name} (${newAssetIn.isBTC ? "BTC" : "RUNE"})`
-          : "null",
-        assetOut: newAssetOut
-          ? `${newAssetOut.name} (${newAssetOut.isBTC ? "BTC" : "RUNE"})`
-          : "null",
-      },
-    });
-
     // Validate the target pair
     if (newAssetIn.isBTC === newAssetOut.isBTC) {
-      console.error(
-        "❌ Invalid asset pair configured. Aborting swap operation.",
-      );
+      console.error("Invalid asset pair configured");
       swapInProgressRef.current = false;
       return;
     }
@@ -892,16 +816,16 @@ export function SwapTab({
 
         // First clear the state completely (no assets -> cannot be invalid)
         await new Promise<void>((resolve) => {
-          console.log("🧹 Clearing asset state temporarily");
-          // Set temporary null values for failsafe clearing
-          setAssetIn(null);
-          setAssetOut(null);
+          // Instead of using null, use safe default values
+          setAssetIn(BTC_ASSET); // Default to BTC
+          if (popularRunes.length > 0) {
+            setAssetOut(popularRunes[0]); // Set to first popular rune
+          }
           setTimeout(resolve, 20);
         });
 
         // Then set to the desired end state
         await new Promise<void>((resolve) => {
-          console.log("🔄 Setting final asset pair atomically");
           // Use the ref to set both values at once
           const finalIn = tempAssetPairRef.current.in;
           const finalOut = tempAssetPairRef.current.out;
@@ -912,17 +836,15 @@ export function SwapTab({
             setAssetOut(finalOut);
           } else {
             // Fallback to original values if something went wrong
-            console.warn("⚠️ Using fallback values for asset swap");
+            console.warn("Using fallback values for asset swap");
             setAssetIn(originalAssetIn);
             setAssetOut(originalAssetOut);
           }
 
           setTimeout(resolve, 20);
         });
-
-        console.log("✅ Asset swap completed successfully");
       } catch (error) {
-        console.error("❌ Error during atomic asset swap:", error);
+        console.error("Error during asset swap:", error);
       } finally {
         // Reset the swap flag to allow further operations
         swapInProgressRef.current = false;
@@ -930,12 +852,7 @@ export function SwapTab({
     };
 
     // Execute the atomic swap
-    performAtomicAssetSwap().then(() => {
-      console.log("✅ Swap direction operation complete");
-      console.log(
-        "------------------------------------------------------------",
-      );
-    });
+    performAtomicAssetSwap();
   };
 
   // --- Quote & Price Calculation ---
@@ -943,11 +860,6 @@ export function SwapTab({
   const handleFetchQuote = useCallback(async () => {
     // Safety checks for all required values
     if (!inputAmount || !parseFloat(inputAmount) || !assetIn || !assetOut) {
-      console.log("Missing required inputs for quote", {
-        inputAmount,
-        assetIn,
-        assetOut,
-      });
       return;
     }
 
@@ -956,7 +868,6 @@ export function SwapTab({
 
     // Check if we're currently throttled
     if (isThrottledRef.current) {
-      console.log("Quote fetch throttled, skipping this request");
       return;
     }
 
@@ -1012,11 +923,6 @@ export function SwapTab({
       const runeName = assetIn.isBTC ? assetOut.name : assetIn.name;
       const isSell = !assetIn.isBTC;
 
-      // Log the request parameters for debugging
-      console.log(
-        `Fetching quote: ${isSell ? "Selling" : "Buying"} ${runeName}, amount: ${amount}`,
-      );
-
       const params = {
         btcAmount: amount,
         runeName,
@@ -1039,7 +945,6 @@ export function SwapTab({
             // Rethrow after final attempt
             throw fetchError;
           }
-          console.log(`Quote fetch attempt ${attempts} failed, retrying...`);
           await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second before retry
         }
       }
@@ -1453,11 +1358,6 @@ export function SwapTab({
           : recommendedFeeRates.halfHourFee // Use half-hour fee for buying runes (medium priority)
         : 15; // Fallback if API data isn't available
 
-      // Log fee rate info for essential monitoring
-      console.log(
-        `Using ${optimalFeeRate} sat/vB fee rate for ${!isBtcToRune ? "selling" : "buying"} transaction`,
-      );
-
       const psbtParams: GetPSBTParams = {
         orders: orders,
         address: address,
@@ -1490,7 +1390,6 @@ export function SwapTab({
         }
 
         // 2. Sign PSBT(s) - Remains client-side via LaserEyes
-        console.log("Step 2: Signing PSBT with wallet...");
         dispatchSwap({ type: "SWAP_STEP", step: "signing" });
         const mainSigningResult = await signPsbt(mainPsbtBase64);
         const signedMainPsbt = mainSigningResult?.signedPsbtBase64;
@@ -1507,7 +1406,6 @@ export function SwapTab({
         }
 
         // 3. Confirm PSBT via API
-        console.log("Step 3: Confirming signed PSBT via API...");
         dispatchSwap({ type: "SWAP_STEP", step: "confirming" });
         const confirmParams: ConfirmPSBTParams = {
           orders: orders,
@@ -1543,10 +1441,7 @@ export function SwapTab({
             `Confirmation failed or transaction ID missing. Response: ${JSON.stringify(confirmResult)}`,
           );
         }
-        console.log("Swap successful! Transaction ID:", finalTxId);
-        console.log(
-          "Swap successful! Setting success state and preventing further fetches",
-        );
+        console.info("Swap successful! Transaction ID:", finalTxId);
         dispatchSwap({ type: "SWAP_SUCCESS", txId: finalTxId });
 
         // Prevent further operations
@@ -1576,10 +1471,6 @@ export function SwapTab({
         errorMessage.includes("Network fee rate not high enough") ||
         errorMessage.includes("fee rate")
       ) {
-        console.log(
-          "Fee rate too low for network conditions, attempting retry with higher fee",
-        );
-
         // First, notify the user that we're retrying
         dispatchSwap({
           type: "SET_GENERIC_ERROR",
@@ -1593,10 +1484,6 @@ export function SwapTab({
           const highPriorityFeeRate = recommendedFeeRates
             ? Math.ceil(recommendedFeeRates.fastestFee * 1.3) // 30% more than fastest
             : 35; // fallback high value
-
-          console.log(
-            `Retrying with higher fee rate: ${highPriorityFeeRate} sat/vB (was ${psbtParams.feeRate} sat/vB)`,
-          );
 
           const retryParams = {
             ...psbtParams,
@@ -1676,9 +1563,7 @@ export function SwapTab({
             );
           }
 
-          console.log(
-            `Transaction successful with higher fee rate! TxID: ${finalTxId}`,
-          );
+          console.info("Transaction successful with higher fee rate!", finalTxId);
           dispatchSwap({ type: "SWAP_SUCCESS", txId: finalTxId });
 
           // Prevent further operations
@@ -1758,9 +1643,7 @@ export function SwapTab({
     } finally {
       // We NEVER reset or change the state if a swap was successful (has txId)
       if (swapState.txId) {
-        console.log("Swap has transaction ID - preserving success state");
         if (swapState.swapStep !== "success") {
-          console.log("Ensuring swap step is set to success");
           dispatchSwap({ type: "SWAP_SUCCESS", txId: swapState.txId });
         }
         return;
@@ -1769,24 +1652,20 @@ export function SwapTab({
       // We need to handle different final states appropriately
       if (swapState.swapStep === "success" && swapState.txId) {
         // Success case - keep the success state and txId
-        console.log("Transaction successful, preserving success state");
+        // Success case handled
       } else if (errorMessageRef.current?.includes("User canceled")) {
         // User canceled case - ensure we reset to a fully interactive state
-        console.log(
-          "User canceled operation, ensuring UI is reset to interactive state",
-        );
+        // Reset UI state for user cancellation case
 
         // Set to idle AND explicitly ensure loading state is cleared
         // This is crucial to ensure the button becomes clickable again
         dispatchSwap({ type: "SWAP_STEP", step: "idle" });
       } else if (quoteExpired) {
         // Quote expired case - keep expired state to prompt for new quote
-        console.log("Quote expired, preserving expired state");
+        // Keep expired state for user to refresh
       } else if (swapState.swapStep !== "success") {
         // All other non-success cases - reset to idle state
-        console.log(
-          "Resetting swap state to idle after non-successful operation",
-        );
+        // Reset to idle for normal error recovery
         dispatchSwap({ type: "SWAP_STEP", step: "idle" });
       }
     }
@@ -1900,8 +1779,8 @@ export function SwapTab({
                   const decimals = swapRuneInfo?.decimals ?? 0;
                   const displayValue = balanceNum / 10 ** decimals;
                   return `${displayValue.toLocaleString(undefined, { maximumFractionDigits: decimals })}`;
-                } catch (error) {
-                  console.error("Error formatting rune balance:", error);
+                } catch (formattingError) {
+                  // Formatting error occurred
                   return "Formatting Error";
                 }
               })()

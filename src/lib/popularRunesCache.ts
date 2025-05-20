@@ -216,7 +216,7 @@ export async function cachePopularRunes(
       },
     ]);
 
-    console.log(`Successfully cached ${runesData.length} popular runes`);
+    // Operation completed successfully
   } catch (error) {
     console.error("Error caching popular runes:", error);
     // Errors in caching are non-critical
