@@ -28,3 +28,8 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.root:focus {
+  outline: 2px dotted var(--win98-blue);
+  outline-offset: 2px;
+}

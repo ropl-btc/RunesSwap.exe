@@ -88,17 +88,24 @@ export const InputArea: React.FC<InputAreaProps> = ({
 
   // Loading dots animation
   React.useEffect(() => {
-    if (
+    const shouldAnimate =
       isAssetsLoading ||
       isPreselectedAssetLoading ||
       isSearching ||
-      (inputValue && inputValue.includes("Loading"))
-    ) {
-      const interval = setInterval(() => {
-        setLoadingDots((prev) => (prev === "..." ? "" : prev + "."));
-      }, 500);
-      return () => clearInterval(interval);
+      inputValue?.includes("Loading");
+
+    if (!shouldAnimate) {
+      // Reset loading dots when animation should stop
+      setLoadingDots("");
+      return;
     }
+
+    const interval = setInterval(() => {
+      setLoadingDots((prev) => (prev === "..." ? "" : prev + "."));
+    }, 500);
+
+    // Always return the cleanup function
+    return () => clearInterval(interval);
   }, [isAssetsLoading, isPreselectedAssetLoading, isSearching, inputValue]);
 
   // Function to check if a string is a valid image src

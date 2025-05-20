@@ -16,7 +16,7 @@ export async function GET() {
 
     // If we have cached data and it's not expired, return it immediately
     if (cachedData && !isExpired) {
-      return createSuccessResponse(cachedData);
+      return createSuccessResponse({ data: cachedData, isStale: false });
     }
 
     // If cache is expired but we have data, try to refresh but use cached as fallback
@@ -30,7 +30,7 @@ export async function GET() {
           console.warn(
             "Invalid response from SatsTerminal, using expired cache",
           );
-          return createSuccessResponse(cachedData);
+          return createSuccessResponse({ data: cachedData, isStale: true });
         }
 
         // Cache the fresh data
@@ -40,13 +40,13 @@ export async function GET() {
         }
 
         // If response is not an array, use cached data
-        return createSuccessResponse(cachedData);
+        return createSuccessResponse({ data: cachedData, isStale: true });
       } catch (error) {
         console.warn(
           "Error refreshing popular runes, using expired cache:",
           error,
         );
-        return createSuccessResponse(cachedData);
+        return createSuccessResponse({ data: cachedData, isStale: true });
       }
     }
 
