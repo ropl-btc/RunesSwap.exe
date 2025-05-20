@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchRunePriceHistoryFromApi, QUERY_KEYS } from "@/lib/apiClient";
+import usePriceHistory from "@/hooks/usePriceHistory";
 import styles from "./AppInterface.module.css";
 import {
   ResponsiveContainer,
@@ -33,139 +32,15 @@ const PriceChart: React.FC<PriceChartProps> = ({
   const [showTooltip, setShowTooltip] = useState(false);
   const [btcPriceLoadingTimeout, setBtcPriceLoadingTimeout] = useState(false);
 
-  // Fetch price history data using React Query
+  // Price history data
   const {
-    data: priceHistoryData,
+    filteredPriceData,
+    startTime,
+    endTime,
+    getCustomTicks,
     isLoading,
     isError,
-  } = useQuery({
-    queryKey: [QUERY_KEYS.RUNE_PRICE_HISTORY, assetName],
-    queryFn: () => fetchRunePriceHistoryFromApi(assetName),
-    staleTime: 5 * 60 * 1000, // Consider data stale after 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
-    refetchOnWindowFocus: false, // Don't refetch on window focus
-    retry: 2, // Retry failed requests twice
-  });
-
-  // TEMPORARY FIX: The external API only returns data points when the price changes, so there are gaps in the time series.
-  // This helper forward-fills missing hourly data points so the chart is visually continuous.
-  // Ideally, the API should provide a complete time series and this workaround can be removed.
-  function fillMissingHours(
-    sortedData: { timestamp: number; price: number }[],
-    hours: number,
-    endTimestamp: number,
-  ) {
-    const filled: { timestamp: number; price: number }[] = [];
-    let lastPrice = sortedData.length ? sortedData[0].price : undefined;
-    let dataIdx = 0;
-    for (let i = hours - 1; i >= 0; i--) {
-      const ts = endTimestamp - i * 60 * 60 * 1000;
-      while (
-        dataIdx < sortedData.length &&
-        sortedData[dataIdx].timestamp <= ts
-      ) {
-        lastPrice = sortedData[dataIdx].price;
-        dataIdx++;
-      }
-      if (typeof lastPrice === "number") {
-        filled.push({
-          timestamp: ts,
-          price: lastPrice,
-        });
-      }
-    }
-    return filled;
-  }
-
-  // Replace the filtering and start/end logic in the useMemo for filteredPriceData
-  const { filteredPriceData, startTime, endTime } = React.useMemo(() => {
-    if (!priceHistoryData?.prices || priceHistoryData.prices.length === 0) {
-      return { filteredPriceData: [], startTime: null, endTime: null };
-    }
-
-    // Sort data by timestamp ascending (keep price in sats)
-    const sortedData = priceHistoryData.prices
-      .map((point) => ({
-        ...point,
-        price: point.price, // price is in sats
-      }))
-      .filter(
-        (point): point is { timestamp: number; price: number } =>
-          typeof point.price === "number",
-      )
-      .sort((a, b) => a.timestamp - b.timestamp);
-
-    // Determine time window
-    let now = Date.now();
-    let windowStart: number;
-    let hours = 0;
-    switch (selectedTimeframe) {
-      case "24h":
-        hours = 24;
-        windowStart = now - 24 * 60 * 60 * 1000;
-        break;
-      case "7d":
-        hours = 7 * 24;
-        windowStart = now - 7 * 24 * 60 * 60 * 1000;
-        break;
-      case "30d":
-        hours = 30 * 24;
-        windowStart = now - 30 * 24 * 60 * 60 * 1000;
-        break;
-      case "90d":
-        windowStart = sortedData[0]?.timestamp || now;
-        now = sortedData[sortedData.length - 1]?.timestamp || now;
-        break;
-    }
-
-    let filtered;
-    if (selectedTimeframe === "90d") {
-      filtered = sortedData.filter(
-        (point) => point.timestamp >= windowStart && point.timestamp <= now,
-      );
-    } else {
-      filtered = fillMissingHours(sortedData, hours, now);
-    }
-
-    return {
-      filteredPriceData: filtered,
-      startTime: filtered.length > 0 ? new Date(filtered[0].timestamp) : null,
-      endTime:
-        filtered.length > 0
-          ? new Date(filtered[filtered.length - 1].timestamp)
-          : null,
-    };
-  }, [priceHistoryData, selectedTimeframe]);
-
-  // Replace getCustomTicks logic with a simpler, data-driven approach
-  const getCustomTicks = React.useMemo(() => {
-    if (!startTime || !endTime || filteredPriceData.length === 0) return [];
-
-    const dataTimestamps = filteredPriceData.map((p) => p.timestamp);
-
-    switch (selectedTimeframe) {
-      case "24h": {
-        // Use available data points for ticks, spaced every ~3-4 points (hourly granularity)
-        const tickCount = Math.min(8, dataTimestamps.length);
-        if (tickCount <= 2) return dataTimestamps;
-        const step = Math.floor(dataTimestamps.length / (tickCount - 1));
-        return dataTimestamps.filter(
-          (_, i) => i % step === 0 || i === dataTimestamps.length - 1,
-        );
-      }
-      case "7d":
-      case "30d":
-      case "90d": {
-        // For longer timeframes, space ticks evenly across available data
-        const tickCount = 6;
-        if (dataTimestamps.length <= tickCount) return dataTimestamps;
-        const step = Math.floor(dataTimestamps.length / (tickCount - 1));
-        return dataTimestamps.filter(
-          (_, i) => i % step === 0 || i === dataTimestamps.length - 1,
-        );
-      }
-    }
-  }, [startTime, endTime, filteredPriceData, selectedTimeframe]);
+  } = usePriceHistory(assetName, selectedTimeframe);
 
   useEffect(() => {
     if (btcPriceUsd === undefined) {
