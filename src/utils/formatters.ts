@@ -13,12 +13,15 @@ export function formatNumberString(
   if (!numStr) return defaultDisplay;
 
   try {
-    // Parse the number string
-    const num = parseFloat(numStr);
-    if (isNaN(num)) return defaultDisplay;
+    // Remove any existing commas and validate the string contains only digits
+    // and an optional decimal part. This avoids precision issues with
+    // `parseFloat` on very large numbers.
+    const cleaned = String(numStr).replace(/,/g, "");
+    if (!/^\d+(\.\d+)?$/.test(cleaned)) return defaultDisplay;
 
-    // Format with commas for thousands separator
-    return num.toLocaleString();
+    const [intPart, decPart] = cleaned.split(".");
+    const withCommas = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return decPart ? `${withCommas}.${decPart}` : withCommas;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     return defaultDisplay;
