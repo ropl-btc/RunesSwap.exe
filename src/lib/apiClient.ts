@@ -484,14 +484,20 @@ export const repayLiquidiumLoan = async (
         `Failed to repay loan: ${response.statusText}`,
     );
   }
-  // Map Liquidium API fields to expected frontend fields
+  // Map Liquidium API fields to expected frontend fields without mutating raw response
   if (data?.data) {
-    data.data = {
-      psbt: data.data.base64_psbt || data.data.psbt,
-      repaymentAmountSats: data.data.repayment_amount_sats,
-      loanId: data.data.offer_id || loanId,
-      ...data.data,
+    // Create a new transformed data object instead of mutating the original
+    const transformedData = {
+      success: data.success,
+      data: {
+        psbt: data.data.base64_psbt || data.data.psbt,
+        repaymentAmountSats: data.data.repayment_amount_sats,
+        loanId: data.data.offer_id || loanId,
+        ...data.data, // Include any other fields from the original data
+      },
+      error: data.error,
     };
+    return transformedData;
   }
   return data;
 };
@@ -706,43 +712,38 @@ export const submitLiquidiumBorrow = async (params: {
   prepare_offer_id: string;
   address: string; // User's address for JWT lookup
 }): Promise<LiquidiumSubmitBorrowResponse> => {
+  const response = await fetch("/api/liquidium/borrow/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+
+  let data;
   try {
-    const response = await fetch("/api/liquidium/borrow/submit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(params),
-    });
-
-    let data;
-    try {
-      data = await response.json();
-    } catch {
-      // If the response was OK but we couldn't parse JSON, create a synthetic success response
-      if (response.ok) {
-        return {
-          success: true,
-          data: {
-            loan_transaction_id: params.prepare_offer_id,
-            message: "Loan successfully started",
-          },
-        } as LiquidiumSubmitBorrowResponse;
-      }
-
-      throw new Error("Failed to parse submit borrow response");
+    data = await response.json();
+  } catch {
+    // If the response was OK but we couldn't parse JSON, create a synthetic success response
+    if (response.ok) {
+      return {
+        success: true,
+        data: {
+          loan_transaction_id: params.prepare_offer_id,
+        },
+      };
     }
 
-    if (!response.ok) {
-      const errorMessage =
-        data?.error?.message ||
-        data?.error ||
-        `Failed to submit borrow: ${response.statusText}`;
-      throw new Error(errorMessage);
-    }
-
-    return data as LiquidiumSubmitBorrowResponse;
-  } catch (error) {
-    throw error;
+    throw new Error("Failed to parse submit borrow response");
   }
+
+  if (!response.ok) {
+    const errorMessage =
+      data?.error?.message ||
+      data?.error ||
+      `Failed to submit borrow: ${response.statusText}`;
+    throw new Error(errorMessage);
+  }
+
+  return data as LiquidiumSubmitBorrowResponse;
 };
 
 // Interface for borrow range response

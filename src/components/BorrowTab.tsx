@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import styles from "./BorrowTab.module.css";
 import Button from "./Button"; // Reuse Button component
 import { Asset } from "@/types/common";
@@ -59,6 +60,7 @@ export function BorrowTab({
   paymentPublicKey,
   signPsbt,
 }: BorrowTabProps) {
+  const router = useRouter();
   // --- State ---
   const [collateralAsset, setCollateralAsset] = useState<Asset | null>(null);
   const [collateralAmount, setCollateralAmount] = useState(""); // Amount of Rune to use as collateral
@@ -286,6 +288,7 @@ export function BorrowTab({
     setLoanProcessError(null);
     setLoanTxId(null);
     setMinMaxRange(null);
+    setBorrowRangeError(null); // Clear any existing borrow range error
   };
 
   const handleGetQuotes = async () => {
@@ -640,11 +643,15 @@ export function BorrowTab({
             const repaymentBtc = (
               quote.loan_breakdown.total_repayment_sats / 1e8
             ).toFixed(8);
-            const interestPercent = (
-              (quote.loan_breakdown.interest_sats /
-                quote.loan_breakdown.principal_sats) *
-              100
-            ).toFixed(2);
+            // Calculate interest percentage safely, avoiding division by zero
+            const interestPercent =
+              quote.loan_breakdown.principal_sats > 0
+                ? (
+                    (quote.loan_breakdown.interest_sats /
+                      quote.loan_breakdown.principal_sats) *
+                    100
+                  ).toFixed(2)
+                : "0.00"; // Default to 0% if principal is zero
             return (
               <div
                 key={quote.offer_id}
@@ -737,8 +744,8 @@ export function BorrowTab({
             <div className={styles.successButtons}>
               <Button
                 onClick={() => {
-                  // Navigate to the portfolio tab
-                  window.location.href = "/?tab=portfolio";
+                  // Navigate to the portfolio tab using client-side routing
+                  router.push("/?tab=portfolio", { scroll: false });
                 }}
                 style={{ marginRight: "var(--space-2)" }}
               >

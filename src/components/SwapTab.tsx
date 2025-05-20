@@ -1170,9 +1170,10 @@ export function SwapTab({
           error: "Quote expired. Please fetch a new one.",
         });
       } else if (errorMessage.includes("User canceled the request")) {
-        // User cancelled signing
+        // User cancelled signing - perform a soft reset that allows retry
         dispatchSwap({ type: "SET_GENERIC_ERROR", error: errorMessage });
-        dispatchSwap({ type: "SWAP_ERROR", error: errorMessage });
+        // Using soft reset instead of SWAP_ERROR allows the user to retry
+        dispatchSwap({ type: "SWAP_STEP", step: "quote_ready" });
       } else {
         // Other swap errors
         dispatchSwap({ type: "SET_GENERIC_ERROR", error: errorMessage });
