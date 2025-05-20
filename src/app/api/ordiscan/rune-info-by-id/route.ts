@@ -94,8 +94,7 @@ export async function GET(request: NextRequest) {
           return NextResponse.json(runeData);
         }
       }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
+    } catch {
       // Error handled by returning not found
     }
 
@@ -104,8 +103,7 @@ export async function GET(request: NextRequest) {
       { error: "Rune not found with the given prefix" },
       { status: 404 },
     );
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

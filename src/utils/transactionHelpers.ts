@@ -154,8 +154,7 @@ export function interpretRuneTransaction(
         runeAmountRaw = "N/A"; // Amount for external transfers is ambiguous
       }
     }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
+  } catch {
     // Default values will be returned
   }
 

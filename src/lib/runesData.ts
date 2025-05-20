@@ -58,9 +58,7 @@ export async function getRuneData(runeName: string): Promise<RuneData | null> {
     // even if caching to DB fails
 
     return runeData as RuneData;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
+  } catch {
     return null;
   }
 }
-
