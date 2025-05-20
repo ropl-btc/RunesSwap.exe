@@ -49,11 +49,12 @@ export function getSatsTerminalClient(): SatsTerminal {
 
 /**
  * Gets an object for interacting with the Liquidium API securely on the server.
- * Requires LIQUIDIUM_API_KEY and LIQUIDIUM_API_URL environment variables.
+ * Requires the LIQUIDIUM_API_KEY environment variable. The LIQUIDIUM_API_URL
+ * variable is optional and defaults to https://alpha.liquidium.wtf if not set.
  */
 export function getLiquidiumClient() {
   const apiKey = process.env.LIQUIDIUM_API_KEY;
-  const apiUrl = process.env.LIQUIDIUM_API_URL || "https://alpha.liquidium.fi";
+  const apiUrl = process.env.LIQUIDIUM_API_URL || "https://alpha.liquidium.wtf";
   if (!apiKey) {
     throw new Error("Server configuration error: Missing Liquidium API Key");
   }

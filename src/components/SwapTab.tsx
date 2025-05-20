@@ -18,6 +18,7 @@ import {
   type GetPSBTParams,
   type ConfirmPSBTParams,
 } from "satsterminal-sdk";
+import { normalizeRuneName } from "@/utils/runeUtils";
 import { Asset, BTC_ASSET } from "@/types/common";
 import type { Rune } from "@/types/satsTerminal.ts";
 import { InputArea } from "./InputArea";
@@ -256,11 +257,11 @@ export function SwapTab({
 
         // Force search for the rune if it changes
         // Normalize names by removing spacers for comparison
-        const normalizedPreSelected = preSelectedRune.replace(/•/g, "");
+        const normalizedPreSelected = normalizeRuneName(preSelectedRune);
 
         // Try to find in available runes first
         const rune = availableRunes.find(
-          (r) => r.name.replace(/•/g, "") === normalizedPreSelected,
+          (r) => normalizeRuneName(r.name) === normalizedPreSelected,
         );
 
         if (rune) {
@@ -288,7 +289,7 @@ export function SwapTab({
             if (searchResults && searchResults.length > 0) {
               // Find closest match
               const matchingRune = searchResults.find(
-                (r) => r.name.replace(/•/g, "") === normalizedPreSelected,
+                (r) => normalizeRuneName(r.name) === normalizedPreSelected,
               );
 
               // If found a match or just take the first result if no exact match
@@ -387,8 +388,8 @@ export function SwapTab({
           .filter(
             (rune) =>
               rune.id !== liquidiumToken.id &&
-              rune.name.replace(/•/g, "") !==
-                liquidiumToken.name.replace(/•/g, ""),
+              normalizeRuneName(rune.name) !==
+                normalizeRuneName(liquidiumToken.name),
           );
 
         // Prepend the hardcoded token ONLY if no pre-selected rune
@@ -446,8 +447,8 @@ export function SwapTab({
             .filter(
               (rune) =>
                 rune.id !== liquidiumToken.id &&
-                rune.name.replace(/•/g, "") !==
-                  liquidiumToken.name.replace(/•/g, ""),
+                normalizeRuneName(rune.name) !==
+                  normalizeRuneName(liquidiumToken.name),
             );
 
           mappedRunes = [liquidiumToken, ...fetchedRunes];
@@ -519,7 +520,10 @@ export function SwapTab({
     isLoading: isSwapRuneInfoLoading,
     error: swapRuneInfoError,
   } = useQuery<RuneData | null, Error>({
-    queryKey: ["runeInfoApi", assetIn?.name?.replace(/•/g, "")],
+    queryKey: [
+      "runeInfoApi",
+      assetIn?.name ? normalizeRuneName(assetIn.name) : undefined,
+    ],
     queryFn: () =>
       assetIn && !assetIn.isBTC && assetIn.name
         ? fetchRuneInfoFromApi(assetIn.name)
@@ -1228,7 +1232,7 @@ export function SwapTab({
   ): string | null => {
     if (!runeName || !runeBalances) return null;
     // Ordiscan returns names without spacers, so compare without them
-    const formattedRuneName = runeName.replace(/•/g, "");
+    const formattedRuneName = normalizeRuneName(runeName);
     const found = runeBalances?.find((rb) => rb.name === formattedRuneName);
     return found ? found.balance : "0"; // Return '0' if not found, assuming 0 balance
   };

@@ -6,6 +6,7 @@ import {
   validateRequest,
 } from "@/lib/apiUtils";
 import { getRuneData } from "@/lib/runesData";
+import { normalizeRuneName } from "@/utils/runeUtils";
 import { z } from "zod";
 
 export async function GET(request: NextRequest) {
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
   const { name: validName } = validation.data;
 
   // Ensure name doesn't have spacers for the API call
-  const formattedName = validName.replace(/•/g, "");
+  const formattedName = normalizeRuneName(validName);
 
   try {
     const runeInfo = await getRuneData(formattedName);

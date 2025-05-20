@@ -6,6 +6,7 @@ import {
   validateRequest,
 } from "@/lib/apiUtils";
 import { getRuneMarketData } from "@/lib/runeMarketData";
+import { normalizeRuneName } from "@/utils/runeUtils";
 import { z } from "zod";
 
 export async function GET(request: NextRequest) {
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
   const { name: validName } = validation.data;
 
   // Ensure name doesn't have spacers for the API call
-  const formattedName = validName.replace(/•/g, "");
+  const formattedName = normalizeRuneName(validName);
 
   try {
     const marketInfo = await getRuneMarketData(formattedName);

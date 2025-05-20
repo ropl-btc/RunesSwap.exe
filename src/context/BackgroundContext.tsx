@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 
+const STORAGE_KEY = "runesswap-background";
+
 interface BackgroundContextType {
   backgroundImage: string | null;
   setBackgroundImage: (image: string | null) => void;
@@ -20,7 +22,7 @@ export function BackgroundProvider({
   // Load background from localStorage on mount and save when it changes
   useEffect(() => {
     try {
-      const savedBackground = localStorage.getItem("runesswap-background");
+      const savedBackground = localStorage.getItem(STORAGE_KEY);
       if (savedBackground) setBackgroundImage(savedBackground);
     } catch {
       // Ignore errors (e.g., localStorage not available)
@@ -30,9 +32,9 @@ export function BackgroundProvider({
   useEffect(() => {
     try {
       if (backgroundImage) {
-        localStorage.setItem("runesswap-background", backgroundImage);
+        localStorage.setItem(STORAGE_KEY, backgroundImage);
       } else {
-        localStorage.removeItem("runesswap-background");
+        localStorage.removeItem(STORAGE_KEY);
       }
     } catch {
       // Ignore errors

@@ -24,7 +24,9 @@ export const QUERY_KEYS = {
   RUNE_ACTIVITY: "runeActivity",
   PORTFOLIO_DATA: "portfolioData",
   LIQUIDIUM_PORTFOLIO: "liquidiumPortfolio",
-};
+} as const;
+
+export type QueryKey = (typeof QUERY_KEYS)[keyof typeof QUERY_KEYS];
 
 // Standard API response handler
 const handleApiResponse = <T>(data: unknown, expectedArrayType = false): T => {
@@ -227,7 +229,7 @@ export const fetchRuneBalancesFromApi = async (
 export const fetchRuneInfoFromApi = async (
   name: string,
 ): Promise<RuneData | null> => {
-  const normalizedName = name.replace(/•/g, "");
+  const normalizedName = normalizeRuneName(name);
   const response = await fetch(
     `/api/ordiscan/rune-info?name=${encodeURIComponent(normalizedName)}`,
   );
@@ -255,7 +257,7 @@ export const fetchRuneInfoFromApi = async (
 export const updateRuneDataViaApi = async (
   name: string,
 ): Promise<RuneData | null> => {
-  const normalizedName = name.replace(/•/g, "");
+  const normalizedName = normalizeRuneName(name);
   const response = await fetch("/api/ordiscan/rune-update", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -285,7 +287,7 @@ export const updateRuneDataViaApi = async (
 export const fetchRuneMarketFromApi = async (
   name: string,
 ): Promise<OrdiscanRuneMarketInfo | null> => {
-  const normalizedName = name.replace(/•/g, "");
+  const normalizedName = normalizeRuneName(name);
   const response = await fetch(
     `/api/ordiscan/rune-market?name=${encodeURIComponent(normalizedName)}`,
   );
