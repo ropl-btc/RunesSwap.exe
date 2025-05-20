@@ -1,0 +1,343 @@
+/* InputArea Component Styles */
+
+.inputArea {
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  background-color: var(--win98-white);
+  width: 100%;
+  min-width: auto; /* Override min-width for narrow containers */
+  border: var(--win98-border-inset);
+  border-color: var(--win98-border-inset-colors);
+}
+
+.inputHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline; /* Align baselines of label and balance text */
+  width: 100%;
+}
+
+.inputLabel {
+  font-size: var(--font-size-small);
+  line-height: 1rem;
+}
+
+.availableBalance {
+  font-size: var(--font-size-small);
+  line-height: 1rem;
+  color: var(--win98-dark-gray);
+  text-align: right;
+  margin-left: var(--space-2);
+}
+
+.percentageShortcuts {
+  font-size: var(--font-size-small);
+  color: var(--win98-dark-gray);
+}
+
+.percentageButton {
+  font-size: var(--font-size-small);
+  color: var(--win98-dark-gray);
+  margin: 0 var(--space-1);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.percentageButton:hover {
+  color: var(--win98-blue);
+}
+
+.percentageButton:active {
+  color: var(--win98-dark-blue);
+}
+
+.inputRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.amountInput {
+  font-size: var(--font-size-large);
+  line-height: 1.75rem;
+  width: 100%;
+  padding: var(--space-1);
+  border: none;
+  outline: none;
+  background: transparent;
+}
+
+.amountInput::placeholder {
+  color: var(--win98-dark-gray);
+}
+
+.amountInputReadOnly {
+  composes: amountInput; /* Inherit base input styles */
+  color: var(--win98-dark-gray);
+}
+
+.usdValueText {
+  font-size: var(--font-size-small);
+  color: var(--win98-dark-gray);
+  text-align: left;
+  padding-left: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.loadingText {
+  font-style: italic;
+  color: var(--win98-dark-gray);
+}
+
+.errorText {
+  color: var(--win98-red);
+}
+
+.messageWithIcon {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.messageIcon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Asset Selector Styles */
+.listboxContainer {
+  flex-shrink: 0;
+  position: relative;
+}
+
+.listboxRelative {
+  position: relative;
+}
+
+.baseButton {
+  padding: var(--space-2) var(--space-4);
+  background-color: var(--win98-gray);
+  color: var(--win98-black);
+  cursor: pointer;
+  border: var(--win98-border-outset);
+  border-color: var(--win98-border-outset-colors);
+}
+
+.baseButton:active {
+  border-color: var(--win98-border-inset-colors);
+}
+
+.baseButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: var(--win98-dark-gray);
+}
+
+.listboxButton {
+  composes: baseButton; /* Inherit base button styles */
+  position: relative;
+  width: 100%;
+  cursor: default;
+  padding: var(--space-1) 2.5rem var(--space-1) var(--space-2); /* Custom padding */
+  text-align: left;
+  font-size: var(--font-size-normal);
+}
+
+.listboxButton:focus {
+  outline: none; /* Or style focus state if needed */
+}
+
+.listboxButtonText {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.listboxButtonIconContainer {
+  pointer-events: none;
+  position: absolute;
+  inset: 0 0 0 auto; /* top, right, bottom, left */
+  display: flex;
+  align-items: center;
+  padding-right: var(--space-2);
+}
+
+.listboxButtonIcon {
+  height: 1.25rem;
+  width: 1.25rem;
+  color: var(--win98-dark-gray);
+}
+
+.listboxOptions {
+  position: absolute;
+  right: 0; /* Align right edge */
+  margin-top: var(--space-1);
+  max-height: 15rem;
+  min-width: 100%;
+  width: max-content; /* Expand for long names */
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  background-color: var(--win98-gray);
+  padding: var(--space-1) 0;
+  font-size: var(--font-size-normal);
+  z-index: var(--z-dropdown);
+  border: var(--win98-border-outset);
+  border-color: var(--win98-border-outset-colors);
+}
+
+/* Hide webkit scrollbar */
+.listboxOptions::-webkit-scrollbar {
+  display: none;
+}
+
+.listboxOption {
+  position: relative;
+  cursor: default;
+  user-select: none;
+  padding: var(--space-2) var(--space-4) var(--space-2) 2.5rem; /* Space for checkmark */
+}
+
+.listboxOptionActive {
+  background-color: var(--win98-blue);
+  color: var(--win98-white);
+}
+
+.listboxOptionInactive {
+  color: var(--win98-black);
+}
+
+.listboxOptionText {
+  display: block;
+  white-space: nowrap;
+  padding: var(--space-1) 0;
+}
+
+.listboxOptionTextSelected {
+  font-weight: 500; /* Medium */
+}
+
+.listboxOptionTextUnselected {
+  font-weight: 400; /* Normal */
+}
+
+.listboxOptionCheckContainer {
+  position: absolute;
+  inset: 0; /* top, right, bottom, left */
+  display: flex;
+  align-items: center;
+  padding-left: var(--space-2);
+  color: var(--win98-blue); /* Check color when active */
+}
+
+.listboxOptionCheckIcon {
+  height: 1.25rem;
+  width: 1.25rem;
+}
+
+.listboxLoadingOrEmpty {
+  position: relative;
+  cursor: default;
+  user-select: none;
+  padding: var(--space-2) var(--space-4);
+  color: var(--win98-dark-gray);
+}
+
+.listboxError {
+  composes: listboxLoadingOrEmpty;
+  color: var(--win98-red);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Search container styles */
+.searchContainer {
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--win98-dark-gray);
+}
+
+.searchWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchInput {
+  width: 100%;
+  padding: var(--space-1) var(--space-2) var(--space-1) 2rem; /* Left padding for icon */
+  background-color: var(--win98-white);
+  color: var(--win98-black);
+  font-size: var(--font-size-normal);
+  border: var(--win98-border-inset);
+  border-color: var(--win98-border-inset-colors);
+}
+
+.searchInput:focus {
+  outline: 1px solid var(--win98-blue);
+}
+
+/* Style for the embedded search icon */
+.searchIconEmbedded {
+  position: absolute;
+  left: var(--space-2);
+  top: 50%;
+  transform: translateY(-50%);
+  height: 1rem;
+  width: 1rem;
+  color: var(--win98-dark-gray);
+  pointer-events: none;
+}
+
+/* Style for the rune image in the dropdown */
+.runeImage {
+  height: 1.25rem;
+  width: 1.25rem;
+  margin-right: var(--space-2);
+}
+
+/* Wrapper for rune image + text in dropdown option */
+.runeOptionContent {
+  display: flex;
+  align-items: center;
+}
+
+.assetButtonImage {
+  height: 1.25rem;
+  width: 1.25rem;
+  margin-right: var(--space-2);
+  flex-shrink: 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Mobile Responsiveness */
+@media (width <= 768px) {
+  .inputRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .amountInput,
+  .amountInputReadOnly {
+    font-size: var(--font-size-normal);
+    text-align: left;
+  }
+
+  .inputArea {
+    min-width: 0;
+  }
+
+  .listboxContainer,
+  .listboxButton {
+    width: 100%;
+  }
+}

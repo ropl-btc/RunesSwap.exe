@@ -1,0 +1,25 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+      "title": "Liquidium Instant Loan API - Authentication",
+      "version": "0.0.1",
+      "description": "Authentication and authorization components for Liquidium Instant Loans API"
+    },
+    "components": {
+      "securitySchemes": {
+        "bearerAuth": {
+          "type": "http",
+          "scheme": "bearer",
+          "bearerFormat": "JWT",
+          "description": "API Key Authentication"
+        },
+        "x-user-token": {
+          "type": "apiKey",
+          "in": "header",
+          "name": "x-user-token",
+          "description": "User JWT Token Authentication"
+        }
+      }
+    },
+    "security": [{ "bearerAuth": [] }]
+  }

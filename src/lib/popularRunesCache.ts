@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase } from "./supabase";
 
 export interface CachedPopularRune {
   id: string;
@@ -13,40 +13,60 @@ export interface CachedPopularRune {
 }
 
 /**
- * Fetch popular runes from cache
- * @returns Cached popular runes if present and not expired
+ * Fetch popular runes from cache with expiry information
+ * @returns Object containing cached data and whether it's expired
  */
-export async function getCachedPopularRunes(): Promise<Record<string, unknown>[] | null> {
+export async function getCachedPopularRunesWithExpiry(): Promise<{
+  cachedData: Record<string, unknown>[] | null;
+  isExpired: boolean;
+}> {
   try {
     // Check for cached popular runes
-    const { data, error } = await supabase
-      .from('popular_runes_cache')
-      .select('*')
-      .order('created_at', { ascending: false })
+    const { data } = await supabase
+      .from("popular_runes_cache")
+      .select("*")
+      .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (error) {
-      console.error('[popularRunesCache] Error fetching from cache:', error);
-      return null;
-    }
 
     if (!data) {
-      return null;
+      return { cachedData: null, isExpired: true };
     }
 
     // Check if the cache is expired (30 days)
     const cacheExpiry = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
     const cacheDate = new Date(data.created_at).getTime();
     const now = new Date().getTime();
-    
-    if (now - cacheDate > cacheExpiry) {
-      console.log('[popularRunesCache] Cache expired, will fetch fresh data');
-      return null;
+    const isExpired = now - cacheDate > cacheExpiry;
+
+    return {
+      cachedData: data.runes_data as Record<string, unknown>[],
+      isExpired,
+    };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    return { cachedData: null, isExpired: true };
+  }
+}
+
+/**
+ * Fetch popular runes from cache
+ * @returns Cached popular runes if present and not expired
+ */
+export async function getCachedPopularRunes(): Promise<
+  Record<string, unknown>[] | null
+> {
+  try {
+    const { cachedData, isExpired } = await getCachedPopularRunesWithExpiry();
+
+    // Only return the data if it's not expired
+    if (cachedData && !isExpired) {
+      return cachedData;
     }
 
-    return data.runes_data as Record<string, unknown>[];
+    return null;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
-    console.error('[popularRunesCache] Error in getCachedPopularRunes:', error);
     return null;
   }
 }
@@ -55,23 +75,20 @@ export async function getCachedPopularRunes(): Promise<Record<string, unknown>[]
  * Store popular runes in cache
  * @param runesData The popular runes data to cache
  */
-export async function cachePopularRunes(runesData: Record<string, unknown>[]): Promise<void> {
+export async function cachePopularRunes(
+  runesData: Record<string, unknown>[],
+): Promise<void> {
   try {
-    const { error } = await supabase
-      .from('popular_runes_cache')
-      .insert([
-        {
-          runes_data: runesData,
-          created_at: new Date().toISOString()
-        }
-      ]);
+    await supabase.from("popular_runes_cache").insert([
+      {
+        runes_data: runesData,
+        created_at: new Date().toISOString(),
+      },
+    ]);
 
-    if (error) {
-      console.error('[popularRunesCache] Error storing in cache:', error);
-    } else {
-      console.log('[popularRunesCache] Successfully cached popular runes data');
-    }
+    // Errors in caching are non-critical
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
-    console.error('[popularRunesCache] Error in cachePopularRunes:', error);
+    // Errors in caching are non-critical
   }
-} 
+}

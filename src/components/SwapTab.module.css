@@ -1,0 +1,114 @@
+/* SwapTab Component Styles */
+
+.swapTabContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  white-space: nowrap;
+}
+
+/* InputArea styles moved to InputArea.module.css */
+
+/* Base Button Style */
+.baseButton {
+  padding: var(--space-2) var(--space-4);
+  background-color: var(--win98-gray);
+  color: var(--win98-black);
+  cursor: pointer;
+  border: var(--win98-border-outset);
+  border-color: var(--win98-border-outset-colors);
+}
+
+.baseButton:active {
+  border-color: var(--win98-border-inset-colors);
+}
+
+.baseButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: var(--win98-dark-gray);
+}
+
+.swapButton {
+  composes: baseButton; /* Inherit base button styles */
+  width: 100%;
+  font-weight: 700;
+}
+
+/* Style for transaction links */
+.txLink {
+  color: var(--win98-blue);
+  text-decoration: underline;
+  margin-left: var(--space-2);
+}
+
+.txLink:hover {
+  color: var(--win98-dark-blue);
+}
+
+/* Container for messages with icons */
+.messageWithIcon {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Style for message icons (error, warning, etc.) */
+.messageIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Info Area Styles */
+.infoArea {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: var(--win98-border-width) solid var(--win98-dark-gray);
+  font-size: var(--font-size-normal);
+  color: var(--win98-black);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Asset selector styles moved to InputArea.module.css */
+
+/* Add styles for the swap direction button */
+.swapIconContainer {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-2) 0;
+}
+
+.swapIconButton {
+  composes: baseButton; /* Inherit base button styles */
+  padding: var(--space-1);
+  line-height: 1;
+}
+
+.swapIcon {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: block; /* Prevent extra space below icon */
+}
+
+.loadingText {
+  font-style: italic;
+  color: var(--win98-dark-gray);
+}
+
+.showPriceChartButton {
+  composes: baseButton; /* Inherit base button styles */
+  width: 100%;
+  padding: var(--space-2);
+  margin-top: var(--space-2);
+  font-weight: 700;
+}
+
+/* Mobile styles moved to InputArea.module.css */

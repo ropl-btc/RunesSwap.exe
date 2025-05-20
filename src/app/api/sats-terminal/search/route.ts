@@ -1,8 +1,13 @@
-import { NextRequest } from 'next/server';
-import { getSatsTerminalClient } from '@/lib/serverUtils';
-import type { Rune } from '@/types/satsTerminal';
-import { createSuccessResponse, createErrorResponse, handleApiError, validateRequest } from '@/lib/apiUtils';
-import { z } from 'zod';
+import { NextRequest } from "next/server";
+import { getSatsTerminalClient } from "@/lib/serverUtils";
+import type { Rune } from "@/types/satsTerminal";
+import {
+  createSuccessResponse,
+  createErrorResponse,
+  handleApiError,
+  validateRequest,
+} from "@/lib/apiUtils";
+import { z } from "zod";
 
 // Define types for rune responses locally or import if shared
 // interface Rune {
@@ -31,11 +36,11 @@ export async function GET(request: NextRequest) {
   // const query = searchParams.get('query');
 
   // Zod validation for 'query'
-  const schema = z.object({ 
+  const schema = z.object({
     query: z.string().min(1),
-    sell: z.boolean().optional().default(false) 
+    sell: z.boolean().optional().default(false),
   });
-  const validation = await validateRequest(request, schema, 'query');
+  const validation = await validateRequest(request, schema, "query");
   if (!validation.success) return validation.errorResponse;
   const { query: validQuery, sell } = validation.data;
 
@@ -43,35 +48,66 @@ export async function GET(request: NextRequest) {
     const terminal = getSatsTerminalClient();
     const searchResults = await terminal.search({
       rune_name: validQuery,
-      sell
+      sell,
     });
 
     // Map the response with improved type checking
-    const orders: SearchOrder[] = Array.isArray(searchResults) ? searchResults :
-                  (searchResults && typeof searchResults === 'object' && 'orders' in searchResults && Array.isArray(searchResults.orders)) ?
-                  (searchResults.orders as SearchOrder[]) :
-                  [];
+    const orders: SearchOrder[] = Array.isArray(searchResults)
+      ? searchResults
+      : searchResults &&
+          typeof searchResults === "object" &&
+          "orders" in searchResults &&
+          Array.isArray(searchResults.orders)
+        ? (searchResults.orders as SearchOrder[])
+        : [];
 
     // Generate a stable ID using a hash of properties instead of random
     const generateStableId = (order: SearchOrder, index: number): string => {
       const base = order.id || order.rune || order.etching?.runeName;
       if (base) return base;
       // Fallback to a stable ID based on properties and index
-      return `unknown_rune_${index}_${order.formattedAmount || ''}_${order.price || 0}`;
+      return `unknown_rune_${index}_${order.formattedAmount || ""}_${order.price || 0}`;
     };
 
     const runes: Rune[] = orders.map((order: SearchOrder, index: number) => ({
       id: generateStableId(order, index),
-      name: order.etching?.runeName || order.rune || 'Unknown Rune',
+      name: order.etching?.runeName || order.rune || "Unknown Rune",
       imageURI: order.icon_content_url_data || order.imageURI,
       formattedAmount: order.formattedAmount,
       formattedUnitPrice: order.formattedUnitPrice,
-      price: order.price
+      price: order.price,
     }));
 
     return createSuccessResponse(runes);
   } catch (error) {
-    const errorInfo = handleApiError(error, `Failed to search for runes with query "${validQuery}"`);
-    return createErrorResponse(errorInfo.message, errorInfo.details, errorInfo.status);
+    const errorInfo = handleApiError(
+      error,
+      `Failed to search for runes with query "${validQuery}"`,
+    );
+
+    // Special handling for rate limiting
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes("Rate limit") || errorInfo.status === 429) {
+      return createErrorResponse(
+        "Rate limit exceeded",
+        "Please try again later",
+        429,
+      );
+    }
+
+    // Handle unexpected token errors (HTML responses instead of JSON)
+    if (errorMessage.includes("Unexpected token")) {
+      return createErrorResponse(
+        "API service unavailable",
+        "The SatsTerminal API is currently unavailable. Please try again later.",
+        503,
+      );
+    }
+
+    return createErrorResponse(
+      errorInfo.message,
+      errorInfo.details,
+      errorInfo.status,
+    );
   }
-} 
+}

@@ -1,9 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import type { GetPSBTParams } from 'satsterminal-sdk';
-import { getSatsTerminalClient } from '@/lib/serverUtils';
-import { z } from 'zod';
-import { handleApiError, createErrorResponse, validateRequest } from '@/lib/apiUtils';
-import { runeOrderSchema } from '@/types/satsTerminal';
+import { NextRequest, NextResponse } from "next/server";
+import type { GetPSBTParams } from "satsterminal-sdk";
+import { getSatsTerminalClient } from "@/lib/serverUtils";
+import { z } from "zod";
+import {
+  handleApiError,
+  createErrorResponse,
+  validateRequest,
+} from "@/lib/apiUtils";
+import { runeOrderSchema } from "@/types/satsTerminal";
 
 type RuneOrder = z.infer<typeof runeOrderSchema>;
 
@@ -21,26 +25,64 @@ const getPsbtParamsSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const validation = await validateRequest(request, getPsbtParamsSchema, 'body');
+  const validation = await validateRequest(
+    request,
+    getPsbtParamsSchema,
+    "body",
+  );
   if (!validation.success) return validation.errorResponse;
   const validatedParams = validation.data;
 
   try {
     const terminal = getSatsTerminalClient();
-    const psbtParams: Omit<GetPSBTParams, 'orders'> & { orders: RuneOrder[] } = {
-      ...validatedParams,
-      orders: validatedParams.orders,
-    };
+    const psbtParams: Omit<GetPSBTParams, "orders"> & { orders: RuneOrder[] } =
+      {
+        ...validatedParams,
+        orders: validatedParams.orders,
+      };
 
     const psbtResponse = await terminal.getPSBT(psbtParams);
     return NextResponse.json(psbtResponse);
-
   } catch (error) {
-    const errorInfo = handleApiError(error, 'Failed to generate PSBT');
+    const errorInfo = handleApiError(error, "Failed to generate PSBT");
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
     // Special handling for quote expired
-    if (errorInfo.message.includes('Quote expired') || (error && typeof error === 'object' && (error as { code?: string }).code === 'ERR677K3')) {
-      return createErrorResponse('Quote expired. Please fetch a new quote.', errorInfo.details, 410);
+    if (
+      errorInfo.message.includes("Quote expired") ||
+      (error &&
+        typeof error === "object" &&
+        (error as { code?: string }).code === "ERR677K3")
+    ) {
+      return createErrorResponse(
+        "Quote expired. Please fetch a new quote.",
+        errorInfo.details,
+        410,
+      );
     }
-    return createErrorResponse(errorInfo.message, errorInfo.details, errorInfo.status);
+
+    // Special handling for rate limiting
+    if (errorMessage.includes("Rate limit") || errorInfo.status === 429) {
+      return createErrorResponse(
+        "Rate limit exceeded",
+        "Please try again later",
+        429,
+      );
+    }
+
+    // Handle unexpected token errors (HTML responses instead of JSON)
+    if (errorMessage.includes("Unexpected token")) {
+      return createErrorResponse(
+        "API service unavailable",
+        "The SatsTerminal API is currently unavailable. Please try again later.",
+        503,
+      );
+    }
+
+    return createErrorResponse(
+      errorInfo.message,
+      errorInfo.details,
+      errorInfo.status,
+    );
   }
-} 
+}

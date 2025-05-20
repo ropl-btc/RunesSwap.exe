@@ -1,43 +1,33 @@
 /* src/components/ConnectWalletButton.module.css */
 
 .connectButton {
-  padding: 0.25rem 0.75rem; /* px-3 py-1 */
+  padding: var(--space-1) var(--space-2);
   background-color: var(--win98-gray);
-  border-width: 2px;
-  border-style: solid;
-  border-top-color: var(--win98-light-gray);
-  border-left-color: var(--win98-light-gray);
-  border-right-color: var(--win98-dark-gray);
-  border-bottom-color: var(--win98-dark-gray);
-  font-size: 0.875rem; /* text-sm */
-  line-height: 1.25rem; /* text-sm */
+  border: var(--win98-border-outset);
+  border-color: var(--win98-border-outset-colors);
+  font-size: var(--font-size-normal);
+  line-height: 1.25rem;
   color: var(--win98-black);
 }
 
 .connectButton:active {
-  border-top-color: var(--win98-dark-gray);
-  border-left-color: var(--win98-dark-gray);
-  border-right-color: var(--win98-light-gray);
-  border-bottom-color: var(--win98-light-gray);
-  /* Optional: slightly inset look */
-  /* padding-top: 0.3rem; */
-  /* padding-left: 0.8rem; */
+  border-color: var(--win98-border-inset-colors);
 }
 
 .buttonContainer {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem; /* gap-2 */
+  gap: var(--space-2);
 }
 
 .connectedInfo {
   display: flex;
   align-items: center;
-  gap: 0.5rem; /* space-x-2 */
+  gap: var(--space-2);
 }
 
 .connectedText {
-  font-size: 0.875rem; /* text-sm */
+  font-size: var(--font-size-normal);
 }
 
 /* New styles for dropdown */
@@ -54,13 +44,12 @@
   background-color: var(--win98-gray);
   border-width: 2px;
   border-style: solid;
-  border-top-color: var(--win98-dark-gray); /* Inset border look */
-  border-left-color: var(--win98-dark-gray);
-  border-right-color: var(--win98-light-gray);
-  border-bottom-color: var(--win98-light-gray);
+  border-color: var(--win98-dark-gray) var(--win98-light-gray)
+    var(--win98-light-gray) var(--win98-dark-gray); /* Inset border look */
+
   z-index: 50; /* Ensure dropdown is above other content - Increased z-index */
   padding: 2px; /* Inner padding for the border effect */
-  box-shadow: 2px 2px 0px 0px var(--win98-dark-gray); /* Optional: subtle shadow */
+  box-shadow: 2px 2px 0 0 var(--win98-dark-gray); /* Optional: subtle shadow */
 }
 
 .dropdownItemContainer {
@@ -69,7 +58,6 @@
 }
 
 .dropdownItem {
-  display: block;
   width: 100%;
   padding: 0.25rem 0.5rem;
   text-align: left;
@@ -119,14 +107,12 @@
   background-color: var(--win98-gray);
   border-width: 2px;
   border-style: solid;
-  border-top-color: var(--win98-dark-gray);
-  border-left-color: var(--win98-dark-gray);
-  border-right-color: var(--win98-light-gray);
-  border-bottom-color: var(--win98-light-gray);
+  border-color: var(--win98-dark-gray) var(--win98-light-gray)
+    var(--win98-light-gray) var(--win98-dark-gray);
   color: var(--win98-black);
   font-size: 0.875rem;
   z-index: 50;
-  box-shadow: 2px 2px 0px 0px var(--win98-dark-gray);
+  box-shadow: 2px 2px 0 0 var(--win98-dark-gray);
 }
 
 .errorMessage p {
@@ -144,10 +130,8 @@
   background-color: var(--win98-gray);
   border-width: 2px;
   border-style: solid;
-  border-top-color: var(--win98-light-gray);
-  border-left-color: var(--win98-light-gray);
-  border-right-color: var(--win98-dark-gray);
-  border-bottom-color: var(--win98-dark-gray);
+  border-color: var(--win98-light-gray) var(--win98-dark-gray)
+    var(--win98-dark-gray) var(--win98-light-gray);
   font-size: 0.75rem;
   text-decoration: none;
   color: var(--win98-black);
@@ -158,8 +142,6 @@
 }
 
 .installLink:active {
-  border-top-color: var(--win98-dark-gray);
-  border-left-color: var(--win98-dark-gray);
-  border-right-color: var(--win98-light-gray);
-  border-bottom-color: var(--win98-light-gray);
-} 
+  border-color: var(--win98-dark-gray) var(--win98-light-gray)
+    var(--win98-light-gray) var(--win98-dark-gray);
+}

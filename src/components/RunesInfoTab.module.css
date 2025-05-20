@@ -1,0 +1,243 @@
+/* Main Container */
+.runesInfoTabContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  white-space: nowrap;
+}
+
+/* Search Container */
+.searchAndResultsContainer {
+  display: flex;
+  flex-direction: column;
+  border: var(--win98-border-outset);
+  border-color: var(--win98-border-outset-colors);
+  background-color: var(--win98-gray);
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  max-width: 100%;
+}
+
+.searchContainerRunesInfo {
+  padding: var(--space-1);
+  background-color: var(--win98-gray);
+  border: none;
+  margin: 0;
+  position: relative;
+}
+
+.searchWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchInput {
+  width: 100%;
+  padding: var(--space-1) var(--space-2) var(--space-1) 2rem;
+  background-color: var(--win98-white);
+  border: var(--win98-border-inset);
+  border-color: var(--win98-border-inset-colors);
+  color: var(--win98-black);
+  font-size: var(--font-size-normal);
+}
+
+.searchInput:focus {
+  outline: 1px solid var(--win98-blue);
+}
+
+.searchIconEmbedded {
+  position: absolute;
+  left: var(--space-2);
+  top: 50%;
+  transform: translateY(-50%);
+  height: 1rem;
+  width: 1rem;
+  color: var(--win98-dark-gray);
+  pointer-events: none;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Runes List */
+.runesListContainer {
+  max-height: 200px;
+  overflow-y: auto;
+  background-color: var(--win98-gray);
+  padding: var(--space-1) 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: none;
+  border-top: 1px solid var(--win98-dark-gray);
+}
+
+.runeListItem {
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid transparent;
+  background-color: transparent;
+  text-align: left;
+  width: 100%;
+  font-family: inherit;
+  font-size: var(--font-size-normal);
+  cursor: default;
+  color: var(--win98-black);
+}
+
+.runeListItem:hover {
+  background-color: var(--win98-blue);
+  color: var(--win98-white);
+}
+
+.runeListItemSelected {
+  background-color: var(--win98-highlight);
+  color: var(--win98-highlight-text);
+}
+
+.runeListItemContent {
+  display: flex;
+  align-items: center;
+}
+
+.runeImage {
+  height: 1.25rem;
+  width: 1.25rem;
+  margin-right: var(--space-2);
+  flex-shrink: 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Rune Details */
+.runeDetailsContainer {
+  padding: var(--space-2);
+  background-color: var(--win98-white);
+  min-height: 100px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  border: var(--win98-border-inset);
+  border-color: var(--win98-border-inset-colors);
+  overflow-x: hidden;
+}
+
+.runeDetailsContainer h3 {
+  font-weight: bold;
+  margin-bottom: var(--space-2);
+  border-bottom: 1px solid var(--win98-dark-gray);
+  padding-bottom: var(--space-1);
+}
+
+.runeDetailsContainer p {
+  margin-bottom: var(--space-1);
+  font-size: var(--font-size-normal);
+}
+
+/* Text Styles */
+.hintText {
+  color: var(--win98-dark-gray);
+  white-space: normal;
+  overflow-wrap: break-word;
+  font-size: inherit;
+  margin-top: 0;
+  padding: 0;
+}
+
+.loadingText {
+  font-style: italic;
+  color: var(--win98-dark-gray);
+}
+
+.errorText {
+  color: var(--win98-red);
+}
+
+.priceHighlight {
+  color: var(--win98-dark-green);
+  font-weight: bold;
+}
+
+/* Message Components */
+.listboxLoadingOrEmpty {
+  position: relative;
+  cursor: default;
+  user-select: none;
+  padding: var(--space-2) var(--space-4);
+  color: var(--win98-dark-gray);
+}
+
+.listboxError {
+  position: relative;
+  cursor: default;
+  user-select: none;
+  padding: 0.5rem 1rem;
+  color: var(--win98-red);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.messageWithIcon {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.messageIcon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Links */
+.etchingTxLink {
+  color: var(--win98-blue);
+  text-decoration: underline;
+}
+
+.etchingTxLink:hover {
+  text-decoration: none;
+}
+
+/* Layout Components */
+.narrowRightPanel {
+  width: 100%;
+  transition: width 0.3s ease;
+  overflow-x: hidden;
+}
+
+.showPriceChartButtonContainer {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-4);
+  width: 100%;
+}
+
+/* Button Styles */
+.showPriceChartButton {
+  width: 100%;
+  padding: var(--space-2);
+  margin-top: var(--space-2);
+  background-color: var(--win98-gray);
+  border: var(--win98-border-outset);
+  border-color: var(--win98-border-outset-colors);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.showPriceChartButton:active {
+  border-color: var(--win98-border-inset-colors);
+}
+
+/* Mobile Responsiveness */
+@media (width <= 768px) {
+  .narrowRightPanel {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+}

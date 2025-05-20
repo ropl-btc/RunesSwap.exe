@@ -1,0 +1,118 @@
+/* BorrowTab Component Styles */
+
+.borrowTabContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  white-space: nowrap;
+}
+
+/* InputArea styles moved to InputArea.module.css */
+
+/* Base Button Style */
+.baseButton {
+  padding: var(--space-2) var(--space-4);
+  background-color: var(--win98-gray);
+  color: var(--win98-black);
+  cursor: pointer;
+  border: var(--win98-border-outset);
+  border-color: var(--win98-border-outset-colors);
+}
+
+.baseButton:active {
+  border-color: var(--win98-border-inset-colors);
+}
+
+.baseButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: var(--win98-dark-gray);
+}
+
+/* Style for transaction links */
+.txLink {
+  color: var(--win98-blue);
+  text-decoration: underline;
+  margin-left: var(--space-2);
+}
+
+.txLink:hover {
+  color: var(--win98-dark-blue);
+}
+
+/* Container for messages with icons */
+.messageWithIcon {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+/* Style for message icons (error, warning, etc.) */
+.messageIcon {
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.25rem;
+}
+
+/* Success message styles */
+.successMessage {
+  padding: var(--space-3);
+  background-color: var(--win98-light-gray);
+  border: var(--win98-border-outset);
+  border-color: var(--win98-border-outset-colors);
+}
+
+.successContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.successTitle {
+  font-weight: bold;
+  color: var(--win98-dark-green);
+  margin: 0;
+}
+
+.successDetails {
+  margin: 0;
+  color: var(--win98-black);
+}
+
+.successButtons {
+  display: flex;
+  margin-top: var(--space-2);
+}
+
+/* Info Area Styles */
+.infoArea {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: var(--win98-border-width) solid var(--win98-dark-gray);
+  font-size: var(--font-size-normal);
+  color: var(--win98-black);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Asset selector styles moved to InputArea.module.css */
+
+/* Mobile Responsiveness */
+@media (width <= 768px) {
+  .successButtons {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .successButtons button {
+    width: 100%;
+    margin-right: 0 !important;
+  }
+}

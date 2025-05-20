@@ -1,210 +1,117 @@
-/* src/app/page.module.css */
-
+/* Layout */
 .mainContainer {
-  padding: 1rem;
-  /* Add any overall container styles if needed */
+  padding: var(--space-4);
 }
 
-
-/* --- New Header Styles --- */
+/* Header */
 .headerContainer {
   display: flex;
-  justify-content: space-between; /* Pushes tabs left, button right */
-  align-items: flex-end; /* Align items to the bottom */
-  margin-bottom: 1rem; /* Space below the header */
-  /* Add a bottom border maybe? */
-  /* border-bottom: 2px solid var(--win98-dark-gray); */
-  /* padding-bottom: 0.5rem; */
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: var(--space-4);
 }
 
 .tabsInHeader {
   display: flex;
-  /* Add styles for the group of tabs */
 }
 
-/* Style for individual tab buttons in the page header */
 .pageTabButton {
-  padding: 0.5rem 1rem;
+  padding: var(--space-2) var(--space-4);
   background-color: var(--win98-gray);
-  /* Use standard Win98 button border */
-  border-width: 2px;
-  border-style: solid;
-  border-top-color: var(--win98-light-gray);
-  border-left-color: var(--win98-light-gray);
-  border-right-color: var(--win98-dark-gray);
-  border-bottom-color: var(--win98-dark-gray);
-  /* Remove tab-specific styles */
-  /* border-bottom: none; */ 
-  /* margin-right: 2px; */ /* Keep margin */
+  border: var(--win98-border-outset);
+  border-color: var(--win98-border-outset-colors);
   margin-right: 2px;
   position: relative;
-  /* bottom: -2px; */ /* Remove lift */
   font-weight: bold;
   color: var(--win98-black);
-  /* border-top-left-radius: 3px; */ /* Remove radius */
-  /* border-top-right-radius: 3px; */ /* Remove radius */
-  
-  /* Reuse Win98 button shadow - Might need adjustment if border changes */
-  box-shadow: inset -1px -1px 0px var(--win98-black), inset 1px 1px 0px var(--win98-white), inset -2px -2px 0px var(--win98-dark-gray), inset 2px 2px 0px var(--win98-light-gray);
 }
 
 .pageTabButton:hover {
   background-color: var(--win98-light-gray);
 }
 
-.pageTabButton:active {
-  /* Standard button active state */
-  background-color: var(--win98-gray); /* Keep gray */
-  border-top-color: var(--win98-dark-gray);
-  border-left-color: var(--win98-dark-gray);
-  border-right-color: var(--win98-light-gray);
-  border-bottom-color: var(--win98-light-gray);
-  box-shadow: none; /* Remove shadow on press */
-  /* Add slight padding adjustment for press effect */
-  padding-top: 0.6rem; 
-  padding-bottom: 0.4rem;
-}
-
+.pageTabButton:active,
 .pageTabActive {
-  /* Style active tab like a pressed button or slightly different background */
-  background-color: var(--win98-gray); /* Keep standard gray */
-  border-top-color: var(--win98-dark-gray);
-  border-left-color: var(--win98-dark-gray);
-  border-right-color: var(--win98-light-gray);
-  border-bottom-color: var(--win98-light-gray);
-  box-shadow: none; /* Remove shadow for pressed look */
-  /* Adjust padding to match active state */
-  padding-top: 0.6rem; 
+  background-color: var(--win98-gray);
+  border-color: var(--win98-border-inset-colors);
+  padding-top: 0.6rem;
   padding-bottom: 0.4rem;
 }
 
 .pageTabActive:hover {
-  /* Keep pressed look on hover */
   background-color: var(--win98-gray);
+  cursor: default;
 }
-
-/* --- End New Header Styles --- */
 
 .connectButtonContainer {
-  /* Keep original styles or adjust as needed */
-  /* Example: Add some margin if needed */
-  /* margin-bottom: 2px; /* Align better with raised tabs */
+  /* Empty for future use */
 }
 
-/* Add mobile-specific styles */
-@media (max-width: 640px) {
-  .disclaimer {
-    font-size: 0.875rem; /* Smaller font on mobile */
-    padding: 0.375rem;
-    margin-bottom: 0.75rem;
-  }
-  
-  .headerContainer {
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-  }
-  
-  .connectButtonContainer {
-    order: -1; /* Places connect button above tabs */
-    margin-bottom: 0.5rem;
-    width: 100%; /* Full width on mobile */
-    display: flex;
-    justify-content: center;
-  }
-  
-  .tabsInHeader {
-    width: 100%;
-    justify-content: space-between;
-  }
-  
-  .pageTabButton {
-    flex: 1;
-    margin-right: 1px;
-    font-size: 0.875rem; /* Slightly smaller font on mobile */
-    padding: 0.375rem 0.5rem; /* Smaller padding on mobile */
-  }
-  
-  .pageTabActive {
-    padding-top: 0.475rem; /* Adjust active state padding for mobile */
-    padding-bottom: 0.275rem;
-  }
-  
-  .pageTabButton:active {
-    padding-top: 0.475rem; /* Adjust active state padding for mobile */
-    padding-bottom: 0.275rem;
-  }
-}
-
-/* Add any other styles for page.tsx here */ 
-
-/* Docs Page Styles */
+/* Docs Page */
 .container {
   max-width: 800px;
   margin: 0 auto;
-  padding: 1rem;
+  padding: var(--space-4);
 }
 
 .title {
-  font-size: 1.75rem;
+  font-size: var(--font-size-large);
   font-weight: bold;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-6);
   text-align: center;
-  color: var(--win98-dark-blue);
+  color: var(--win98-black);
 }
 
 .docsContent {
   background-color: var(--win98-white);
-  border-width: 2px;
-  border-style: solid;
-  border-top-color: var(--win98-dark-gray);
-  border-left-color: var(--win98-dark-gray);
-  border-right-color: var(--win98-light-gray);
-  border-bottom-color: var(--win98-light-gray);
-  padding: 1.5rem;
+  border: var(--win98-border-inset);
+  border-color: var(--win98-border-inset-colors);
+  padding: var(--space-6);
 }
 
 .docsContent section {
-  margin-bottom: 2rem;
+  margin-bottom: var(--space-8);
 }
 
 .docsContent h2 {
-  font-size: 1.5rem;
+  font-size: var(--font-size-large);
   font-weight: bold;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
   color: var(--win98-blue);
   border-bottom: 1px solid var(--win98-gray);
-  padding-bottom: 0.5rem;
+  padding-bottom: var(--space-2);
 }
 
 .docsContent h3 {
-  font-size: 1.25rem;
+  font-size: var(--font-size-large);
   font-weight: bold;
-  margin-top: 1.5rem;
-  margin-bottom: 0.75rem;
-  color: var(--win98-dark-blue);
+  margin-top: var(--space-6);
+  margin-bottom: var(--space-3);
+  color: var(--win98-black);
 }
 
 .docsContent p {
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
   line-height: 1.5;
+  color: var(--win98-black);
 }
 
 .docsContent ul {
   list-style-type: square;
-  margin-left: 1.5rem;
-  margin-bottom: 1rem;
+  margin-left: var(--space-6);
+  margin-bottom: var(--space-4);
+  color: var(--win98-black);
 }
 
 .docsContent li {
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--space-2);
   line-height: 1.5;
 }
 
 .contactLinks {
   display: flex;
-  gap: 1.5rem;
-  margin-top: 1rem;
+  gap: var(--space-6);
+  margin-top: var(--space-4);
 }
 
 .contactLinks a {
@@ -212,12 +119,8 @@
   text-decoration: underline;
 }
 
-.contactLinks a:hover {
-  text-decoration: none;
-}
-
 .backToHome {
-  margin-top: 2rem;
+  margin-top: var(--space-8);
   text-align: center;
 }
 
@@ -225,14 +128,14 @@
   display: inline-block;
   color: var(--win98-blue);
   text-decoration: none;
-  padding: 0.5rem 1rem;
+  padding: var(--space-2) var(--space-4);
   background-color: var(--win98-gray);
-  border-width: 2px;
-  border-style: solid;
-  border-top-color: var(--win98-light-gray);
-  border-left-color: var(--win98-light-gray);
-  border-right-color: var(--win98-dark-gray);
-  border-bottom-color: var(--win98-dark-gray);
+  border: var(--win98-border-outset);
+  border-color: var(--win98-border-outset-colors);
+}
+
+.contactLinks a:hover {
+  text-decoration: none;
 }
 
 .backToHome a:hover {
@@ -240,31 +143,60 @@
 }
 
 .backToHome a:active {
-  border-top-color: var(--win98-dark-gray);
-  border-left-color: var(--win98-dark-gray);
-  border-right-color: var(--win98-light-gray);
-  border-bottom-color: var(--win98-light-gray);
+  border-color: var(--win98-border-inset-colors);
 }
 
-/* Media queries for docs page */
-@media (max-width: 640px) {
+/* Mobile Responsiveness */
+@media (width <= 640px) {
+  .headerContainer {
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+  }
+
+  .connectButtonContainer {
+    order: -1;
+    margin-bottom: var(--space-2);
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .tabsInHeader {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .pageTabButton {
+    flex: 1;
+    margin-right: 1px;
+    font-size: var(--font-size-normal);
+    padding: var(--space-1) var(--space-2);
+  }
+
+  .pageTabButton:active,
+  .pageTabActive {
+    padding-top: calc(var(--space-1) + 0.1rem);
+    padding-bottom: calc(var(--space-1) - 0.1rem);
+  }
+
   .container {
-    padding: 0.5rem;
+    padding: var(--space-2);
   }
-  
+
   .docsContent {
-    padding: 1rem;
+    padding: var(--space-4);
   }
-  
+
   .title {
-    font-size: 1.5rem;
+    font-size: var(--font-size-large);
   }
-  
+
   .docsContent h2 {
-    font-size: 1.25rem;
+    font-size: var(--font-size-large);
   }
-  
+
   .docsContent h3 {
-    font-size: 1.125rem;
+    font-size: var(--font-size-normal);
   }
-} 
+}
