@@ -17,11 +17,14 @@ export function formatNumberString(
     // and an optional decimal part. This avoids precision issues with
     // `parseFloat` on very large numbers.
     const cleaned = String(numStr).replace(/,/g, "");
-    if (!/^\d+(\.\d+)?$/.test(cleaned)) return defaultDisplay;
+    const isNegative = cleaned.startsWith("-");
+    const numericPart = isNegative ? cleaned.slice(1) : cleaned;
+    if (!/^\d+(\.\d+)?$/.test(numericPart)) return defaultDisplay;
 
-    const [intPart, decPart] = cleaned.split(".");
+    const [intPart, decPart] = numericPart.split(".");
     const withCommas = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-    return decPart ? `${withCommas}.${decPart}` : withCommas;
+    const result = decPart ? `${withCommas}.${decPart}` : withCommas;
+    return isNegative ? `-${result}` : result;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     return defaultDisplay;
