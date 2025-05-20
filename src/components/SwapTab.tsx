@@ -128,7 +128,7 @@ export function SwapTab({
   const currentRunesError = searchQuery.trim() ? searchError : popularError;
 
   // Add back loadingDots state for animation
-  const [swapLoadingDots, setLoadingDots] = useState(".");
+  const [loadingDots, setLoadingDots] = useState(".");
   // Add back quote, quoteError, quoteExpired for quote data and error
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
   const [quoteTimestamp, setQuoteTimestamp] = useState<number | null>(null);
@@ -470,14 +470,28 @@ export function SwapTab({
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
 
-  // Effect for loading dots animation
+  // Effect for loading dots animation (with proper cycling animation)
   useEffect(() => {
     let intervalId: NodeJS.Timeout | null = null;
-    if (isBtcPriceLoading || isSearching) {
-      // Added isSearching
+    if (
+      isBtcPriceLoading ||
+      isSearching ||
+      swapState.isQuoteLoading ||
+      swapState.isSwapping
+    ) {
+      // Create animated dots that cycle through [.,..,...] pattern
       intervalId = setInterval(() => {
-        setLoadingDots((dots) => (dots.length < 3 ? dots + "." : "."));
-      }, 500); // Update every 500ms
+        setLoadingDots((dots) => {
+          switch (dots) {
+            case ".":
+              return "..";
+            case "..":
+              return "...";
+            default:
+              return "."; // Reset to single dot
+          }
+        });
+      }, 400); // Update every 400ms for smoother animation
     } else {
       setLoadingDots("."); // Reset when not loading
     }
@@ -488,7 +502,12 @@ export function SwapTab({
         clearInterval(intervalId);
       }
     };
-  }, [isBtcPriceLoading, isSearching]); // Added isSearching
+  }, [
+    isBtcPriceLoading,
+    isSearching,
+    swapState.isQuoteLoading,
+    swapState.isSwapping,
+  ]); // Added more dependencies
 
   // Create a debounced search function - MEMOIZED
   const debouncedSearch = useMemo(
@@ -1397,9 +1416,9 @@ export function SwapTab({
       return;
     }
 
-    // Proceed with the swap process
+    // Proceed with the swap process - only dispatch SWAP_START, not FETCH_QUOTE_START
+    // This prevents duplicate loading states that can cause button to remain disabled on cancellation
     dispatchSwap({ type: "SWAP_START" });
-    dispatchSwap({ type: "FETCH_QUOTE_START" });
 
     try {
       // 1. Get PSBT via API
@@ -1709,7 +1728,10 @@ export function SwapTab({
           type: "SWAP_ERROR",
           error: "Quote expired. Please fetch a new one.",
         });
-      } else if (errorMessage.includes("User canceled the request")) {
+      } else if (
+        errorMessage.includes("User canceled the request") ||
+        errorMessage.includes("User canceled")
+      ) {
         // User cancelled signing - we need to reset the swap state more thoroughly
         console.log(
           "User canceled request detected - resetting swap state completely",
@@ -1718,6 +1740,10 @@ export function SwapTab({
         // IMPORTANT: We use a full reset instead of individual state updates
         // This ensures we clear ALL state flags at once, including isQuoteLoading
         dispatchSwap({ type: "RESET_SWAP" });
+
+        // Explicitly set the swap step to idle as well to ensure the UI is reset correctly
+        // This handles edge cases where RESET_SWAP might not fully propagate immediately
+        dispatchSwap({ type: "SWAP_STEP", step: "idle" });
 
         // Then set the error message for the user (after reset)
         dispatchSwap({
@@ -1749,6 +1775,9 @@ export function SwapTab({
         console.log(
           "User canceled operation, ensuring UI is reset to interactive state",
         );
+
+        // Set to idle AND explicitly ensure loading state is cleared
+        // This is crucial to ensure the button becomes clickable again
         dispatchSwap({ type: "SWAP_STEP", step: "idle" });
       } else if (quoteExpired) {
         // Quote expired case - keep expired state to prompt for new quote
@@ -1900,7 +1929,7 @@ export function SwapTab({
         label="You Receive (Estimated)"
         inputId="output-amount"
         inputValue={
-          swapState.isQuoteLoading ? `Loading${swapLoadingDots}` : outputAmount
+          swapState.isQuoteLoading ? `Loading${loadingDots}` : outputAmount
         }
         placeholder="0.0"
         readOnly={true}

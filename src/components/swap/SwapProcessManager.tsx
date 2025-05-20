@@ -46,7 +46,16 @@ export function swapProcessReducer(
   }
   switch (action.type) {
     case "RESET_SWAP":
-      return { ...initialSwapProcessState };
+      // Ensure a clean reset by explicitly setting all values rather than spreading
+      return {
+        isSwapping: false,
+        swapStep: "idle",
+        swapError: null,
+        txId: null,
+        quoteExpired: false,
+        isQuoteLoading: false,
+        quoteError: null,
+      };
     case "FETCH_QUOTE_START":
       return {
         ...state,
@@ -86,13 +95,15 @@ export function swapProcessReducer(
         quoteExpired: false,
       };
     case "SWAP_STEP":
-      // When explicitly setting to idle, also clear the loading state
+      // When explicitly setting to idle, also clear all loading states completely
       if (action.step === "idle") {
         return {
           ...state,
           swapStep: action.step,
           isQuoteLoading: false, // Clear loading state when going to idle
           isSwapping: false, // Also ensure swap is not in progress
+          quoteError: null, // Clear any existing errors
+          swapError: null, // Clear swap errors too
         };
       }
       return { ...state, swapStep: action.step };
