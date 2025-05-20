@@ -15,7 +15,6 @@ export async function GET(request: NextRequest) {
         400,
       );
     }
-    console.log("[Liquidium] Looking up JWT for address:", address);
     const { data: tokenRows, error: tokenError } = await supabase
       .from("liquidium_tokens")
       .select("jwt")
@@ -38,14 +37,12 @@ export async function GET(request: NextRequest) {
       );
     }
     const userJwt = tokenRows[0].jwt;
-    console.log("[Liquidium] Found JWT, fetching portfolio...");
     const liquidium = getLiquidiumClient();
     const portfolio = await liquidium.getPortfolio(userJwt);
     if (!portfolio || !portfolio.offers) {
       console.warn("[Liquidium] No offers found in portfolio response");
       return createSuccessResponse([]); // Return empty array if no offers
     }
-    console.log("[Liquidium] Returning offers:", portfolio.offers.length);
     return createSuccessResponse(portfolio.offers);
   } catch (error) {
     console.error("[Liquidium] Portfolio route error:", error);

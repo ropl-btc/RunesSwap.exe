@@ -74,7 +74,6 @@ export async function POST(request: NextRequest) {
       expires_at: expiresAt,
       last_used_at: new Date().toISOString(),
     };
-    console.log("[API Debug] Upserting Liquidium JWT with data:", upsertData);
     const { error, data: upsertResult } = await supabase
       .from("liquidium_tokens")
       .upsert(upsertData, { onConflict: "wallet_address" });
@@ -86,7 +85,6 @@ export async function POST(request: NextRequest) {
         500,
       );
     }
-    console.log("[API Debug] Upsert result:", upsertResult);
     return createSuccessResponse({ jwt: authSubmitResponse.user_jwt });
   } catch (error) {
     const errorInfo = handleApiError(error, "Liquidium authentication failed");

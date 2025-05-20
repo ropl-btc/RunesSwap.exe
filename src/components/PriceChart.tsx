@@ -137,17 +137,6 @@ const PriceChart: React.FC<PriceChartProps> = ({
     };
   }, [priceHistoryData, selectedTimeframe]);
 
-  // Debug logging for price history data
-  useEffect(() => {
-    if (filteredPriceData.length > 0 && startTime && endTime) {
-      console.log(
-        `[PriceChart] ${selectedTimeframe} data range: ${startTime.toLocaleString()} to ${endTime.toLocaleString()}`,
-      );
-      console.log(
-        `[PriceChart] Number of data points: ${filteredPriceData.length}`,
-      );
-    }
-  }, [filteredPriceData, startTime, endTime, selectedTimeframe]);
 
   // Replace getCustomTicks logic with a simpler, data-driven approach
   const getCustomTicks = React.useMemo(() => {
