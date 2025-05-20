@@ -25,9 +25,57 @@ export const QUERY_KEYS = {
   RUNE_ACTIVITY: "runeActivity",
   PORTFOLIO_DATA: "portfolioData",
   LIQUIDIUM_PORTFOLIO: "liquidiumPortfolio",
+  BTC_FEE_RATES: "btcFeeRates",
 } as const;
 
 export type QueryKey = (typeof QUERY_KEYS)[keyof typeof QUERY_KEYS];
+
+/**
+ * Interface for Bitcoin fee rate recommendations from mempool.space
+ */
+export interface BitcoinFeeRates {
+  fastestFee: number;  // For next block (1-2 blocks) - highest priority
+  halfHourFee: number; // For confirmation within 30 mins (3 blocks)
+  hourFee: number;     // For confirmation within 1 hour (6 blocks)
+  economyFee: number;  // For eventual confirmation (may take several hours)
+  minimumFee: number;  // Minimum fee to be relayed by most nodes
+}
+
+/**
+ * Fetches the current recommended Bitcoin transaction fee rates from mempool.space
+ * Returns fee rates in satoshis per virtual byte (sat/vB)
+ */
+export const fetchRecommendedFeeRates = async (): Promise<BitcoinFeeRates> => {
+  try {
+    // Use mempool.space API to get recommended fee rates
+    const response = await fetch("https://mempool.space/api/v1/fees/recommended");
+    
+    if (!response.ok) {
+      console.warn(`Failed to fetch fee rates: ${response.status} ${response.statusText}`);
+      // Return default values if API call fails
+      return {
+        fastestFee: 25,
+        halfHourFee: 20,
+        hourFee: 15,
+        economyFee: 10,
+        minimumFee: 5
+      };
+    }
+    
+    const data = await response.json();
+    return data as BitcoinFeeRates;
+  } catch (error) {
+    console.warn("Error fetching recommended fee rates:", error);
+    // Return default values in case of error
+    return {
+      fastestFee: 25,
+      halfHourFee: 20,
+      hourFee: 15,
+      economyFee: 10,
+      minimumFee: 5
+    };
+  }
+};
 
 // Standard API response handler
 const handleApiResponse = <T>(data: unknown, expectedArrayType = false): T => {

@@ -90,7 +90,8 @@ RunesSwap.app charges no additional fees beyond SatsTerminal network fees and st
 
 ## Contributing
 
-Contributions are welcome via pull requests. Please ensure:
+Contributions are welcome via pull requests. The pre-commit hook automatically
+runs linting, tests and a production build. Please ensure:
 - Code builds successfully (`pnpm build`).
 - Linting & formatting pass (`pnpm lint`).
 - New features include tests and documentation updates.

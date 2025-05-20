@@ -1,0 +1,38 @@
+/* SwapDirectionButton Component Styles */
+
+.baseButton {
+  padding: var(--space-2) var(--space-4);
+  background-color: var(--win98-gray);
+  color: var(--win98-black);
+  cursor: pointer;
+  border: var(--win98-border-outset);
+  border-color: var(--win98-border-outset-colors);
+}
+
+.baseButton:active {
+  border-color: var(--win98-border-inset-colors);
+}
+
+.baseButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: var(--win98-dark-gray);
+}
+
+.swapIconContainer {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-2) 0;
+}
+
+.swapIconButton {
+  composes: baseButton; /* Inherit base button styles */
+  padding: var(--space-1);
+  line-height: 1;
+}
+
+.swapIcon {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: block; /* Prevent extra space below icon */
+}

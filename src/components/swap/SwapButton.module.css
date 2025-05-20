@@ -1,0 +1,26 @@
+/* SwapButton Component Styles */
+
+.baseButton {
+  padding: var(--space-2) var(--space-4);
+  background-color: var(--win98-gray);
+  color: var(--win98-black);
+  cursor: pointer;
+  border: var(--win98-border-outset);
+  border-color: var(--win98-border-outset-colors);
+}
+
+.baseButton:active {
+  border-color: var(--win98-border-inset-colors);
+}
+
+.baseButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: var(--win98-dark-gray);
+}
+
+.swapButton {
+  composes: baseButton; /* Inherit base button styles */
+  width: 100%;
+  font-weight: 700;
+}
