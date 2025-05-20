@@ -12,7 +12,7 @@ export async function POST(request: Request) {
         400,
       );
     }
-    // Look up JWT for this address
+    // Look up JWT for this address using regular client
     const { data: tokenRows, error: tokenError } = await supabase
       .from("liquidium_tokens")
       .select("jwt")

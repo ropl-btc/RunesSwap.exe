@@ -75,9 +75,12 @@ export async function POST(request: NextRequest) {
       last_used_at: new Date().toISOString(),
     };
     console.info("[API Debug] Upserting Liquidium JWT with data:", upsertData);
+
+    // Now using regular client as we have proper RLS policies in place
     const { error, data: upsertResult } = await supabase
       .from("liquidium_tokens")
       .upsert(upsertData, { onConflict: "wallet_address" });
+
     if (error) {
       console.error("[API Error] Failed to store Liquidium JWT", error);
       return createErrorResponse(

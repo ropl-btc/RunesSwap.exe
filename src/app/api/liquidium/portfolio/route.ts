@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
         400,
       );
     }
+    // Now using regular client as we have proper RLS policies in place
     const { data: tokenRows, error: tokenError } = await supabase
       .from("liquidium_tokens")
       .select("jwt")
