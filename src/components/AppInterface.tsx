@@ -225,11 +225,7 @@ export function AppInterface({ activeTab }: AppInterfaceProps) {
       {/* Conditionally render layout based on whether price chart is needed */}
       {activeTab === "swap" || activeTab === "runesInfo" ? (
         <div className={styles.appLayout}>
-          <div
-            className={`${styles.swapContainer} ${isPriceChartVisible ? styles.narrowSwapContainer : ""}`}
-          >
-            {renderActiveTab()}
-          </div>
+          <div className={styles.swapContainer}>{renderActiveTab()}</div>
           {isPriceChartVisible && (
             <div className={styles.priceChartContainer}>
               <PriceChart

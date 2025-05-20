@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
   // Zod validation for 'query'
   const schema = z.object({
     query: z.string().min(1),
-    sell: z.boolean().optional().default(false),
+    sell: z.coerce.boolean().optional().default(false),
   });
   const validation = await validateRequest(request, schema, "query");
   if (!validation.success) return validation.errorResponse;
