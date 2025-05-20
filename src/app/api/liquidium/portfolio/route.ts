@@ -30,7 +30,6 @@ export async function GET(request: NextRequest) {
       );
     }
     if (!tokenRows || tokenRows.length === 0) {
-      console.warn("[Liquidium] No JWT found for address:", address);
       return createErrorResponse(
         "Not authenticated with Liquidium",
         "No JWT found for this address",
@@ -41,7 +40,6 @@ export async function GET(request: NextRequest) {
     const liquidium = getLiquidiumClient();
     const portfolio = await liquidium.getPortfolio(userJwt);
     if (!portfolio || !portfolio.offers) {
-      console.warn("[Liquidium] No offers found in portfolio response");
       return createSuccessResponse([]); // Return empty array if no offers
     }
     return createSuccessResponse(portfolio.offers);

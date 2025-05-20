@@ -62,9 +62,7 @@ export async function POST(request: NextRequest) {
           expiresAt = new Date(payload.exp * 1000);
         }
       }
-    } catch (e) {
-      console.warn("[API Debug] Failed to decode JWT for expiry:", e);
-    }
+    } catch {}
     // Store JWT in Supabase
     const upsertData = {
       wallet_address: ordinalsAddress,
@@ -74,10 +72,9 @@ export async function POST(request: NextRequest) {
       expires_at: expiresAt,
       last_used_at: new Date().toISOString(),
     };
-    console.info("[API Debug] Upserting Liquidium JWT with data:", upsertData);
 
     // Now using regular client as we have proper RLS policies in place
-    const { error, data: upsertResult } = await supabase
+    const { error } = await supabase
       .from("liquidium_tokens")
       .upsert(upsertData, { onConflict: "wallet_address" });
 
@@ -89,7 +86,6 @@ export async function POST(request: NextRequest) {
         500,
       );
     }
-    console.info("[API Debug] Upsert result:", upsertResult);
     return createSuccessResponse({ jwt: authSubmitResponse.user_jwt });
   } catch (error) {
     const errorInfo = handleApiError(error, "Liquidium authentication failed");

@@ -327,8 +327,7 @@ export function SwapTab({
               // Clear search field
               setSearchQuery("");
             }
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          } catch (error) {
+          } catch {
             // Error handled in finally block
           } finally {
             setIsSearching(false);
@@ -975,8 +974,7 @@ export function SwapTab({
       } else {
         setOutputUsdValue(null);
       }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
+    } catch {
       setInputUsdValue(null);
       setOutputUsdValue(null);
     }
@@ -1263,8 +1261,7 @@ export function SwapTab({
 
         decimals = swapRuneInfo?.decimals ?? 0;
         availableBalance = balanceNum / 10 ** decimals;
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (error) {
+      } catch {
         return;
       }
     }

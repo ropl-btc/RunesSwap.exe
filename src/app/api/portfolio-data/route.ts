@@ -69,11 +69,11 @@ export async function GET(request: NextRequest) {
     const marketError = marketDataResult.error;
 
     if (runeInfoError) {
-      console.error("Error fetching rune infos:", runeInfoError);
+      // Continue with fallback fetch if cache lookup fails
     }
 
     if (marketError) {
-      console.error("Error fetching market data:", marketError);
+      // Continue with fallback fetch if cache lookup fails
     }
 
     // Convert array data to maps for easy client-side lookup

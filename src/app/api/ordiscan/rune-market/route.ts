@@ -25,9 +25,6 @@ export async function GET(request: NextRequest) {
     const marketInfo = await getRuneMarketData(formattedName);
 
     if (!marketInfo) {
-      console.warn(
-        `[API Route] Rune market info not found for ${formattedName}`,
-      );
       // Return null data with success: true for consistent client-side handling
       return createSuccessResponse(null, 404);
     }

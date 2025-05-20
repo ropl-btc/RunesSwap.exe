@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { getOrdiscanClient } from "@/lib/serverUtils";
+import { createErrorResponse, createSuccessResponse } from "@/lib/apiUtils";
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,9 +9,10 @@ export async function GET(request: NextRequest) {
     const prefix = searchParams.get("prefix");
 
     if (!prefix) {
-      return NextResponse.json(
-        { error: "Missing required parameter: prefix" },
-        { status: 400 },
+      return createErrorResponse(
+        "Missing required parameter: prefix",
+        undefined,
+        400,
       );
     }
 
@@ -34,7 +36,7 @@ export async function GET(request: NextRequest) {
       }
 
       if (prefixRune && prefixRune.length > 0) {
-        return NextResponse.json(prefixRune[0]);
+        return createSuccessResponse(prefixRune[0]);
       }
     }
 
@@ -43,7 +45,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (existingRune && existingRune.length > 0) {
-      return NextResponse.json(existingRune[0]);
+      return createSuccessResponse(existingRune[0]);
     }
 
     // If not found in DB, try to fetch from Ordiscan
@@ -91,24 +93,20 @@ export async function GET(request: NextRequest) {
 
           await supabase.from("runes").upsert([dataToInsert]);
 
-          return NextResponse.json(runeData);
+          return createSuccessResponse(runeData);
         }
       }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
+    } catch {
       // Error handled by returning not found
     }
 
     // If all attempts fail, return not found
-    return NextResponse.json(
-      { error: "Rune not found with the given prefix" },
-      { status: 404 },
+    return createErrorResponse(
+      "Rune not found with the given prefix",
+      undefined,
+      404,
     );
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+  } catch {
+    return createErrorResponse("Internal server error", undefined, 500);
   }
 }
