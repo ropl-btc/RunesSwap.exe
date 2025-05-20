@@ -45,6 +45,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(psbtResponse);
   } catch (error) {
     const errorInfo = handleApiError(error, "Failed to generate PSBT");
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
     // Special handling for quote expired
     if (
       errorInfo.message.includes("Quote expired") ||
@@ -58,6 +60,25 @@ export async function POST(request: NextRequest) {
         410,
       );
     }
+
+    // Special handling for rate limiting
+    if (errorMessage.includes("Rate limit") || errorInfo.status === 429) {
+      return createErrorResponse(
+        "Rate limit exceeded",
+        "Please try again later",
+        429,
+      );
+    }
+
+    // Handle unexpected token errors (HTML responses instead of JSON)
+    if (errorMessage.includes("Unexpected token")) {
+      return createErrorResponse(
+        "API service unavailable",
+        "The SatsTerminal API is currently unavailable. Please try again later.",
+        503,
+      );
+    }
+
     return createErrorResponse(
       errorInfo.message,
       errorInfo.details,

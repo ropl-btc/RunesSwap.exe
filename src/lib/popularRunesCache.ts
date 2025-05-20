@@ -13,6 +13,43 @@ export interface CachedPopularRune {
 }
 
 /**
+ * Fetch popular runes from cache with expiry information
+ * @returns Object containing cached data and whether it's expired
+ */
+export async function getCachedPopularRunesWithExpiry(): Promise<{
+  cachedData: Record<string, unknown>[] | null;
+  isExpired: boolean;
+}> {
+  try {
+    // Check for cached popular runes
+    const { data } = await supabase
+      .from("popular_runes_cache")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!data) {
+      return { cachedData: null, isExpired: true };
+    }
+
+    // Check if the cache is expired (30 days)
+    const cacheExpiry = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
+    const cacheDate = new Date(data.created_at).getTime();
+    const now = new Date().getTime();
+    const isExpired = now - cacheDate > cacheExpiry;
+
+    return {
+      cachedData: data.runes_data as Record<string, unknown>[],
+      isExpired,
+    };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
+    return { cachedData: null, isExpired: true };
+  }
+}
+
+/**
  * Fetch popular runes from cache
  * @returns Cached popular runes if present and not expired
  */
@@ -20,31 +57,14 @@ export async function getCachedPopularRunes(): Promise<
   Record<string, unknown>[] | null
 > {
   try {
-    // Check for cached popular runes
-    const { data, error } = await supabase
-      .from("popular_runes_cache")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (error) {
-      return null;
+    const { cachedData, isExpired } = await getCachedPopularRunesWithExpiry();
+
+    // Only return the data if it's not expired
+    if (cachedData && !isExpired) {
+      return cachedData;
     }
 
-    if (!data) {
-      return null;
-    }
-
-    // Check if the cache is expired (30 days)
-    const cacheExpiry = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
-    const cacheDate = new Date(data.created_at).getTime();
-    const now = new Date().getTime();
-
-    if (now - cacheDate > cacheExpiry) {
-      return null;
-    }
-
-    return data.runes_data as Record<string, unknown>[];
+    return null;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     return null;
