@@ -6,3 +6,6 @@ npx lint-staged
 
 # Run tests
 pnpm test
+
+# Run production build
+pnpm build
