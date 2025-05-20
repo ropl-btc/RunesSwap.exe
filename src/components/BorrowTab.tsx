@@ -730,7 +730,6 @@ export function BorrowTab({
                 onClick={() => {
                   // Reset the loan process to start a new loan
                   setLoanTxId(null);
-                  setPrepareData(null);
                   setSelectedQuoteId(null);
                   setQuotes([]);
                   setLoanProcessError(null);
