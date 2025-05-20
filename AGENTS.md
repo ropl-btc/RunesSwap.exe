@@ -97,7 +97,7 @@ When adding new features:
 3. Implement or update React components.
 4. Write Jest tests for new utilities or routes.
 5. Run `pnpm lint` and `pnpm test` before committing.
-6. Run `pnpm build` to verify the project compiles successfully.
+6. Run `pnpm build` to ensure the project compiles without errors.
 
 This AGENTS.md should provide enough context to navigate the codebase and run common tasks. Refer to `README.md` and `CLAUDE.md` for more detailed documentation.
 

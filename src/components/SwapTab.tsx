@@ -640,218 +640,24 @@ export function SwapTab({
     setExchangeRate(null);
     setInputUsdValue(null);
     setOutputUsdValue(null);
-
-    // Schedule a check to validate the new asset configuration
-    setTimeout(() => {
-      console.log("Post asset selection check:", {
-        assetIn: assetIn
-          ? `${assetIn.name} (${assetIn.isBTC ? "BTC" : "RUNE"})`
-          : "null",
-        assetOut: assetOut
-          ? `${assetOut.name} (${assetOut.isBTC ? "BTC" : "RUNE"})`
-          : "null",
-        isValid: assetIn && assetOut && assetIn.isBTC !== assetOut.isBTC,
-      });
-    }, 100);
   };
-
-  // Create refs for tracking swap state and prevent race conditions
-  const swapInProgressRef = useRef(false);
-
-  // Add refs to track the actual asset states after updates
-  const pendingAssetInRef = useRef<Asset | null>(null);
-  const pendingAssetOutRef = useRef<Asset | null>(null);
-
-  // Create an effect to monitor asset state changes
-  useEffect(() => {
-    // Only log when swap is in progress to avoid spam
-    if (swapInProgressRef.current) {
-      console.log("ASSET STATE CHANGED:", {
-        assetIn: assetIn
-          ? `${assetIn.name} (${assetIn.isBTC ? "BTC" : "RUNE"})`
-          : "null",
-        assetOut: assetOut
-          ? `${assetOut.name} (${assetOut.isBTC ? "BTC" : "RUNE"})`
-          : "null",
-        pendingAssetIn: pendingAssetInRef.current
-          ? `${pendingAssetInRef.current.name} (${pendingAssetInRef.current.isBTC ? "BTC" : "RUNE"})`
-          : "null",
-        pendingAssetOut: pendingAssetOutRef.current
-          ? `${pendingAssetOutRef.current.name} (${pendingAssetOutRef.current.isBTC ? "BTC" : "RUNE"})`
-          : "null",
-        isValid: assetIn && assetOut && assetIn.isBTC !== assetOut.isBTC,
-      });
-
-      // Check if we reached our target state
-      if (pendingAssetInRef.current && pendingAssetOutRef.current) {
-        const matchesExpected =
-          assetIn === pendingAssetInRef.current &&
-          assetOut === pendingAssetOutRef.current;
-
-        if (matchesExpected) {
-          console.log("✅ Asset state matches expected target!");
-        }
-      }
-
-      // Check for invalid state
-      if (assetIn && assetOut && assetIn.isBTC === assetOut.isBTC) {
-        console.error("❌ INVALID STATE DETECTED IN EFFECT:", {
-          assetIn: assetIn
-            ? `${assetIn.name} (${assetIn.isBTC ? "BTC" : "RUNE"})`
-            : "null",
-          assetOut: assetOut
-            ? `${assetOut.name} (${assetOut.isBTC ? "BTC" : "RUNE"})`
-            : "null",
-        });
-      }
-    }
-  }, [assetIn, assetOut]);
-
-  // Create ref to store a temporary asset pair state during swaps
-  const tempAssetPairRef = useRef<{ in: Asset | null; out: Asset | null }>({
-    in: null,
-    out: null,
-  });
 
   // --- Swap Direction Logic ---
   const handleSwapDirection = () => {
-    // Prevent double swaps
-    if (swapInProgressRef.current) {
-      return;
-    }
+    const tempAsset = assetIn;
+    setAssetIn(assetOut ?? BTC_ASSET);
+    setAssetOut(tempAsset);
 
-    // Mark swap as in progress
-    swapInProgressRef.current = true;
-
-    // Ensure we have valid assets
-    if (!assetIn || !assetOut) {
-      swapInProgressRef.current = false;
-      return;
-    }
-
-    // ⚠️ CRITICAL: DISABLE THE RESET_SWAP TRIGGER
-    // Prevent reset_swap from being triggered during asset changes
-    lastResetTimestampRef.current = Date.now() + 5000; // Block reset for 5 seconds
-
-    // Decide which direction to go
-    let newAssetIn: Asset, newAssetOut: Asset;
-
-    if (assetIn.isBTC && !assetOut.isBTC) {
-      // Currently BTC->RUNE, switch to RUNE->BTC
-      newAssetIn = assetOut; // The Rune
-      newAssetOut = BTC_ASSET; // BTC
-    } else if (!assetIn.isBTC && assetOut.isBTC) {
-      // Currently RUNE->BTC, switch to BTC->RUNE
-      newAssetIn = BTC_ASSET; // BTC
-      newAssetOut = assetIn; // The Rune
-    } else {
-      // Invalid current state - force a valid configuration
-      console.warn("Invalid asset pair detected, forcing to BTC->RUNE");
-
-      // Always default to BTC->Rune
-      newAssetIn = BTC_ASSET;
-
-      // Find a Rune to use (either from current assets or popular runes)
-      const runeAsset = !assetIn.isBTC
-        ? assetIn
-        : !assetOut.isBTC
-          ? assetOut
-          : popularRunes.length > 0
-            ? popularRunes[0]
-            : null;
-
-      if (!runeAsset) {
-        console.error("No Rune asset available for swap operation");
-        swapInProgressRef.current = false;
-        return;
-      }
-
-      newAssetOut = runeAsset;
-    }
-
-    // Validate the target pair
-    if (newAssetIn.isBTC === newAssetOut.isBTC) {
-      console.error("Invalid asset pair configured");
-      swapInProgressRef.current = false;
-      return;
-    }
-
-    // Save the target pair to the temp ref
-    tempAssetPairRef.current = {
-      in: newAssetIn,
-      out: newAssetOut,
-    };
-
-    // Clear quote-related state first
-    setQuote(null);
-    setExchangeRate(null);
-    setInputUsdValue(null);
-    setOutputUsdValue(null);
-
-    // Clear error state for a clean swap
-    dispatchSwap({ type: "FETCH_QUOTE_ERROR", error: "" });
-
-    // Swap amounts
     const tempAmount = inputAmount;
     setInputAmount(outputAmount);
     setOutputAmount(tempAmount);
 
-    // ⚠️ CRITICAL CHANGE: Create an async function to perform the asset swap atomically
-    // This ensures we don't have intermediate invalid states
-    const performAtomicAssetSwap = async () => {
-      try {
-        // Store original state in case we need to restore
-        const originalAssetIn = assetIn;
-        const originalAssetOut = assetOut;
-
-        // Reset to a known good state first - use BTC -> First Rune
-        // This ensures we don't have any invalid intermediate state
-        const safeRune = popularRunes.length > 0 ? popularRunes[0] : null;
-
-        if (!safeRune) {
-          console.error("❌ Critical error: No safe rune available for swap");
-          return;
-        }
-
-        // First clear the state completely (no assets -> cannot be invalid)
-        await new Promise<void>((resolve) => {
-          // Instead of using null, use safe default values
-          setAssetIn(BTC_ASSET); // Default to BTC
-          if (popularRunes.length > 0) {
-            setAssetOut(popularRunes[0]); // Set to first popular rune
-          }
-          setTimeout(resolve, 20);
-        });
-
-        // Then set to the desired end state
-        await new Promise<void>((resolve) => {
-          // Use the ref to set both values at once
-          const finalIn = tempAssetPairRef.current.in;
-          const finalOut = tempAssetPairRef.current.out;
-
-          if (finalIn && finalOut) {
-            // Set both at once to avoid intermediate invalid states
-            setAssetIn(finalIn);
-            setAssetOut(finalOut);
-          } else {
-            // Fallback to original values if something went wrong
-            console.warn("Using fallback values for asset swap");
-            setAssetIn(originalAssetIn);
-            setAssetOut(originalAssetOut);
-          }
-
-          setTimeout(resolve, 20);
-        });
-      } catch (error) {
-        console.error("Error during asset swap:", error);
-      } finally {
-        // Reset the swap flag to allow further operations
-        swapInProgressRef.current = false;
-      }
-    };
-
-    // Execute the atomic swap
-    performAtomicAssetSwap();
+    setQuote(null);
+    dispatchSwap({ type: "FETCH_QUOTE_ERROR", error: "" });
+    setExchangeRate(null);
+    setInputUsdValue(null);
+    setOutputUsdValue(null);
+    dispatchSwap({ type: "RESET_SWAP" });
   };
 
   // --- Quote & Price Calculation ---
@@ -1047,7 +853,6 @@ export function SwapTab({
   useEffect(() => {
     // Successful swap - don't do anything
     if (swapState.txId || swapState.swapStep === "success") {
-      console.log("Transaction already completed, skipping quote fetch");
       return;
     }
 
@@ -1076,19 +881,12 @@ export function SwapTab({
       hasValidAssets &&
       currentKey !== quoteKeyRef.current
     ) {
-      console.log(
-        `Input values changed: ${quoteKeyRef.current} -> ${currentKey}`,
-      );
-
       // Don't fetch if we're throttled
       if (!isThrottledRef.current) {
-        console.log("Fetching quote for new input combination");
         // We've already validated these values exist
         handleFetchQuote();
         // Update the key reference IMMEDIATELY after starting the fetch to prevent duplicates
         quoteKeyRef.current = currentKey;
-      } else {
-        console.log("Throttled, skipping fetch");
       }
     }
 
@@ -1101,7 +899,6 @@ export function SwapTab({
 
       // Clear any existing results only if needed
       if (quote || outputAmount || exchangeRate) {
-        console.log("Clearing quote-related UI state for invalid inputs");
         setQuote(null);
         setOutputAmount("");
         setExchangeRate(null);
@@ -1132,9 +929,6 @@ export function SwapTab({
           !lastResetTimestampRef.current ||
           currentTime - lastResetTimestampRef.current > RESET_COOLDOWN
         ) {
-          console.log(
-            "Clearing swap state due to zero input after previous input",
-          );
           dispatchSwap({ type: "RESET_SWAP" });
           lastResetTimestampRef.current = currentTime;
 
@@ -1150,6 +944,11 @@ export function SwapTab({
     swapState.txId,
     swapState.swapStep,
     swapState.isSwapping,
+    dispatchSwap,
+    handleFetchQuote,
+    quote,
+    outputAmount,
+    exchangeRate,
   ]);
 
   // UseEffect to calculate input USD value
@@ -1440,7 +1239,6 @@ export function SwapTab({
             `Confirmation failed or transaction ID missing. Response: ${JSON.stringify(confirmResult)}`,
           );
         }
-        console.info("Swap successful! Transaction ID:", finalTxId);
         dispatchSwap({ type: "SWAP_SUCCESS", txId: finalTxId });
 
         // Prevent further operations
@@ -1594,10 +1392,6 @@ export function SwapTab({
             );
           }
 
-          console.info(
-            "Transaction successful with higher fee rate!",
-            finalTxId,
-          );
           dispatchSwap({ type: "SWAP_SUCCESS", txId: finalTxId });
 
           // Prevent further operations
@@ -1651,10 +1445,7 @@ export function SwapTab({
         errorMessage.includes("User canceled the request") ||
         errorMessage.includes("User canceled")
       ) {
-        // User cancelled signing - we need to reset the swap state more thoroughly
-        console.log(
-          "User canceled request detected - resetting swap state completely",
-        );
+        // User cancelled signing - reset state completely
 
         // IMPORTANT: We use a full reset instead of individual state updates
         // This ensures we clear ALL state flags at once, including isQuoteLoading
