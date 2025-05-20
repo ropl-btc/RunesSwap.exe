@@ -27,9 +27,6 @@ export async function GET() {
 
         // Validate response structure
         if (!popularResponse || typeof popularResponse !== "object") {
-          console.warn(
-            "Invalid response from SatsTerminal, using expired cache",
-          );
           return createSuccessResponse({ data: cachedData, isStale: true });
         }
 
@@ -41,11 +38,7 @@ export async function GET() {
 
         // If response is not an array, use cached data
         return createSuccessResponse({ data: cachedData, isStale: true });
-      } catch (error) {
-        console.warn(
-          "Error refreshing popular runes, using expired cache:",
-          error,
-        );
+      } catch {
         return createSuccessResponse({ data: cachedData, isStale: true });
       }
     }

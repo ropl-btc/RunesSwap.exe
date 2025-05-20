@@ -11,8 +11,6 @@ import {
   type ConfirmPSBTParams,
 } from "satsterminal-sdk";
 import { type RuneData } from "./runesData";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import type { LiquidiumLoanOffer } from "@/types/liquidium"; // Import Liquidium types if needed elsewhere
 
 // API Query Keys for React Query caching
 export const QUERY_KEYS = {

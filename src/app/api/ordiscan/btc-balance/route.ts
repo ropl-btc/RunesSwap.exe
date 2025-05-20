@@ -23,10 +23,6 @@ export async function GET(request: NextRequest) {
     const utxos = await ordiscan.address.getUtxos({ address: address });
 
     if (!Array.isArray(utxos)) {
-      console.warn(
-        `[API Route] Invalid or empty UTXO data received for address ${address}. Expected array, got:`,
-        utxos,
-      );
       // Return 0 balance if data is invalid
       return createSuccessResponse({ balance: 0 });
     }

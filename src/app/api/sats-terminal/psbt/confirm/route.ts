@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import type { ConfirmPSBTParams } from "satsterminal-sdk";
 import { getSatsTerminalClient } from "@/lib/serverUtils";
 import { z } from "zod";
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     };
 
     const confirmResponse = await terminal.confirmPSBT(confirmParams);
-    return NextResponse.json(confirmResponse);
+    return createSuccessResponse(confirmResponse);
   } catch (error) {
     const errorInfo = handleApiError(error, "Failed to confirm PSBT");
     const errorMessage = error instanceof Error ? error.message : String(error);

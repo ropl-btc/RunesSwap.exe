@@ -23,7 +23,6 @@ export async function POST(request: NextRequest) {
     const runeData = await ordiscan.rune.getInfo({ name: runeName });
 
     if (!runeData) {
-      console.warn(`[API Route] Rune info not found for ${runeName}`);
       return createSuccessResponse(null, 404);
     }
 

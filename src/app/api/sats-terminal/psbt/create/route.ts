@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import type { GetPSBTParams } from "satsterminal-sdk";
 import { getSatsTerminalClient } from "@/lib/serverUtils";
 import { z } from "zod";
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       };
 
     const psbtResponse = await terminal.getPSBT(psbtParams);
-    return NextResponse.json(psbtResponse);
+    return createSuccessResponse(psbtResponse);
   } catch (error) {
     const errorInfo = handleApiError(error, "Failed to generate PSBT");
     const errorMessage = error instanceof Error ? error.message : String(error);
