@@ -12,8 +12,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
   supabase = new Proxy(
     {},
     {
-      get() {
-        throw new Error("Supabase client is not configured");
+      get(target, prop) {
+        throw new Error(
+          `Supabase client is not configured. Attempted to access property: ${String(
+            prop,
+          )}`,
+        );
       },
     },
   ) as SupabaseClient;
