@@ -30,13 +30,22 @@ export async function POST(request: NextRequest) {
 
   try {
     const terminal = getSatsTerminalClient();
-    // Ensure btcAmount is a string for the SDK
-    const quoteParams: QuoteParams = {
-      ...validatedParams,
-      btcAmount: validatedParams.btcAmount,
+    let quoteResponse;
+    const maybeTerminal = terminal as unknown as {
+      newFetchQuote?: (btcAmount: number, runeName: string) => Promise<unknown>;
     };
-
-    const quoteResponse = await terminal.fetchQuote(quoteParams);
+    if (typeof maybeTerminal.newFetchQuote === "function") {
+      quoteResponse = await maybeTerminal.newFetchQuote(
+        Number(validatedParams.btcAmount),
+        validatedParams.runeName,
+      );
+    } else {
+      const quoteParams: QuoteParams = {
+        ...validatedParams,
+        btcAmount: validatedParams.btcAmount,
+      };
+      quoteResponse = await terminal.fetchQuote(quoteParams);
+    }
 
     // Validate the response
     if (!quoteResponse || typeof quoteResponse !== "object") {

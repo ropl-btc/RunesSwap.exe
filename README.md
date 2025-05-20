@@ -33,6 +33,7 @@ NEXT_PUBLIC_SUPABASE_URL=<your-supabase-url>
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-supabase-anon-key>
 ORDISCAN_API_KEY=<your-ordiscan-api-key>
 SATS_TERMINAL_API_KEY=<your-satsterminal-api-key>
+TBA_API_URL=<your-satsterminal-api-url>
 ```
 
 ### Installation & Development

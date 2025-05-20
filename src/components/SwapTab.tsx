@@ -234,6 +234,7 @@ export function SwapTab({
   const [loadingDots, setLoadingDots] = useState(".");
   // Add back quote, quoteError, quoteExpired for quote data and error
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
+  const [quoteTimestamp, setQuoteTimestamp] = useState<number | null>(null);
 
   // --- Swap process state (reducer) ---
   const [swapState, dispatchSwap] = useReducer(
@@ -776,6 +777,7 @@ export function SwapTab({
       // Only update state if this is the latest request
       if (requestId === latestQuoteRequestId.current) {
         setQuote(quoteResponse);
+        setQuoteTimestamp(Date.now());
         let calculatedOutputAmount = "";
         let calculatedRate = null;
         if (quoteResponse) {
@@ -1027,6 +1029,15 @@ export function SwapTab({
       return;
     }
 
+    if (!quoteTimestamp || Date.now() - quoteTimestamp > 60000) {
+      dispatchSwap({ type: "QUOTE_EXPIRED" });
+      dispatchSwap({
+        type: "SET_GENERIC_ERROR",
+        error: "Quote expired. Please fetch a new one.",
+      });
+      return;
+    }
+
     dispatchSwap({ type: "SWAP_START" });
     dispatchSwap({ type: "FETCH_QUOTE_START" });
 
@@ -1051,7 +1062,7 @@ export function SwapTab({
         if ("side" in order && order.side)
           (patchedOrder as Record<string, unknown>)["side"] = String(
             order.side,
-          ).toUpperCase() as "BUY" | "SELL";
+          ).toLowerCase() as "buy" | "sell";
         return patchedOrder as RuneOrder;
       });
 
@@ -1172,10 +1183,9 @@ export function SwapTab({
           error: "Quote expired. Please fetch a new one.",
         });
       } else if (errorMessage.includes("User canceled the request")) {
-        // User cancelled signing - perform a soft reset that allows retry
+        // User cancelled signing - mark quote expired so user can fetch a new one
         dispatchSwap({ type: "SET_GENERIC_ERROR", error: errorMessage });
-        // Using soft reset instead of SWAP_ERROR allows the user to retry
-        dispatchSwap({ type: "SWAP_STEP", step: "quote_ready" });
+        dispatchSwap({ type: "QUOTE_EXPIRED" });
       } else {
         // Other swap errors
         dispatchSwap({ type: "SET_GENERIC_ERROR", error: errorMessage });
@@ -1240,7 +1250,15 @@ export function SwapTab({
   // Reset swap state when inputs/wallet change significantly
   useEffect(() => {
     dispatchSwap({ type: "RESET_SWAP" });
+    setQuoteTimestamp(null);
   }, [address, connected]);
+
+  // Clear stored quote timestamp when quote expires or swap is reset
+  useEffect(() => {
+    if (swapState.quoteExpired) {
+      setQuoteTimestamp(null);
+    }
+  }, [swapState.quoteExpired]);
 
   // Add balance percentage helper functions
   const handlePercentageClick = (percentage: number) => {
