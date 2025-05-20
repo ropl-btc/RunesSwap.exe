@@ -644,8 +644,11 @@ export function SwapTab({
 
   // --- Swap Direction Logic ---
   const handleSwapDirection = () => {
+    if (!assetOut) {
+      return;
+    }
     const tempAsset = assetIn;
-    setAssetIn(assetOut ?? BTC_ASSET);
+    setAssetIn(assetOut);
     setAssetOut(tempAsset);
 
     const tempAmount = inputAmount;
