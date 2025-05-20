@@ -8,7 +8,9 @@ import styles from "./BorrowTab.module.css";
 import Button from "./Button"; // Reuse Button component
 import { Asset } from "@/types/common";
 import { FormattedRuneAmount } from "./FormattedRuneAmount"; // Reuse FormattedRuneAmount
-import { InputArea } from "./InputArea";
+import CollateralInput from "./CollateralInput";
+import BorrowQuotesList from "./BorrowQuotesList";
+import { useBorrowProcess } from "@/hooks/useBorrowProcess";
 import {
   fetchPopularFromApi,
   fetchRuneBalancesFromApi,
@@ -16,13 +18,9 @@ import {
   fetchRuneMarketFromApi,
   fetchBorrowQuotesFromApi,
   fetchBorrowRangesFromApi,
-  prepareLiquidiumBorrow,
-  submitLiquidiumBorrow,
   QUERY_KEYS,
   LiquidiumBorrowQuoteResponse,
   LiquidiumBorrowQuoteOffer,
-  LiquidiumPrepareBorrowResponse,
-  LiquidiumSubmitBorrowResponse,
 } from "@/lib/apiClient";
 import { normalizeRuneName } from "@/utils/runeUtils";
 import {
@@ -77,13 +75,6 @@ export function BorrowTab({
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
   const [minMaxRange, setMinMaxRange] = useState<string | null>(null);
   const [borrowRangeError, setBorrowRangeError] = useState<string | null>(null);
-
-  // State for loan process
-  const [isPreparing, setIsPreparing] = useState(false);
-  const [isSigning, setIsSigning] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [loanProcessError, setLoanProcessError] = useState<string | null>(null);
-  const [loanTxId, setLoanTxId] = useState<string | null>(null);
 
   // --- Data Fetching ---
   // Fetch popular runes on mount using API
@@ -192,6 +183,23 @@ export function BorrowTab({
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
+  const {
+    startLoan,
+    reset: resetLoanProcess,
+    isPreparing,
+    isSigning,
+    isSubmitting,
+    loanProcessError,
+    loanTxId,
+  } = useBorrowProcess({
+    signPsbt,
+    address: address ?? "",
+    paymentAddress: paymentAddress ?? "",
+    publicKey: publicKey ?? "",
+    paymentPublicKey: paymentPublicKey ?? "",
+    collateralRuneInfo: collateralRuneInfo ?? null,
+  });
+
   // Fetch min-max range when collateral asset changes
   useEffect(() => {
     const fetchMinMaxRange = async () => {
@@ -286,8 +294,7 @@ export function BorrowTab({
     setQuotes([]);
     setQuotesError(null);
     setSelectedQuoteId(null);
-    setLoanProcessError(null);
-    setLoanTxId(null);
+    resetLoanProcess();
     setMinMaxRange(null);
     setBorrowRangeError(null); // Clear any existing borrow range error
   };
@@ -301,8 +308,7 @@ export function BorrowTab({
     setQuotesError(null);
     setQuotes([]);
     setSelectedQuoteId(null);
-    setLoanProcessError(null);
-    setLoanTxId(null);
+    resetLoanProcess();
 
     try {
       // Convert user amount to raw amount based on decimals
@@ -397,121 +403,6 @@ export function BorrowTab({
     }
   };
 
-  const handleStartLoan = async () => {
-    if (
-      !selectedQuoteId ||
-      !collateralAsset ||
-      !collateralAmount ||
-      !address ||
-      !paymentAddress ||
-      !publicKey ||
-      !paymentPublicKey
-    ) {
-      setLoanProcessError(
-        "Missing required information (quote, asset, amount, or wallet details).",
-      );
-      return;
-    }
-
-    setIsPreparing(true);
-    setLoanProcessError(null);
-    setLoanTxId(null);
-
-    try {
-      // 1. Prepare Loan
-      const decimals = collateralRuneInfo?.decimals ?? 0;
-
-      // Calculate raw amount with proper decimal handling
-      let rawTokenAmount;
-      try {
-        // Pure BigInt calculation to maintain precision
-        const amountFloat = parseFloat(collateralAmount);
-        // Convert to integer representation (e.g. 1.23 -> 123 for 2 decimals)
-        const amountInteger = Math.floor(
-          amountFloat * 10 ** Math.min(8, decimals),
-        );
-        // Scale to full decimal precision
-        const multiplier = BigInt(10 ** Math.max(0, decimals - 8));
-        const amountBigInt = BigInt(amountInteger) * multiplier;
-        rawTokenAmount = amountBigInt.toString();
-      } catch {
-        // Fallback calculation
-        rawTokenAmount = String(
-          Math.floor(parseFloat(collateralAmount) * 10 ** decimals),
-        );
-      }
-
-      const feeRate = 5; // Use a default fee rate for MVP
-
-      const prepareResult: LiquidiumPrepareBorrowResponse =
-        await prepareLiquidiumBorrow({
-          instant_offer_id: selectedQuoteId,
-          fee_rate: feeRate,
-          token_amount: rawTokenAmount,
-          borrower_payment_address: paymentAddress,
-          borrower_payment_pubkey: paymentPublicKey,
-          borrower_ordinal_address: address,
-          borrower_ordinal_pubkey: publicKey,
-          address: address, // Pass user address for JWT lookup
-        });
-
-      if (
-        !prepareResult.success ||
-        !prepareResult.data?.base64_psbt ||
-        !prepareResult.data?.prepare_offer_id
-      ) {
-        throw new Error(
-          typeof prepareResult.error === "string"
-            ? prepareResult.error
-            : "Failed to prepare loan transaction.",
-        );
-      }
-
-      // We have the prepared data for signing
-
-      // 2. Sign PSBT
-      setIsPreparing(false);
-      setIsSigning(true);
-      const psbtToSign = prepareResult.data.base64_psbt;
-      const signResult = await signPsbt(psbtToSign); // Assuming signPsbt handles base64
-
-      if (!signResult?.signedPsbtBase64) {
-        throw new Error("User canceled the request");
-      }
-      const signedPsbtBase64 = signResult.signedPsbtBase64;
-
-      // 3. Submit Loan
-      setIsSigning(false);
-      setIsSubmitting(true);
-
-      const submitResult: LiquidiumSubmitBorrowResponse =
-        await submitLiquidiumBorrow({
-          signed_psbt_base_64: signedPsbtBase64,
-          prepare_offer_id: prepareResult.data.prepare_offer_id,
-          address: address, // Pass user address for JWT lookup
-        });
-
-      if (!submitResult.success || !submitResult.data?.loan_transaction_id) {
-        throw new Error(
-          typeof submitResult.error === "string"
-            ? submitResult.error
-            : "Failed to submit loan transaction.",
-        );
-      }
-
-      setLoanTxId(submitResult.data.loan_transaction_id);
-      // Optionally clear form or show success message
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to start loan.";
-      setLoanProcessError(errorMessage);
-    } finally {
-      setIsPreparing(false);
-      setIsSigning(false);
-      setIsSubmitting(false);
-    }
-  };
-
   // Asset selector is now handled by the InputArea component
 
   // --- Render Logic ---
@@ -523,35 +414,55 @@ export function BorrowTab({
     !isLoading;
   const canStartLoan = connected && selectedQuoteId && !isLoading && !loanTxId;
 
+  const availableBalanceDisplay =
+    connected && collateralAsset && !collateralAsset.isBTC ? (
+      isRuneBalancesLoading || isCollateralRuneInfoLoading ? (
+        "Loading..."
+      ) : (
+        <FormattedRuneAmount
+          runeName={collateralAsset.name}
+          rawAmount={getSpecificRuneBalance(collateralAsset.name)}
+        />
+      )
+    ) : null;
+
+  const usdValue =
+    collateralAmount &&
+    parseFloat(collateralAmount) > 0 &&
+    collateralRuneMarketInfo?.price_in_usd
+      ? (
+          parseFloat(collateralAmount) * collateralRuneMarketInfo.price_in_usd
+        ).toLocaleString(undefined, {
+          style: "currency",
+          currency: "USD",
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })
+      : undefined;
+
   return (
     <div className={styles.borrowTabContainer}>
       <h1 className="heading">Borrow Against Runes</h1>
 
       {/* Collateral Input Area */}
-      <InputArea
-        label="Collateral Amount (Rune)"
-        inputId="collateral-amount"
-        inputValue={collateralAmount}
-        onInputChange={(value) => {
+      <CollateralInput
+        connected={connected}
+        collateralAsset={collateralAsset}
+        onCollateralAssetChange={handleSelectCollateral}
+        collateralAmount={collateralAmount}
+        onCollateralAmountChange={(value) => {
           setCollateralAmount(value);
-          // Reset quotes when amount changes
           setQuotes([]);
           setSelectedQuoteId(null);
           setQuotesError(null);
-          // Don't reset min-max range when input changes
         }}
-        placeholder="0.0"
-        min="0"
-        step="any" // Allow decimals
-        disabled={isLoading}
-        assetSelectorEnabled={true}
-        selectedAsset={collateralAsset}
-        onAssetChange={handleSelectCollateral}
         availableAssets={popularRunes}
-        showBtcInSelector={false} // Only allow selecting runes for collateral
         isAssetsLoading={isPopularLoading}
         assetsError={popularError}
-        showPercentageShortcuts={connected && !!collateralAsset}
+        disabled={isLoading}
+        availableBalance={availableBalanceDisplay}
+        usdValue={usdValue}
+        minMaxRange={minMaxRange || undefined}
         onPercentageClick={(percentage) => {
           if (!connected || !collateralAsset) return;
 
@@ -564,49 +475,17 @@ export function BorrowTab({
           const decimals = collateralRuneInfo?.decimals ?? 0;
           const availableBalance = balanceNum / 10 ** decimals;
 
-          // Calculate percentage of available balance
           const newAmount =
             percentage === 1 ? availableBalance : availableBalance * percentage;
 
-          // Format with appropriate decimal places
           const formattedAmount =
             Math.floor(newAmount * 10 ** decimals) / 10 ** decimals;
 
-          // Set the amount and reset quotes
           setCollateralAmount(formattedAmount.toString());
           setQuotes([]);
           setSelectedQuoteId(null);
           setQuotesError(null);
-          // Don't reset min-max range when using percentage shortcuts
         }}
-        availableBalance={
-          connected && collateralAsset && !collateralAsset.isBTC ? (
-            isRuneBalancesLoading || isCollateralRuneInfoLoading ? (
-              "Loading..."
-            ) : (
-              <FormattedRuneAmount
-                runeName={collateralAsset.name}
-                rawAmount={getSpecificRuneBalance(collateralAsset.name)}
-              />
-            )
-          ) : null
-        }
-        usdValue={
-          collateralAmount &&
-          parseFloat(collateralAmount) > 0 &&
-          collateralRuneMarketInfo?.price_in_usd
-            ? (
-                parseFloat(collateralAmount) *
-                collateralRuneMarketInfo.price_in_usd
-              ).toLocaleString(undefined, {
-                style: "currency",
-                currency: "USD",
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })
-            : undefined
-        }
-        minMaxRange={minMaxRange || undefined}
       />
 
       {/* Borrow Range Error */}
@@ -624,86 +503,19 @@ export function BorrowTab({
       {/* Display Quotes */}
       {quotesError && <div className="errorText">{quotesError}</div>}
       {quotes.length > 0 && (
-        <div
-          className={styles.infoArea}
-          style={{ marginTop: "var(--space-4)", borderTop: "none" }}
-        >
-          <h2
-            className="heading"
-            style={{
-              fontSize: "var(--font-size-normal)",
-              marginBottom: "var(--space-2)",
-            }}
-          >
-            Available Loan Offers:
-          </h2>
-          {quotes.map((quote) => {
-            const principalBtc = (
-              quote.loan_breakdown.principal_sats / 1e8
-            ).toFixed(8);
-            const repaymentBtc = (
-              quote.loan_breakdown.total_repayment_sats / 1e8
-            ).toFixed(8);
-            // Calculate interest percentage safely, avoiding division by zero
-            const interestPercent =
-              quote.loan_breakdown.principal_sats > 0
-                ? (
-                    (quote.loan_breakdown.interest_sats /
-                      quote.loan_breakdown.principal_sats) *
-                    100
-                  ).toFixed(2)
-                : "0.00"; // Default to 0% if principal is zero
-            return (
-              <div
-                key={quote.offer_id}
-                onClick={() => setSelectedQuoteId(quote.offer_id)}
-                style={{
-                  border:
-                    selectedQuoteId === quote.offer_id
-                      ? "2px solid var(--win98-blue)"
-                      : "2px solid var(--win98-gray)",
-                  padding: "var(--space-2)",
-                  marginBottom: "var(--space-2)",
-                  cursor: "pointer",
-                  backgroundColor:
-                    selectedQuoteId === quote.offer_id
-                      ? "var(--win98-light-gray)"
-                      : "var(--win98-white)",
-                }}
-                className={styles.inputArea} // Reuse inputArea style for border
-              >
-                <p>
-                  <strong>Loan Amount:</strong> {principalBtc} BTC
-                </p>
-                <p>
-                  <strong>LTV:</strong>{" "}
-                  {(Number(quote.ltv_rate) * 100).toFixed(2)}%
-                </p>
-                <p>
-                  <strong>Term:</strong> {quote.loan_term_days ?? "N/A"} days
-                </p>
-                <p>
-                  <strong>Interest:</strong> {interestPercent}% (
-                  {quote.loan_breakdown.interest_sats} sats)
-                </p>
-                <p>
-                  <strong>Total Repayment:</strong> {repaymentBtc} BTC
-                </p>
-                <p>
-                  <strong>Due:</strong>{" "}
-                  {new Date(
-                    quote.loan_breakdown.loan_due_by_date,
-                  ).toLocaleDateString()}
-                </p>
-              </div>
-            );
-          })}
-        </div>
+        <BorrowQuotesList
+          quotes={quotes}
+          selectedQuoteId={selectedQuoteId}
+          onSelectQuote={setSelectedQuoteId}
+        />
       )}
 
       {/* Start Loan Button */}
       {selectedQuoteId && (
-        <Button onClick={handleStartLoan} disabled={!canStartLoan}>
+        <Button
+          onClick={() => startLoan(selectedQuoteId, collateralAmount)}
+          disabled={!canStartLoan}
+        >
           {isPreparing
             ? "Preparing..."
             : isSigning
@@ -755,10 +567,9 @@ export function BorrowTab({
               <Button
                 onClick={() => {
                   // Reset the loan process to start a new loan
-                  setLoanTxId(null);
+                  resetLoanProcess();
                   setSelectedQuoteId(null);
                   setQuotes([]);
-                  setLoanProcessError(null);
                 }}
               >
                 Start Another Loan
