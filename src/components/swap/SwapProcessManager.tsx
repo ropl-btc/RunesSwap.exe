@@ -1,6 +1,5 @@
-import { useReducer, useEffect } from 'react';
-import { Asset } from '@/types/common';
-import { SwapStep } from './SwapButton';
+import { useReducer, useEffect } from "react";
+import { SwapStep } from "./SwapButton";
 
 export type SwapProcessState = {
   isSwapping: boolean;
@@ -41,7 +40,9 @@ export function swapProcessReducer(
   console.log(`SwapProcess: ${action.type}`, action);
   // Add some additional context about the current state for better debugging
   if (action.type !== "RESET_SWAP") {
-    console.log(`Current swap state before action: isSwapping=${state.isSwapping}, swapStep=${state.swapStep}, quoteExpired=${state.quoteExpired}, isQuoteLoading=${state.isQuoteLoading}`);
+    console.log(
+      `Current swap state before action: isSwapping=${state.isSwapping}, swapStep=${state.swapStep}, quoteExpired=${state.quoteExpired}, isQuoteLoading=${state.isQuoteLoading}`,
+    );
   }
   switch (action.type) {
     case "RESET_SWAP":
@@ -85,16 +86,26 @@ export function swapProcessReducer(
         quoteExpired: false,
       };
     case "SWAP_STEP":
+      // When explicitly setting to idle, also clear the loading state
+      if (action.step === "idle") {
+        return {
+          ...state,
+          swapStep: action.step,
+          isQuoteLoading: false, // Clear loading state when going to idle
+          isSwapping: false, // Also ensure swap is not in progress
+        };
+      }
       return { ...state, swapStep: action.step };
     case "SWAP_ERROR":
       return {
         ...state,
         isSwapping: false,
+        isQuoteLoading: false, // Ensure loading state is cleared
         swapError: action.error,
         swapStep: "error",
       };
     case "SWAP_SUCCESS":
-      console.log('Setting swap state to SUCCESS with txId:', action.txId);
+      console.log("Setting swap state to SUCCESS with txId:", action.txId);
       return {
         ...state,
         isSwapping: false,
@@ -113,7 +124,7 @@ interface UseSwapProcessManagerProps {
    * Whether the wallet is connected
    */
   connected: boolean;
-  
+
   /**
    * Wallet address
    */
@@ -123,26 +134,29 @@ interface UseSwapProcessManagerProps {
 /**
  * Hook to manage the swap process state
  */
-export function useSwapProcessManager({ connected, address }: UseSwapProcessManagerProps) {
+export function useSwapProcessManager({
+  connected,
+  address,
+}: UseSwapProcessManagerProps) {
   const [swapState, dispatchSwap] = useReducer(
     swapProcessReducer,
-    initialSwapProcessState
+    initialSwapProcessState,
   );
-  
+
   // Reset swap state when inputs/wallet change significantly
   useEffect(() => {
     dispatchSwap({ type: "RESET_SWAP" });
   }, [address, connected]);
-  
+
   // Special handling for successful swaps - ensure the success state persists
   useEffect(() => {
     if (swapState.swapStep === "success" && swapState.txId) {
-      console.log('Swap success state detected, ensuring it persists');
+      console.log("Swap success state detected, ensuring it persists");
       // This is a successful swap - we want to ensure the UI shows this
       // The success state should persist until the user manually resets (e.g., by starting a new swap)
     }
   }, [swapState.swapStep, swapState.txId]);
-  
+
   return { swapState, dispatchSwap };
 }
 

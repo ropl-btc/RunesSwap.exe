@@ -1,0 +1,27 @@
+/* SwapStatusMessages Component Styles */
+
+.messageWithIcon {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.messageIcon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.txLink {
+  color: var(--win98-blue);
+  text-decoration: underline;
+  margin-left: var(--space-2);
+}
+
+.txLink:hover {
+  color: var(--win98-dark-blue);
+}
+
+.errorText {
+  color: var(--win98-red);
+}
