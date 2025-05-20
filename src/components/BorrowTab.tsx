@@ -202,7 +202,7 @@ export function BorrowTab({
         // Get the actual rune ID from collateralRuneInfo if available
         let runeIdForApi = collateralAsset.id;
 
-        if (collateralRuneInfo?.id && collateralRuneInfo.id.includes(":")) {
+        if (collateralRuneInfo?.id?.includes(":")) {
           runeIdForApi = collateralRuneInfo.id;
         }
 
@@ -213,12 +213,8 @@ export function BorrowTab({
 
           // Convert raw values to formatted values based on decimals
           const decimals = collateralRuneInfo?.decimals ?? 0;
-          const minFormatted = (Number(minAmount) / 10 ** decimals).toFixed(
-            decimals > 0 ? 2 : 0,
-          );
-          const maxFormatted = (Number(maxAmount) / 10 ** decimals).toFixed(
-            decimals > 0 ? 2 : 0,
-          );
+          const minFormatted = formatRuneAmount(minAmount, decimals);
+          const maxFormatted = formatRuneAmount(maxAmount, decimals);
 
           setMinMaxRange(`Min: ${minFormatted} - Max: ${maxFormatted}`);
           setBorrowRangeError(null);
@@ -251,6 +247,26 @@ export function BorrowTab({
   }, [collateralAsset, address, collateralRuneInfo]);
 
   // --- Helper Functions ---
+  // Helper function to format rune amounts with BigInt precision
+  const formatRuneAmount = (rawAmount: string, decimals: number): string => {
+    try {
+      // Using BigInt to maintain precision
+      const rawAmountBigInt = BigInt(rawAmount);
+      const divisorBigInt = BigInt(10 ** decimals);
+
+      // Scale by 100 for two decimal places of precision
+      const scaledAmount = (rawAmountBigInt * 100n) / divisorBigInt;
+
+      // Convert to number for formatting (safe now that we've scaled down)
+      const scaledNumber = Number(scaledAmount) / 100;
+
+      return scaledNumber.toFixed(decimals > 0 ? 2 : 0);
+    } catch {
+      // Fallback to basic number conversion if BigInt fails
+      return (Number(rawAmount) / 10 ** decimals).toFixed(decimals > 0 ? 2 : 0);
+    }
+  };
+
   const getSpecificRuneBalance = (
     runeName: string | undefined,
   ): string | null => {
@@ -291,12 +307,15 @@ export function BorrowTab({
       // Calculate raw amount with proper decimal handling
       let rawAmount;
       try {
-        // Use BigInt for precise calculation
-        const multiplier = BigInt(10 ** decimals);
+        // Pure BigInt calculation to maintain precision
         const amountFloat = parseFloat(collateralAmount);
-        const amountBigInt = BigInt(
-          Math.floor(amountFloat * Number(multiplier)),
+        // Convert to integer representation (e.g. 1.23 -> 123 for 2 decimals)
+        const amountInteger = Math.floor(
+          amountFloat * 10 ** Math.min(8, decimals),
         );
+        // Scale to full decimal precision
+        const multiplier = BigInt(10 ** Math.max(0, decimals - 8));
+        const amountBigInt = BigInt(amountInteger) * multiplier;
         rawAmount = amountBigInt.toString();
       } catch {
         // Fallback calculation
@@ -309,9 +328,8 @@ export function BorrowTab({
       // This ensures we're using the correct ID format (e.g., "810010:907")
       let runeIdForApi = collateralAsset.id;
 
-      if (collateralRuneInfo?.id && collateralRuneInfo.id.includes(":")) {
+      if (collateralRuneInfo?.id?.includes(":")) {
         runeIdForApi = collateralRuneInfo.id;
-      } else {
       }
 
       const result: LiquidiumBorrowQuoteResponse =
@@ -341,12 +359,8 @@ export function BorrowTab({
 
           // Convert raw values to formatted values based on decimals
           const decimals = collateralRuneInfo?.decimals ?? 0;
-          const minFormatted = (Number(globalMin) / 10 ** decimals).toFixed(
-            decimals > 0 ? 2 : 0,
-          );
-          const maxFormatted = (Number(globalMax) / 10 ** decimals).toFixed(
-            decimals > 0 ? 2 : 0,
-          );
+          const minFormatted = formatRuneAmount(globalMin.toString(), decimals);
+          const maxFormatted = formatRuneAmount(globalMax.toString(), decimals);
 
           setMinMaxRange(`Min: ${minFormatted} - Max: ${maxFormatted}`);
         } else {
@@ -406,12 +420,15 @@ export function BorrowTab({
       // Calculate raw amount with proper decimal handling
       let rawTokenAmount;
       try {
-        // Use BigInt for precise calculation
-        const multiplier = BigInt(10 ** decimals);
+        // Pure BigInt calculation to maintain precision
         const amountFloat = parseFloat(collateralAmount);
-        const amountBigInt = BigInt(
-          Math.floor(amountFloat * Number(multiplier)),
+        // Convert to integer representation (e.g. 1.23 -> 123 for 2 decimals)
+        const amountInteger = Math.floor(
+          amountFloat * 10 ** Math.min(8, decimals),
         );
+        // Scale to full decimal precision
+        const multiplier = BigInt(10 ** Math.max(0, decimals - 8));
+        const amountBigInt = BigInt(amountInteger) * multiplier;
         rawTokenAmount = amountBigInt.toString();
       } catch {
         // Fallback calculation
