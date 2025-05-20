@@ -37,6 +37,11 @@ describe("formatNumberString", () => {
     expect(formatNumberString("1234567890")).toBe("1,234,567,890");
   });
 
+  it("handles extremely large numbers without losing precision", () => {
+    const bigNum = "12345678901234567890";
+    expect(formatNumberString(bigNum)).toBe("12,345,678,901,234,567,890");
+  });
+
   it("returns default display for invalid input", () => {
     expect(formatNumberString("not-a-number")).toBe("N/A");
   });
