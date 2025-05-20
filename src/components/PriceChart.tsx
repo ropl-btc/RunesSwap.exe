@@ -16,7 +16,7 @@ import Image from "next/image";
 
 interface PriceChartProps {
   assetName: string;
-  timeFrame?: "24h" | "7d" | "30d" | "all";
+  timeFrame?: "24h" | "7d" | "30d" | "90d";
   onClose?: () => void;
   btcPriceUsd?: number; // BTC price in USD
 }
@@ -28,7 +28,7 @@ const PriceChart: React.FC<PriceChartProps> = ({
   btcPriceUsd,
 }) => {
   const [selectedTimeframe, setSelectedTimeframe] = useState<
-    "24h" | "7d" | "30d" | "all"
+    "24h" | "7d" | "30d" | "90d"
   >(timeFrame);
   const [showTooltip, setShowTooltip] = useState(false);
   const [btcPriceLoadingTimeout, setBtcPriceLoadingTimeout] = useState(false);
@@ -112,14 +112,14 @@ const PriceChart: React.FC<PriceChartProps> = ({
         hours = 30 * 24;
         windowStart = now - 30 * 24 * 60 * 60 * 1000;
         break;
-      case "all":
+      case "90d":
         windowStart = sortedData[0]?.timestamp || now;
         now = sortedData[sortedData.length - 1]?.timestamp || now;
         break;
     }
 
     let filtered;
-    if (selectedTimeframe === "all") {
+    if (selectedTimeframe === "90d") {
       filtered = sortedData.filter(
         (point) => point.timestamp >= windowStart && point.timestamp <= now,
       );
@@ -155,7 +155,7 @@ const PriceChart: React.FC<PriceChartProps> = ({
       }
       case "7d":
       case "30d":
-      case "all": {
+      case "90d": {
         // For longer timeframes, space ticks evenly across available data
         const tickCount = 6;
         if (dataTimestamps.length <= tickCount) return dataTimestamps;
@@ -271,7 +271,7 @@ const PriceChart: React.FC<PriceChartProps> = ({
                         day: "numeric",
                       });
                     case "30d":
-                    case "all":
+                    case "90d":
                       return date.toLocaleDateString([], {
                         month: "short",
                         day: "numeric",
@@ -423,8 +423,8 @@ const PriceChart: React.FC<PriceChartProps> = ({
             30d
           </button>
           <button
-            className={`${styles.timeframeButton} ${selectedTimeframe === "all" ? styles.timeframeButtonActive : ""}`}
-            onClick={() => setSelectedTimeframe("all")}
+            className={`${styles.timeframeButton} ${selectedTimeframe === "90d" ? styles.timeframeButtonActive : ""}`}
+            onClick={() => setSelectedTimeframe("90d")}
           >
             90d
           </button>
