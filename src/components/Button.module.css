@@ -30,6 +30,5 @@
 }
 
 .root:focus {
-  outline: 2px dotted var(--win98-blue);
-  outline-offset: 2px;
+  outline: 1px solid var(--win98-blue);
 }
