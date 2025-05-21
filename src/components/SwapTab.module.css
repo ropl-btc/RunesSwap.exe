@@ -9,28 +9,8 @@
 
 /* InputArea styles moved to InputArea.module.css */
 
-/* Base Button Style */
-.baseButton {
-  padding: var(--space-2) var(--space-4);
-  background-color: var(--win98-gray);
-  color: var(--win98-black);
-  cursor: pointer;
-  border: var(--win98-border-outset);
-  border-color: var(--win98-border-outset-colors);
-}
-
-.baseButton:active {
-  border-color: var(--win98-border-inset-colors);
-}
-
-.baseButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  color: var(--win98-dark-gray);
-}
-
 .swapButton {
-  composes: baseButton; /* Inherit base button styles */
+  composes: button from global;
   width: 100%;
   font-weight: 700;
 }
@@ -87,7 +67,7 @@
 }
 
 .swapIconButton {
-  composes: baseButton; /* Inherit base button styles */
+  composes: button from global;
   padding: var(--space-1);
   line-height: 1;
 }
@@ -104,7 +84,7 @@
 }
 
 .showPriceChartButton {
-  composes: baseButton; /* Inherit base button styles */
+  composes: button from global;
   width: 100%;
   padding: var(--space-2);
   margin-top: var(--space-2);

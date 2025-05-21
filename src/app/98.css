@@ -1,0 +1,49 @@
+/* Minimal subset of 98.css for prototyping
+   Source: https://github.com/jdan/98.css (MIT License)
+*/
+
+.button {
+  font-family: var(--font-windows, Tahoma, sans-serif);
+  padding: 2px 6px;
+  background-color: #c0c0c0;
+  border-width: 2px;
+  border-style: outset;
+  border-color: #fff #404040 #404040 #fff;
+  cursor: pointer;
+}
+
+.button:active {
+  border-style: inset;
+}
+
+.window {
+  background: #c0c0c0;
+  border: 2px solid #000;
+  padding: 0;
+}
+
+.title-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #000080;
+  color: #fff;
+  padding: 0 4px;
+  height: 18px;
+}
+
+.title-bar-text {
+  font-weight: bold;
+  line-height: 18px;
+}
+
+.title-bar-controls {
+  display: flex;
+  gap: 2px;
+}
+
+.window-body {
+  background: #fff;
+  padding: 0.5rem;
+  border: 2px inset #fff;
+}

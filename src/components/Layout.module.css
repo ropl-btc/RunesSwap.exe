@@ -67,9 +67,7 @@
 
 /* Window component */
 .window {
-  background-color: var(--win98-gray);
-  border: var(--win98-border-outset);
-  border-color: var(--win98-border-outset-colors);
+  composes: window from global;
   width: 100%;
   max-width: 42rem;
   min-height: 610px;
@@ -81,20 +79,16 @@
 
 /* Title bar */
 .titleBar {
-  background-color: var(--win98-blue);
-  color: var(--win98-white);
-  padding: 0.125rem var(--space-2);
+  composes: title-bar from global;
   font-size: var(--font-size-normal);
   font-weight: 700;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   position: sticky;
   top: 0;
   z-index: 10;
 }
 
 .titleBarRow {
+  composes: title-bar-text from global;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -111,6 +105,7 @@
 
 /* Content area */
 .content {
+  composes: window-body from global;
   padding: 1rem;
   scrollbar-width: none; /* Firefox */
   overflow-y: auto;

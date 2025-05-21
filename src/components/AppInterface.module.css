@@ -236,12 +236,9 @@
 }
 
 .timeframeButton {
+  composes: button from global;
   padding: var(--space-1) var(--space-2);
   font-size: var(--font-size-small);
-  background-color: var(--win98-gray);
-  color: var(--win98-black);
-  border: var(--win98-border-outset);
-  border-color: var(--win98-border-outset-colors);
 }
 
 .timeframeButton:active {
@@ -265,16 +262,14 @@
 }
 
 .collapseChartButton {
+  composes: button from global;
   width: 100%;
   padding: var(--space-2);
   margin: 0;
-  background-color: var(--win98-gray);
   font-weight: 700;
   cursor: pointer;
   margin-top: auto;
   color: var(--win98-black);
-  border: var(--win98-border-outset);
-  border-color: var(--win98-border-outset-colors);
 }
 
 .collapseChartButton:active {

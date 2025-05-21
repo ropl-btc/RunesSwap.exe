@@ -1,10 +1,8 @@
 /* src/components/ConnectWalletButton.module.css */
 
 .connectButton {
+  composes: button from global;
   padding: var(--space-1) var(--space-2);
-  background-color: var(--win98-gray);
-  border: var(--win98-border-outset);
-  border-color: var(--win98-border-outset-colors);
   font-size: var(--font-size-normal);
   line-height: 1.25rem;
   color: var(--win98-black);
@@ -58,10 +56,10 @@
 }
 
 .dropdownItem {
+  composes: button from global;
   width: 100%;
   padding: 0.25rem 0.5rem;
   text-align: left;
-  background-color: var(--win98-gray);
   border: none;
   cursor: pointer;
   font-size: 0.875rem; /* text-sm */
@@ -125,13 +123,9 @@
 }
 
 .installLink {
+  composes: button from global;
   display: inline-block;
   padding: 0.25rem 0.5rem;
-  background-color: var(--win98-gray);
-  border-width: 2px;
-  border-style: solid;
-  border-color: var(--win98-light-gray) var(--win98-dark-gray)
-    var(--win98-dark-gray) var(--win98-light-gray);
   font-size: 0.75rem;
   text-decoration: none;
   color: var(--win98-black);
