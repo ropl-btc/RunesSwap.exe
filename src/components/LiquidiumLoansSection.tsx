@@ -101,6 +101,7 @@ const LiquidiumLoansSection: React.FC<LiquidiumLoansSectionProps> = ({
                   onClick={() => onRepay(loan)}
                   disabled={true}
                   className={styles.repayButtonDisabled}
+                  title="Coming soon..."
                 >
                   {isRepayingLoanId === loan.id ? "Repaying..." : "Repay"}
                 </Button>

@@ -39,6 +39,16 @@ const RunesPortfolioTable: React.FC<RunesPortfolioTableProps> = ({
         className="sortable"
         style={{ fontWeight: "bold" }}
         onClick={() => onSort("name")}
+        role="columnheader"
+        tabIndex={0}
+        aria-sort={
+          sortField === "name"
+            ? sortDirection === "asc"
+              ? "ascending"
+              : "descending"
+            : "none"
+        }
+        onKeyDown={(e) => e.key === "Enter" && onSort("name")}
       >
         Rune Name
         {sortField === "name" && (
@@ -51,6 +61,16 @@ const RunesPortfolioTable: React.FC<RunesPortfolioTableProps> = ({
         className="sortable"
         style={{ fontWeight: "bold" }}
         onClick={() => onSort("balance")}
+        role="columnheader"
+        tabIndex={0}
+        aria-sort={
+          sortField === "balance"
+            ? sortDirection === "asc"
+              ? "ascending"
+              : "descending"
+            : "none"
+        }
+        onKeyDown={(e) => e.key === "Enter" && onSort("balance")}
       >
         Balance
         {sortField === "balance" && (
@@ -63,6 +83,16 @@ const RunesPortfolioTable: React.FC<RunesPortfolioTableProps> = ({
         className="sortable"
         style={{ fontWeight: "bold" }}
         onClick={() => onSort("value")}
+        role="columnheader"
+        tabIndex={0}
+        aria-sort={
+          sortField === "value"
+            ? sortDirection === "asc"
+              ? "ascending"
+              : "descending"
+            : "none"
+        }
+        onKeyDown={(e) => e.key === "Enter" && onSort("value")}
       >
         Value (USD)
         {sortField === "value" && (
@@ -86,7 +116,7 @@ const RunesPortfolioTable: React.FC<RunesPortfolioTableProps> = ({
                 {rune.imageURI && (
                   <Image
                     src={rune.imageURI}
-                    alt=""
+                    alt={`${rune.formattedName} icon`}
                     className={styles.runeImage}
                     width={24}
                     height={24}
