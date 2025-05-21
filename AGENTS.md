@@ -108,4 +108,6 @@ When implementing complex features, prefer splitting large components into small
 Stateful logic can be moved to custom hooks under `src/hooks`, while reusable UI pieces 
 should live in their own components inside `src/components`. Existing examples include
 `AssetSelector` and `AmountHelpers` extracted from `InputArea`, and the `usePriceHistory`
-hook powering `PriceChart`.
+hook powering `PriceChart`. More recent additions include the `useBtcPrice` hook used
+by `Layout` and `AppInterface` to fetch the BTC price, and the `TabNavigation`
+component that manages tab selection and URL syncing.
