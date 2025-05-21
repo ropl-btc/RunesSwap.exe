@@ -109,3 +109,5 @@ Stateful logic can be moved to custom hooks under `src/hooks`, while reusable UI
 should live in their own components inside `src/components`. Existing examples include
 `AssetSelector` and `AmountHelpers` extracted from `InputArea`, and the `usePriceHistory`
 hook powering `PriceChart`.
+Newer helpers include the `usePriceChart` hook along with `TimeframeSelector` and
+`PriceTooltip` components for the price chart.
