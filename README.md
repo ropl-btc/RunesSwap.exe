@@ -21,6 +21,12 @@ A Uniswap‑style swap interface for Bitcoin Runes, built with Next.js, TypeScri
 - Ordiscan SDK for on‑chain data
 - ESLint, Prettier, Husky + lint‑staged for linting & formatting
 
+## Windows 98 Styling
+RunesSwap originally implemented the Win98 look entirely with custom CSS. After evaluating the
+[98.css](https://github.com/jdan/98.css) library we added a small subset in `src/app/98.css` and
+composed its `.button` class in our Button component. This removed about 30 lines from
+`globals.css` and keeps styles maintainable while preserving the classic appearance.
+
 ## Getting Started
 ### Prerequisites
 - Node.js v18+ (LTS recommended)

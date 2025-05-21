@@ -124,37 +124,6 @@ input::-webkit-inner-spin-button {
   margin-bottom: var(--space-4);
 }
 
-/* Win98 Common Components */
-.win98-button {
-  background-color: var(--win98-gray);
-  border: var(--win98-border-outset);
-  border-color: var(--win98-border-outset-colors);
-  padding: var(--space-1) var(--space-2);
-  cursor: pointer;
-  font-size: var(--font-size-normal);
-}
-
-.win98-button:active {
-  border-color: var(--win98-border-inset-colors);
-}
-
-.win98-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.win98-input {
-  background-color: var(--win98-white);
-  border: var(--win98-border-inset);
-  border-color: var(--win98-border-inset-colors);
-  padding: var(--space-1);
-  font-size: var(--font-size-normal);
-}
-
-.win98-input:focus {
-  outline: 1px solid var(--win98-blue);
-}
-
 /* Link styles */
 .win98-link {
   color: var(--win98-blue);
