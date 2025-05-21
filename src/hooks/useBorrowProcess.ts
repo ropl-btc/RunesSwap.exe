@@ -4,7 +4,7 @@ import {
   LiquidiumSubmitBorrowResponse,
   prepareLiquidiumBorrow,
   submitLiquidiumBorrow,
-} from "@/lib/apiClient";
+} from "@/lib/api";
 import type { RuneData } from "@/lib/runesData";
 
 interface UseBorrowProcessArgs {
