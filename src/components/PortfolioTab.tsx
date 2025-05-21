@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSharedLaserEyes } from "@/context/LaserEyesContext";
-import { fetchPortfolioDataFromApi, QUERY_KEYS } from "@/lib/apiClient";
+import { fetchPortfolioDataFromApi, QUERY_KEYS } from "@/lib/api";
 import { LiquidiumLoanOffer } from "@/types/liquidium";
 import styles from "./PortfolioTab.module.css";
 import RunesPortfolioTable from "./RunesPortfolioTable";

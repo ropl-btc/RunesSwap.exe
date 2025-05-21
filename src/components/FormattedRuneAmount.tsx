@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchRuneInfoFromApi } from "@/lib/apiClient";
+import { fetchRuneInfoFromApi } from "@/lib/api";
 import type { RuneData } from "@/lib/runesData";
 
 interface FormattedRuneAmountProps {

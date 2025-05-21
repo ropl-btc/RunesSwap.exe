@@ -21,7 +21,7 @@ import {
   QUERY_KEYS,
   LiquidiumBorrowQuoteResponse,
   LiquidiumBorrowQuoteOffer,
-} from "@/lib/apiClient";
+} from "@/lib/api";
 import { normalizeRuneName } from "@/utils/runeUtils";
 import {
   type RuneBalance as OrdiscanRuneBalance,

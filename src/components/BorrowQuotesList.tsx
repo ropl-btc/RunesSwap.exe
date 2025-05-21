@@ -1,6 +1,6 @@
 import React from "react";
 import styles from "./BorrowTab.module.css";
-import { LiquidiumBorrowQuoteOffer } from "@/lib/apiClient";
+import { LiquidiumBorrowQuoteOffer } from "@/lib/api";
 
 interface BorrowQuotesListProps {
   quotes: LiquidiumBorrowQuoteOffer[];
