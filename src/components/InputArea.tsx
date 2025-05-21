@@ -95,7 +95,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
       {assetSelectorEnabled ? (
         <AssetSelector
           selectedAsset={selectedAsset}
-          onAssetChange={onAssetChange!}
+          onAssetChange={onAssetChange ?? (() => {})}
           availableAssets={availableAssets}
           disabled={disabled}
           showBtcInSelector={showBtcInSelector}
