@@ -14,7 +14,7 @@ import {
   fetchRuneMarketFromApi,
   fetchRunesFromApi,
   fetchPopularFromApi,
-} from "@/lib/apiClient"; // Import API functions
+} from "@/lib/api"; // Import API functions
 import { formatNumberString, truncateTxid } from "@/utils/formatters"; // Import utils
 import { FormattedRuneAmount } from "./FormattedRuneAmount"; // Import component
 import type { Rune } from "@/types/satsTerminal";

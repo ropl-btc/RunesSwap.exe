@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSharedLaserEyes } from "@/context/LaserEyesContext";
 import styles from "./AppInterface.module.css";
-import { fetchPopularFromApi, QUERY_KEYS } from "@/lib/apiClient";
+import { fetchPopularFromApi, QUERY_KEYS } from "@/lib/api";
 import { useSearchParams } from "next/navigation";
 import useBtcPrice from "@/hooks/useBtcPrice";
 
