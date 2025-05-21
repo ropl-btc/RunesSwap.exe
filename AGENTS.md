@@ -117,6 +117,8 @@ The pre‑commit hook runs `lint-staged`, the test suite, and a production build
 4. After confirmation and signing, the loan is issued on‑chain.
 
 ## Component Guidelines
+- **BorrowSuccessMessage** component displays loan confirmation after starting a loan.
+- **useBorrowQuotes** hook handles fetching popular runes, loan quotes, and min/max ranges for borrowing.
 
 Break larger components into smaller ones where possible. Stateful logic should live in custom hooks under `src/hooks`, while reusable UI pieces should belong in `src/components`.
 
