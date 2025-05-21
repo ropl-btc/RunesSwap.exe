@@ -65,17 +65,19 @@ export const SwapStatusMessages: React.FC<SwapStatusMessagesProps> = ({
 
     {/* Display Swap Error/Success Messages */}
     {swapError && (
-      <div className={`errorText ${styles.messageWithIcon}`}>
-        <Image
-          src="/icons/msg_error-0.png"
-          alt="Error"
-          className={styles.messageIcon}
-          width={16}
-          height={16}
-        />
-        <span>Error: {swapError}</span>
+      <>
+        <div className={`errorText ${styles.messageWithIcon}`}>
+          <Image
+            src="/icons/msg_error-0.png"
+            alt="Error"
+            className={styles.messageIcon}
+            width={16}
+            height={16}
+          />
+          <span>Error: {swapError}</span>
+        </div>
         <div
-          className="smallText"
+          className={`smallText ${styles.subMessage}`}
           style={{ whiteSpace: "normal", wordBreak: "break-word" }}
         >
           {swapError.includes("fee rate") ? (
@@ -96,7 +98,7 @@ export const SwapStatusMessages: React.FC<SwapStatusMessagesProps> = ({
             </>
           )}
         </div>
-      </div>
+      </>
     )}
 
     {/* Success message - shown whenever we have a transaction ID, regardless of swap step */}

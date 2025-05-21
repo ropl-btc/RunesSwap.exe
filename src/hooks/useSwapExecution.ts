@@ -132,7 +132,7 @@ export default function useSwapExecution({
         if ("side" in order && order.side)
           (patchedOrder as Record<string, unknown>)["side"] = String(
             order.side,
-          ).toLowerCase() as "buy" | "sell";
+          ).toUpperCase() as "BUY" | "SELL";
         return patchedOrder as RuneOrder;
       });
 
@@ -291,7 +291,7 @@ export default function useSwapExecution({
               if ("side" in order && order.side)
                 (patchedOrder as Record<string, unknown>)["side"] = String(
                   order.side,
-                ).toLowerCase() as "buy" | "sell";
+                ).toUpperCase() as "BUY" | "SELL";
               return patchedOrder as RuneOrder;
             },
           );
