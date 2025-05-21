@@ -103,6 +103,8 @@ This AGENTS.md should provide enough context to navigate the codebase and run co
 
 
 ## Component Guidelines
+- **BorrowSuccessMessage** component displays loan confirmation after starting a loan.
+- **useBorrowQuotes** hook handles fetching popular runes, loan quotes, and min/max ranges for borrowing.
 
 When implementing complex features, prefer splitting large components into smaller ones. 
 Stateful logic can be moved to custom hooks under `src/hooks`, while reusable UI pieces 
