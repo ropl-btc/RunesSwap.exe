@@ -18,7 +18,9 @@ import {
   fetchRuneInfoFromApi,
   fetchRuneMarketFromApi,
   QUERY_KEYS,
-} from "@/lib/apiClient";
+  LiquidiumBorrowQuoteResponse,
+  LiquidiumBorrowQuoteOffer,
+} from "@/lib/api";
 import { normalizeRuneName } from "@/utils/runeUtils";
 import {
   type RuneBalance as OrdiscanRuneBalance,

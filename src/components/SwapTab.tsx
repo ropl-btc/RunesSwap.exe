@@ -31,7 +31,7 @@ import {
   fetchRuneMarketFromApi,
   fetchRecommendedFeeRates,
   QUERY_KEYS,
-} from "@/lib/apiClient";
+} from "@/lib/api";
 import {
   type RuneBalance as OrdiscanRuneBalance,
   type RuneMarketInfo as OrdiscanRuneMarketInfo,

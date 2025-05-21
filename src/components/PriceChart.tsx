@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
-import usePriceHistory from "@/hooks/usePriceHistory";
+import usePriceChart from "@/hooks/usePriceChart";
 import styles from "./AppInterface.module.css";
+import PriceTooltip from "./PriceTooltip";
+import TimeframeSelector from "./TimeframeSelector";
 import {
   ResponsiveContainer,
   LineChart,
@@ -26,21 +28,20 @@ const PriceChart: React.FC<PriceChartProps> = ({
   onClose,
   btcPriceUsd,
 }) => {
-  const [selectedTimeframe, setSelectedTimeframe] = useState<
-    "24h" | "7d" | "30d" | "90d"
-  >(timeFrame);
-  const [showTooltip, setShowTooltip] = useState(false);
   const [btcPriceLoadingTimeout, setBtcPriceLoadingTimeout] = useState(false);
 
-  // Price history data
   const {
+    selectedTimeframe,
+    setSelectedTimeframe,
+    showTooltip,
+    setShowTooltip,
     filteredPriceData,
     startTime,
     endTime,
     getCustomTicks,
     isLoading,
     isError,
-  } = usePriceHistory(assetName, selectedTimeframe);
+  } = usePriceChart(assetName, timeFrame);
 
   useEffect(() => {
     if (btcPriceUsd === undefined) {
@@ -88,35 +89,7 @@ const PriceChart: React.FC<PriceChartProps> = ({
       <div>
         <div className={styles.priceChartHeader}>
           <h3 className={styles.priceChartTitle}>{assetName} Price</h3>
-          <div
-            className={styles.infoIconContainer}
-            onMouseEnter={() => setShowTooltip(true)}
-            onMouseLeave={() => setShowTooltip(false)}
-            onClick={() => setShowTooltip(!showTooltip)}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={styles.infoIcon}
-            >
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="16" x2="12" y2="12"></line>
-              <line x1="12" y1="8" x2="12.01" y2="8"></line>
-            </svg>
-            {showTooltip && (
-              <div className={styles.tooltipBox}>
-                Price history might be inaccurate and should only serve as an
-                estimation.
-              </div>
-            )}
-          </div>
+          <PriceTooltip show={showTooltip} setShow={setShowTooltip} />
         </div>
         <div style={{ position: "relative", width: "100%", height: 320 }}>
           <ResponsiveContainer width="100%" height={320}>
@@ -278,32 +251,10 @@ const PriceChart: React.FC<PriceChartProps> = ({
             </div>
           )}
         </div>
-        <div className={styles.timeframeSelectorBottom}>
-          <button
-            className={`${styles.timeframeButton} ${selectedTimeframe === "24h" ? styles.timeframeButtonActive : ""}`}
-            onClick={() => setSelectedTimeframe("24h")}
-          >
-            24h
-          </button>
-          <button
-            className={`${styles.timeframeButton} ${selectedTimeframe === "7d" ? styles.timeframeButtonActive : ""}`}
-            onClick={() => setSelectedTimeframe("7d")}
-          >
-            7d
-          </button>
-          <button
-            className={`${styles.timeframeButton} ${selectedTimeframe === "30d" ? styles.timeframeButtonActive : ""}`}
-            onClick={() => setSelectedTimeframe("30d")}
-          >
-            30d
-          </button>
-          <button
-            className={`${styles.timeframeButton} ${selectedTimeframe === "90d" ? styles.timeframeButtonActive : ""}`}
-            onClick={() => setSelectedTimeframe("90d")}
-          >
-            90d
-          </button>
-        </div>
+        <TimeframeSelector
+          timeframe={selectedTimeframe}
+          onChange={setSelectedTimeframe}
+        />
       </div>
 
       {/* Collapse Chart button */}

@@ -1,22 +1,23 @@
-# AGENTS
+# RunesSwap Coding Guide
 
-This document provides guidance for Codex agents working with the **RunesSwap.app** codebase. The goal is to explain the overall project structure, how its parts fit together, and the key commands for common tasks.
+This file provides instructions for automated coding agents (Codex or Claude) working with the **RunesSwap.app** repository.
 
 ## Overview
 
-RunesSwap.app is a swap and borrowing interface for Bitcoin Runes built with **Next.js** and **TypeScript**. It uses a Windows‑98 style theme and integrates several external services:
+RunesSwap.app is a Next.js application written in **TypeScript**. It offers a swap and borrowing interface for Bitcoin Runes with a Windows‑98 style theme. The app integrates several external services:
 
-- **Ordiscan** – on‑chain UTXO and Rune data
-- **SatsTerminal** – swap execution and PSBT handling
-- **Liquidium** – borrowing and loan management
-- **Supabase** – storage for rune info and market data
-- **CoinGecko** – BTC price data
+* **Ordiscan** for on‑chain UTXO and Rune data
+* **SatsTerminal** for swap execution and PSBT handling
+* **Liquidium** for borrowing and loan management
+* **Supabase** for storage of rune information and market data
+* **CoinGecko** for BTC price data
 
-The frontend lives in the `src/` directory and uses Next.js App Router. API routes under `src/app/api` act as a thin backend that proxies and caches requests to the above services. Data fetching in the UI is handled with React Query. Global state is managed with Zustand. Type definitions are found under `src/types`.
+The main source code lives in `src/` and uses the Next.js App Router.
+API routes under `src/app/api` act as a thin backend to proxy and cache requests to the above services. Server data is fetched with React Query, and client state is handled by Zustand. Type definitions are organised under `src/types`.
 
 ## Repository Layout
 
-```
+```text
 / (repo root)
 ├── src/                 # Application source code
 │   ├── app/             # Next.js pages and API routes
@@ -26,7 +27,9 @@ The frontend lives in the `src/` directory and uses Next.js App Router. API rout
 │   │   └── ...
 │   ├── components/      # React components (SwapTab, BorrowTab, etc.)
 │   ├── context/         # React context providers
+│   ├── hooks/           # Custom React hooks
 │   ├── lib/             # API client utilities, data helpers
+│   │   └── api/         # Service-specific API modules
 │   ├── store/           # Zustand stores
 │   ├── types/           # Shared TypeScript types
 │   └── utils/           # Helper functions
@@ -35,11 +38,20 @@ The frontend lives in the `src/` directory and uses Next.js App Router. API rout
 └── ...                  # Config files and scripts
 ```
 
-A sample environment file `.env.example` lists all variables needed for development (API keys for SatsTerminal, Ordiscan, Liquidium, and Supabase credentials).
+A `.env.example` file shows all environment variables needed for development. Important variables include:
+
+* `SATS_TERMINAL_API_KEY`
+* `TBA_API_URL`
+* `ORDISCAN_API_KEY`
+* `RUNES_FLOOR_API_KEY`
+* `NEXT_PUBLIC_LIQUIDIUM_API_URL`
+* `NEXT_PUBLIC_LIQUIDIUM_API_KEY`
+* `NEXT_PUBLIC_SUPABASE_URL`
+* `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 ## Development
 
-Install dependencies with **pnpm** (preferred) and start the dev server:
+Install dependencies and start the development server with **pnpm**:
 
 ```bash
 pnpm install
@@ -47,7 +59,6 @@ pnpm dev
 ```
 
 The app runs at `http://localhost:3000`.
-
 To build and run in production mode:
 
 ```bash
@@ -57,57 +68,62 @@ pnpm start
 
 ## Testing and Linting
 
-- **Unit tests** use **Jest** (`ts-jest` preset). Run all tests with:
+* Unit tests use **Jest** with the `ts-jest` preset:
 
   ```bash
   pnpm test
   ```
-
-- **Linting** uses ESLint and Prettier. Run:
+* Linting uses **ESLint** and Prettier:
 
   ```bash
   pnpm lint
   ```
 
-Husky hooks run linting and tests on each commit. Commit messages follow the conventional commit style (see `commitlint.config.js`).
+The pre‑commit hook runs `lint-staged`, the test suite, and a production build. Commit messages are checked by **commitlint** and must follow the Conventional Commits format.
 
 ## Architecture Notes
 
-- **Next.js App Router** handles routing. Pages and API routes reside under `src/app`.
-- **API routes** wrap external services and return standardized responses via helpers in `src/lib/apiUtils.ts`.
-- **React components** under `src/components` implement the swap interface (SwapTab, BorrowTab, PortfolioTab, etc.).
-- **State** is managed with React Query (server data) and Zustand (client state). Shared contexts (wallet, background) live in `src/context`.
-- **Path alias** `@/*` maps to `./src/*` (see `tsconfig.json` and Jest config).
-- **Styles** use CSS Modules plus global variables for the Windows 98 theme (`globals.css`).
+* Uses **Next.js App Router** for routing.
+* API routes wrap external services and return standardized responses via helpers in `src/lib/apiUtils.ts`.
+* API client methods are organized into modules under `src/lib/api/`.
+* React components under `src/components` implement the swap, borrow, portfolio and info tabs.
+* State is managed with React Query (server data) and Zustand (client state); shared contexts live in `src/context`.
+* Path alias `@/*` resolves to `./src/*` (configured in `tsconfig.json` and Jest).
+* Styles use CSS Modules plus global variables for the Windows 98 theme.
+* The README is rendered through `src/app/docs` for in‑app documentation.
 
-## Typical Data Flow
+## Data Flows
 
-1. A UI component requests data using React Query.
-2. The query calls an API client function in `src/lib/apiClient.ts`.
-3. The client sends a request to a Next.js API route (`src/app/api/...`).
-4. The API route fetches data from Ordiscan/SatsTerminal/Liquidium, optionally caching results in Supabase, and returns a standardized JSON response.
+### Typical Data Flow
+
+1. A UI component fetches data using React Query.
+2. The query calls a client function from modules in `src/lib/api/`.
+3. The client sends a request to a Next.js API route under `src/app/api`.
+4. The API route fetches data from Ordiscan, SatsTerminal, or Liquidium, optionally caching results in Supabase, and returns a standardized JSON response.
 5. The UI updates based on the React Query result.
 
-## Contributing
+### Swap Flow
 
-When adding new features:
+1. User selects input/output assets and amount.
+2. A quote is fetched from SatsTerminal.
+3. The user confirms and signs the PSBT with the Laser Eyes wallet.
+4. The transaction is broadcast to the Bitcoin network.
 
-1. Create or update API routes under `src/app/api` if backend work is required.
-2. Add/extend API client methods in `src/lib/apiClient.ts`.
-3. Implement or update React components.
-4. Write Jest tests for new utilities or routes.
-5. Run `pnpm lint` and `pnpm test` before committing.
-6. Run `pnpm build` to ensure the project compiles without errors.
+### Borrow Flow
 
-This AGENTS.md should provide enough context to navigate the codebase and run common tasks. Refer to `README.md` and `CLAUDE.md` for more detailed documentation.
-
+1. User chooses a Rune for collateral.
+2. User enters amount and loan terms.
+3. A quote is fetched from Liquidium.
+4. After confirmation and signing, the loan is issued on‑chain.
 
 ## Component Guidelines
 - **BorrowSuccessMessage** component displays loan confirmation after starting a loan.
 - **useBorrowQuotes** hook handles fetching popular runes, loan quotes, and min/max ranges for borrowing.
 
-When implementing complex features, prefer splitting large components into smaller ones. 
-Stateful logic can be moved to custom hooks under `src/hooks`, while reusable UI pieces 
-should live in their own components inside `src/components`. Existing examples include
-`AssetSelector` and `AmountHelpers` extracted from `InputArea`, and the `usePriceHistory`
-hook powering `PriceChart`.
+Break larger components into smaller ones where possible. Stateful logic should live in custom hooks under `src/hooks`, while reusable UI pieces should belong in `src/components`.
+
+When implementing complex features, prefer extracting related hooks and components. For example:
+
+* `AssetSelector` and `AmountHelpers` were extracted from `InputArea`.
+* The price chart feature uses a dedicated `usePriceChart` hook, along with `TimeframeSelector` and `PriceTooltip` components.
+* The runes info view now leverages a `useRunesSearch` hook, with `RuneSearchBar` and `RuneDetails` components to keep `RunesInfoTab` lean.
