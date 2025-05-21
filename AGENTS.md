@@ -126,3 +126,4 @@ When implementing complex features, prefer extracting related hooks and componen
 * The price chart feature uses a dedicated `usePriceChart` hook, along with `TimeframeSelector` and `PriceTooltip` components.
 * The runes info view leverages a `useRunesSearch` hook, with `RuneSearchBar` and `RuneDetails` components to keep `RunesInfoTab` lean.
 * The `useWalletConnection` hook manages wallet connection state and provider detection, powering the `ConnectWalletButton` component.
+* `usePortfolioData`, `useLiquidiumAuth` and `useRepayModal` keep `PortfolioTab` lightweight by handling portfolio queries, Liquidium authentication and repayment flows.
