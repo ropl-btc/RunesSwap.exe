@@ -97,7 +97,12 @@ export function useBorrowQuotes({
   // Fetch min-max borrow range when collateral asset changes
   useEffect(() => {
     const fetchMinMaxRange = async () => {
-      if (!collateralAsset || !address || collateralAsset.isBTC) {
+      if (
+        !collateralAsset ||
+        !address ||
+        collateralAsset.isBTC ||
+        !collateralRuneInfo
+      ) {
         setMinMaxRange(null);
         setBorrowRangeError(null);
         return;
