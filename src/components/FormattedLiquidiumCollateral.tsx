@@ -95,7 +95,7 @@ export function FormattedLiquidiumCollateral({
         {runeInfo?.imageURI && (
           <Image
             src={runeInfo.imageURI}
-            alt=""
+            alt={`${displayName} icon`}
             className={styles.runeImage}
             width={20}
             height={20}

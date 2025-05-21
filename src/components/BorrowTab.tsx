@@ -320,12 +320,10 @@ export function BorrowTab({
         // Pure BigInt calculation to maintain precision
         const amountFloat = parseFloat(collateralAmount);
         // Convert to integer representation (e.g. 1.23 -> 123 for 2 decimals)
-        const amountInteger = Math.floor(
-          amountFloat * 10 ** Math.min(8, decimals),
-        );
-        // Scale to full decimal precision
-        const multiplier = BigInt(10 ** Math.max(0, decimals - 8));
-        const amountBigInt = BigInt(amountInteger) * multiplier;
+        const scale8 = BigInt(10) ** BigInt(Math.min(8, decimals));
+        const scaleRest = BigInt(10) ** BigInt(Math.max(0, decimals - 8));
+        const amountInteger = BigInt(Math.floor(amountFloat * Number(scale8)));
+        const amountBigInt = amountInteger * scaleRest;
         rawAmount = amountBigInt.toString();
       } catch {
         // Fallback calculation

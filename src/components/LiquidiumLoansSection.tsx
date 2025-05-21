@@ -12,7 +12,6 @@ interface LiquidiumLoansSectionProps {
   authError: string | null;
   isLoadingLiquidium: boolean;
   liquidiumError: string | null;
-  isRepayingLoanId: string | null;
   onAuth: () => void;
   onRepay: (loan: LiquidiumLoanOffer) => void;
 }
@@ -25,7 +24,6 @@ const LiquidiumLoansSection: React.FC<LiquidiumLoansSectionProps> = ({
   authError,
   isLoadingLiquidium,
   liquidiumError,
-  isRepayingLoanId,
   onAuth,
   onRepay,
 }) => (
@@ -99,10 +97,11 @@ const LiquidiumLoansSection: React.FC<LiquidiumLoansSectionProps> = ({
               {loan.loan_details.state === "ACTIVE" && (
                 <Button
                   onClick={() => onRepay(loan)}
-                  disabled={true}
+                  disabled
+                  title="Coming soon..."
                   className={styles.repayButtonDisabled}
                 >
-                  {isRepayingLoanId === loan.id ? "Repaying..." : "Repay"}
+                  Repay
                 </Button>
               )}
               {loan.loan_details.state === "ACTIVATING" && (

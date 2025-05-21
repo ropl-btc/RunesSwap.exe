@@ -32,7 +32,6 @@ export default function PortfolioTab() {
   const [liquidiumError, setLiquidiumError] = useState<string | null>(null);
 
   const {
-    isRepayingLoanId,
     repayModal,
     handleRepay,
     handleRepayModalClose,
@@ -368,7 +367,6 @@ export default function PortfolioTab() {
         authError={authError}
         isLoadingLiquidium={isLoadingLiquidium}
         liquidiumError={liquidiumError}
-        isRepayingLoanId={isRepayingLoanId}
         onAuth={handleLiquidiumAuth}
         onRepay={handleRepay}
       />

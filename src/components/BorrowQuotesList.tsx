@@ -12,36 +12,49 @@ const BorrowQuotesList: React.FC<BorrowQuotesListProps> = ({
   quotes,
   selectedQuoteId,
   onSelectQuote,
-}) => (
-  <div
-    className={styles.infoArea}
-    style={{ marginTop: "var(--space-4)", borderTop: "none" }}
-  >
-    <h2
-      className="heading"
-      style={{
-        fontSize: "var(--font-size-normal)",
-        marginBottom: "var(--space-2)",
-      }}
+}) => {
+  const formattedQuotes = quotes.map((quote) => {
+    const principalBtc = (quote.loan_breakdown.principal_sats / 1e8).toFixed(8);
+    const repaymentBtc = (
+      quote.loan_breakdown.total_repayment_sats / 1e8
+    ).toFixed(8);
+    const interestPercent =
+      quote.loan_breakdown.principal_sats > 0
+        ? (
+            (quote.loan_breakdown.interest_sats /
+              quote.loan_breakdown.principal_sats) *
+            100
+          ).toFixed(2)
+        : "0.00";
+    const ltvPercent = Number(quote.ltv_rate).toFixed(2);
+    const dueDate = new Date(
+      quote.loan_breakdown.loan_due_by_date,
+    ).toLocaleDateString();
+    return {
+      ...quote,
+      principalBtc,
+      repaymentBtc,
+      interestPercent,
+      ltvPercent,
+      dueDate,
+    };
+  });
+
+  return (
+    <div
+      className={styles.infoArea}
+      style={{ marginTop: "var(--space-4)", borderTop: "none" }}
     >
-      Available Loan Offers:
-    </h2>
-    {quotes.map((quote) => {
-      const principalBtc = (quote.loan_breakdown.principal_sats / 1e8).toFixed(
-        8,
-      );
-      const repaymentBtc = (
-        quote.loan_breakdown.total_repayment_sats / 1e8
-      ).toFixed(8);
-      const interestPercent =
-        quote.loan_breakdown.principal_sats > 0
-          ? (
-              (quote.loan_breakdown.interest_sats /
-                quote.loan_breakdown.principal_sats) *
-              100
-            ).toFixed(2)
-          : "0.00";
-      return (
+      <h2
+        className="heading"
+        style={{
+          fontSize: "var(--font-size-normal)",
+          marginBottom: "var(--space-2)",
+        }}
+      >
+        Available Loan Offers:
+      </h2>
+      {formattedQuotes.map((quote) => (
         <div
           key={quote.offer_id}
           onClick={() => onSelectQuote(quote.offer_id)}
@@ -61,31 +74,28 @@ const BorrowQuotesList: React.FC<BorrowQuotesListProps> = ({
           className={styles.inputArea}
         >
           <p>
-            <strong>Loan Amount:</strong> {principalBtc} BTC
+            <strong>Loan Amount:</strong> {quote.principalBtc} BTC
           </p>
           <p>
-            <strong>LTV:</strong> {(Number(quote.ltv_rate) * 100).toFixed(2)}%
+            <strong>LTV:</strong> {quote.ltvPercent}%
           </p>
           <p>
             <strong>Term:</strong> {quote.loan_term_days ?? "N/A"} days
           </p>
           <p>
-            <strong>Interest:</strong> {interestPercent}% (
+            <strong>Interest:</strong> {quote.interestPercent}% (
             {quote.loan_breakdown.interest_sats} sats)
           </p>
           <p>
-            <strong>Total Repayment:</strong> {repaymentBtc} BTC
+            <strong>Total Repayment:</strong> {quote.repaymentBtc} BTC
           </p>
           <p>
-            <strong>Due:</strong>{" "}
-            {new Date(
-              quote.loan_breakdown.loan_due_by_date,
-            ).toLocaleDateString()}
+            <strong>Due:</strong> {quote.dueDate}
           </p>
         </div>
-      );
-    })}
-  </div>
-);
+      ))}
+    </div>
+  );
+};
 
 export default BorrowQuotesList;

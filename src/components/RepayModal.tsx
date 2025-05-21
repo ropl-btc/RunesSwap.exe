@@ -23,9 +23,17 @@ const RepayModal: React.FC<RepayModalProps> = ({
 }) => {
   if (!open) return null;
   return (
-    <div className={styles.repayModalOverlay}>
-      <div className={styles.repayModalWindow}>
-        <h3 className="heading">Confirm Repayment</h3>
+    <div
+      className={styles.repayModalOverlay}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="repay-modal-title"
+      onClick={(e) => e.target === e.currentTarget && onCancel()}
+    >
+      <div className={styles.repayModalWindow} tabIndex={-1}>
+        <h3 id="repay-modal-title" className="heading">
+          Confirm Repayment
+        </h3>
         <div>
           Repayment Amount: <b>{repayAmount}</b>
         </div>
@@ -33,7 +41,10 @@ const RepayModal: React.FC<RepayModalProps> = ({
           className="smallText"
           style={{ margin: "8px 0", wordBreak: "break-all" }}
         >
-          PSBT: <code>{psbtPreview}...</code>
+          PSBT:{" "}
+          <code title="Full PSBT (truncated for display)">
+            {psbtPreview}...
+          </code>
         </div>
         {error && (
           <div className="errorText" style={{ margin: "8px 0" }}>
