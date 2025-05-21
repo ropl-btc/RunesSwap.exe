@@ -120,4 +120,8 @@ The pre‑commit hook runs `lint-staged`, the test suite, and a production build
 
 Break larger components into smaller ones where possible. Stateful logic should live in custom hooks under `src/hooks`, while reusable UI pieces should belong in `src/components`.
 
-When implementing complex features, prefer extracting related hooks and components. For example, `AssetSelector` and `AmountHelpers` were extracted from `InputArea`. The price chart feature now uses a dedicated `usePriceChart` hook, along with `TimeframeSelector` and `PriceTooltip` components to power the chart.
+When implementing complex features, prefer extracting related hooks and components. For example:
+
+* `AssetSelector` and `AmountHelpers` were extracted from `InputArea`.
+* The price chart feature uses a dedicated `usePriceChart` hook, along with `TimeframeSelector` and `PriceTooltip` components.
+* The runes info view now leverages a `useRunesSearch` hook, with `RuneSearchBar` and `RuneDetails` components to keep `RunesInfoTab` lean.
