@@ -35,6 +35,17 @@ export function useRunesSearch({
 
   useEffect(() => {
     const fetchPopular = async () => {
+      if (isPopularRunesLoading) {
+        setIsPopularLoading(true);
+        return;
+      }
+
+      if (popularRunesError) {
+        setPopularError(popularRunesError.message);
+        setIsPopularLoading(false);
+        return;
+      }
+
       if (cachedPopularRunes && cachedPopularRunes.length > 0) {
         const liquidiumToken: Rune = {
           id: "liquidiumtoken",
@@ -59,6 +70,7 @@ export function useRunesSearch({
               rune.name !== liquidiumToken.name,
           );
         setPopularRunes([liquidiumToken, ...fetchedRunes]);
+        setPopularError(null);
         setIsPopularLoading(false);
         return;
       }
@@ -115,8 +127,7 @@ export function useRunesSearch({
     };
 
     fetchPopular();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [cachedPopularRunes, isPopularRunesLoading, popularRunesError]);
 
   const debouncedSearch = useMemo(
     () =>
