@@ -247,8 +247,12 @@ export function SwapTab({
   }, [preSelectedRune, availableRunes, hasLoadedPreselectedRune, searchQuery]);
 
   // Fetch popular runes on mount using API
+  const hasLoadedPopularRunes = useRef(false);
+
   useEffect(() => {
     const fetchPopular = async () => {
+      if (hasLoadedPopularRunes.current) return;
+
       // If we already have cached popular runes, use them instead of fetching again
       if (cachedPopularRunes && cachedPopularRunes.length > 0) {
         const liquidiumToken: Asset = {
@@ -299,6 +303,7 @@ export function SwapTab({
         }
 
         setIsPopularLoading(false);
+        hasLoadedPopularRunes.current = true;
         return;
       }
 
@@ -371,10 +376,11 @@ export function SwapTab({
         }
       } finally {
         setIsPopularLoading(false);
+        hasLoadedPopularRunes.current = true;
       }
     };
     fetchPopular();
-  }, [cachedPopularRunes, preSelectedRune, assetOut, searchQuery]);
+  }, [cachedPopularRunes, preSelectedRune]);
 
   // State for calculated prices
   const [exchangeRate, setExchangeRate] = useState<string | null>(null);
