@@ -99,3 +99,5 @@ The pre‑commit hook runs `lint-staged`, the test suite, and a production build
 
 ## Component Guidelines
 Break larger components into smaller ones where possible. Stateful logic should live in custom hooks under `src/hooks`. Reusable UI pieces belong in `src/components`.
+
+- The asset selection dropdown UI lives in `src/components/AssetSelectorDropdown.tsx`. Logic for loading popular runes and debounced searching resides in `src/hooks/useAssetSearch.ts`. `src/components/AssetSelector.tsx` is a thin wrapper combining the hook with the dropdown.
