@@ -105,7 +105,8 @@ This AGENTS.md should provide enough context to navigate the codebase and run co
 ## Component Guidelines
 
 When implementing complex features, prefer splitting large components into smaller ones. 
-Stateful logic can be moved to custom hooks under `src/hooks`, while reusable UI pieces 
+Stateful logic can be moved to custom hooks under `src/hooks`, while reusable UI pieces
 should live in their own components inside `src/components`. Existing examples include
 `AssetSelector` and `AmountHelpers` extracted from `InputArea`, and the `usePriceHistory`
-hook powering `PriceChart`.
+hook powering `PriceChart`. The runes info view now uses a `useRunesSearch` hook with
+`RuneSearchBar` and `RuneDetails` components to keep `RunesInfoTab` lean.
