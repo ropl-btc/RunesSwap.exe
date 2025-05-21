@@ -118,4 +118,6 @@ The pre‑commit hook runs `lint-staged`, the test suite, and a production build
 
 ## Component Guidelines
 
-Break larger components into smaller ones where possible. Stateful logic should live in custom hooks under `src/hooks`. Reusable UI pieces belong in `src/components`.
+Break larger components into smaller ones where possible. Stateful logic should live in custom hooks under `src/hooks`, while reusable UI pieces should belong in `src/components`.
+
+When implementing complex features, prefer extracting related hooks and components. For example, `AssetSelector` and `AmountHelpers` were extracted from `InputArea`. The price chart feature now uses a dedicated `usePriceChart` hook, along with `TimeframeSelector` and `PriceTooltip` components to power the chart.
