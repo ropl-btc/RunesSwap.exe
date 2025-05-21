@@ -99,13 +99,3 @@ The pre‑commit hook runs `lint-staged`, the test suite, and a production build
 
 ## Component Guidelines
 Break larger components into smaller ones where possible. Stateful logic should live in custom hooks under `src/hooks`. Reusable UI pieces belong in `src/components`.
-
-## Contributing
-When adding features:
-1. Create or update API routes in `src/app/api` if needed.
-2. Extend API client methods in `src/lib/apiClient.ts`.
-3. Implement or update React components and hooks.
-4. Add Jest tests for new utilities or routes.
-5. Run `pnpm lint`, `pnpm test`, and `pnpm build` before committing.
-
-Refer to `README.md` for additional details.
