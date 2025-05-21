@@ -6,7 +6,7 @@ import {
 } from "@/lib/apiClient";
 import { LiquidiumLoanOffer } from "@/types/liquidium";
 
-interface UseLiquidiumPortfolioArgs {
+interface UseRepayModalArgs {
   address: string | null;
   signPsbt?: (
     tx: string,
@@ -17,10 +17,7 @@ interface UseLiquidiumPortfolioArgs {
   >;
 }
 
-export function useLiquidiumPortfolio({
-  address,
-  signPsbt,
-}: UseLiquidiumPortfolioArgs) {
+export function useRepayModal({ address, signPsbt }: UseRepayModalArgs) {
   const [isRepayingLoanId, setIsRepayingLoanId] = useState<string | null>(null);
   const [repayModal, setRepayModal] = useState<{
     open: boolean;

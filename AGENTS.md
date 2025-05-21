@@ -108,4 +108,5 @@ When implementing complex features, prefer splitting large components into small
 Stateful logic can be moved to custom hooks under `src/hooks`, while reusable UI pieces 
 should live in their own components inside `src/components`. Existing examples include
 `AssetSelector` and `AmountHelpers` extracted from `InputArea`, and the `usePriceHistory`
-hook powering `PriceChart`.
+hook powering `PriceChart`. Additional hooks such as `usePortfolioData`,
+`useLiquidiumAuth`, and `useRepayModal` keep the Portfolio tab logic modular.
