@@ -18,8 +18,6 @@ import {
   fetchRuneInfoFromApi,
   fetchRuneMarketFromApi,
   QUERY_KEYS,
-  LiquidiumBorrowQuoteResponse,
-  LiquidiumBorrowQuoteOffer,
 } from "@/lib/api";
 import { normalizeRuneName } from "@/utils/runeUtils";
 import {
