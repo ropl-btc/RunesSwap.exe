@@ -38,7 +38,13 @@ export function useBorrowProcess({
     selectedQuoteId: string | null,
     collateralAmount: string,
   ) => {
-    if (!selectedQuoteId || !collateralAmount) {
+    const parsed = Number(collateralAmount);
+    if (
+      !selectedQuoteId ||
+      !collateralAmount.trim() ||
+      Number.isNaN(parsed) ||
+      parsed <= 0
+    ) {
       setLoanProcessError("Missing required information (quote or amount).");
       return;
     }
@@ -52,11 +58,10 @@ export function useBorrowProcess({
       let rawTokenAmount: string;
       try {
         const amountFloat = parseFloat(collateralAmount);
-        const amountInteger = Math.floor(
-          amountFloat * 10 ** Math.min(8, decimals),
-        );
-        const multiplier = BigInt(10 ** Math.max(0, decimals - 8));
-        const amountBigInt = BigInt(amountInteger) * multiplier;
+        const scale8 = BigInt(10) ** BigInt(Math.min(8, decimals));
+        const scaleRest = BigInt(10) ** BigInt(Math.max(0, decimals - 8));
+        const amountInteger = BigInt(Math.floor(amountFloat * Number(scale8)));
+        const amountBigInt = amountInteger * scaleRest;
         rawTokenAmount = amountBigInt.toString();
       } catch {
         rawTokenAmount = String(

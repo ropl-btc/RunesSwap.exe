@@ -73,15 +73,33 @@ export function useRepayModal({ address, signPsbt }: Args) {
     setRepayModal((m) => ({ ...m, loading: true, error: null }));
     try {
       const psbtBase64 = repayModal.repayInfo.psbt;
-      const signResult = await signPsbt(psbtBase64, false, false);
+      let signResult;
+      try {
+        signResult = await signPsbt(psbtBase64, false, false);
+      } catch (signErr) {
+        throw new Error(
+          `Failed to sign PSBT: ${
+            signErr instanceof Error ? signErr.message : String(signErr)
+          }`,
+        );
+      }
       const signedPsbt =
         signResult?.signedPsbtBase64 || signResult?.signedPsbtHex;
       if (!signedPsbt) throw new Error("Wallet did not return a signed PSBT");
-      const submitResult = await submitRepayPsbt(
-        repayModal.loan.id,
-        signedPsbt,
-        address,
-      );
+      let submitResult;
+      try {
+        submitResult = await submitRepayPsbt(
+          repayModal.loan.id,
+          signedPsbt,
+          address,
+        );
+      } catch (submitErr) {
+        throw new Error(
+          `Failed to submit signed PSBT: ${
+            submitErr instanceof Error ? submitErr.message : String(submitErr)
+          }`,
+        );
+      }
       if (submitResult.success && submitResult.data) {
         setRepayModal({ ...repayModal, loading: false, error: null });
         handleRepayModalClose();
