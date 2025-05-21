@@ -25,3 +25,8 @@
 .errorText {
   color: var(--win98-red);
 }
+
+/* Sub-message shown below error text */
+.subMessage {
+  margin-left: calc(1rem + var(--space-2));
+}
