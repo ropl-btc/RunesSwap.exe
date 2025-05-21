@@ -29,9 +29,6 @@ importers:
       '@vercel/analytics':
         specifier: ^1.5.0
         version: 1.5.0(next@15.2.4(@babel/core@7.27.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
-      clsx:
-        specifier: ^2.1.1
-        version: 2.1.1
       lodash.debounce:
         specifier: ^4.0.8
         version: 4.0.8
