@@ -60,7 +60,7 @@ export default function TabNavigation({ onTabChange }: TabNavigationProps) {
       url.searchParams.delete("rune");
     }
     window.history.pushState({}, "", url.toString());
-  }, [activeTab]);
+  }, [activeTab, onTabChange]);
 
   const handleClick = (tab: ActiveTab) => setActiveTab(tab);
 

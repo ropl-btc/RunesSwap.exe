@@ -9,7 +9,6 @@ import {
 } from "@/types/ordiscan";
 import { fetchRuneInfoFromApi, fetchRuneMarketFromApi } from "@/lib/api";
 import { useRunesInfoStore } from "@/store/runesInfoStore";
-import { useRunesInfoStore } from "@/store/runesInfoStore"; // Import the store
 import type { RuneData } from "@/lib/runesData";
 import type { Rune } from "@/types/satsTerminal";
 import RuneSearchBar from "./RuneSearchBar";
