@@ -3,7 +3,7 @@ import {
   repayLiquidiumLoan,
   submitRepayPsbt,
   RepayLiquidiumLoanResponse,
-} from "@/lib/apiClient";
+} from "@/lib/api";
 import { LiquidiumLoanOffer } from "@/types/liquidium";
 
 interface UseLiquidiumPortfolioArgs {

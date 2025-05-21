@@ -27,6 +27,7 @@ The frontend lives in the `src/` directory and uses Next.js App Router. API rout
 │   ├── components/      # React components (SwapTab, BorrowTab, etc.)
 │   ├── context/         # React context providers
 │   ├── lib/             # API client utilities, data helpers
+│   │   └── api/         # Service-specific API modules
 │   ├── store/           # Zustand stores
 │   ├── types/           # Shared TypeScript types
 │   └── utils/           # Helper functions
@@ -83,7 +84,7 @@ Husky hooks run linting and tests on each commit. Commit messages follow the con
 ## Typical Data Flow
 
 1. A UI component requests data using React Query.
-2. The query calls an API client function in `src/lib/apiClient.ts`.
+2. The query calls an API client function from the modules in `src/lib/api/`.
 3. The client sends a request to a Next.js API route (`src/app/api/...`).
 4. The API route fetches data from Ordiscan/SatsTerminal/Liquidium, optionally caching results in Supabase, and returns a standardized JSON response.
 5. The UI updates based on the React Query result.
@@ -93,7 +94,7 @@ Husky hooks run linting and tests on each commit. Commit messages follow the con
 When adding new features:
 
 1. Create or update API routes under `src/app/api` if backend work is required.
-2. Add/extend API client methods in `src/lib/apiClient.ts`.
+2. Add/extend API client methods under `src/lib/api/`.
 3. Implement or update React components.
 4. Write Jest tests for new utilities or routes.
 5. Run `pnpm lint` and `pnpm test` before committing.

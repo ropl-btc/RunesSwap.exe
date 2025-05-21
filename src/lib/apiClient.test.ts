@@ -6,7 +6,7 @@ import {
   fetchRuneActivityFromApi,
   fetchRunePriceHistoryFromApi,
   QUERY_KEYS,
-} from "./apiClient";
+} from "./api";
 
 // Mock the global fetch function
 global.fetch = jest.fn();

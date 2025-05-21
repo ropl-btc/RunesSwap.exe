@@ -4,7 +4,7 @@ import { Listbox, Transition } from "@headlessui/react";
 import { ChevronUpDownIcon, CheckIcon } from "@heroicons/react/24/solid";
 import styles from "./InputArea.module.css";
 import { Asset, BTC_ASSET } from "@/types/common";
-import { fetchRunesFromApi } from "@/lib/apiClient";
+import { fetchRunesFromApi } from "@/lib/api";
 import type { Rune } from "@/types/satsTerminal";
 
 interface AssetSelectorProps {

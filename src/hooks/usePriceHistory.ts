@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchRunePriceHistoryFromApi, QUERY_KEYS } from "@/lib/apiClient";
+import { fetchRunePriceHistoryFromApi, QUERY_KEYS } from "@/lib/api";
 import { useMemo } from "react";
 
 export function usePriceHistory(
