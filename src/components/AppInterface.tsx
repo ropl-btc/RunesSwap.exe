@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react"; // Add useEffect
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSharedLaserEyes } from "@/context/LaserEyesContext";
 import styles from "./AppInterface.module.css";
 import { fetchPopularFromApi, QUERY_KEYS } from "@/lib/api";
 import { useSearchParams } from "next/navigation";
+import useBtcPrice from "@/hooks/useBtcPrice";
 
 // Import the tab components
 import SwapTab from "./SwapTab";
@@ -14,23 +15,6 @@ import YourTxsTab from "./YourTxsTab";
 import PortfolioTab from "./PortfolioTab";
 import BorrowTab from "./BorrowTab"; // <-- Import BorrowTab
 import PriceChart from "./PriceChart";
-
-// CoinGecko API endpoint
-const COINGECKO_BTC_PRICE_URL =
-  "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd";
-
-// Function to fetch BTC price
-const getBtcPrice = async (): Promise<number> => {
-  const response = await fetch(COINGECKO_BTC_PRICE_URL);
-  if (!response.ok) {
-    throw new Error("Failed to fetch BTC price from CoinGecko");
-  }
-  const data = await response.json();
-  if (!data.bitcoin || !data.bitcoin.usd) {
-    throw new Error("Invalid response format from CoinGecko");
-  }
-  return data.bitcoin.usd;
-};
 
 // --- Props Interface --- Update the activeTab type
 interface AppInterfaceProps {
@@ -68,17 +52,7 @@ export function AppInterface({ activeTab }: AppInterfaceProps) {
     signPsbt,
   } = useSharedLaserEyes();
 
-  // Fetch BTC price using React Query
-  const {
-    data: btcPriceUsd,
-    isLoading: isBtcPriceLoading,
-    error: btcPriceError,
-  } = useQuery<number, Error>({
-    queryKey: ["btcPriceUsd"],
-    queryFn: getBtcPrice,
-    refetchInterval: 60000, // Refetch every 60 seconds
-    staleTime: 30000, // Consider data stale after 30 seconds
-  });
+  const { btcPriceUsd, isBtcPriceLoading, btcPriceError } = useBtcPrice();
 
   // Fetch popular runes using React Query for caching across tabs
   const {
