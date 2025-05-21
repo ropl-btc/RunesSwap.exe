@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import styles from "./AppInterface.module.css"; // Reuse styles for now
 import { RuneActivityEvent } from "@/types/ordiscan"; // Import types
-import { fetchRuneActivityFromApi } from "@/lib/apiClient"; // Import API functions
+import { fetchRuneActivityFromApi } from "@/lib/api"; // Import API functions
 import { FormattedRuneAmount } from "./FormattedRuneAmount"; // Import component
 import { FormattedRuneName } from "./FormattedRuneName"; // Import the new component
 import { interpretRuneTransaction } from "@/utils/transactionHelpers"; // Import the new utility function
