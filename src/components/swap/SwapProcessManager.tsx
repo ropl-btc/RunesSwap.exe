@@ -39,7 +39,8 @@ export function swapProcessReducer(
 ): SwapProcessState {
   // Log actions that contain errors or significant state changes
   if (action.type === "SWAP_ERROR" || action.type === "FETCH_QUOTE_ERROR") {
-    console.error(`SwapProcess: ${action.type}`, action);
+    // Use warn to avoid triggering Next.js error overlay while still logging
+    console.warn(`SwapProcess: ${action.type}`, action);
   }
   switch (action.type) {
     case "RESET_SWAP":

@@ -132,7 +132,7 @@ export default function useSwapExecution({
         if ("side" in order && order.side)
           (patchedOrder as Record<string, unknown>)["side"] = String(
             order.side,
-          ).toLowerCase() as "buy" | "sell";
+          ).toUpperCase() as "BUY" | "SELL";
         return patchedOrder as RuneOrder;
       });
 
@@ -291,7 +291,7 @@ export default function useSwapExecution({
               if ("side" in order && order.side)
                 (patchedOrder as Record<string, unknown>)["side"] = String(
                   order.side,
-                ).toLowerCase() as "buy" | "sell";
+                ).toUpperCase() as "BUY" | "SELL";
               return patchedOrder as RuneOrder;
             },
           );
@@ -454,7 +454,7 @@ export default function useSwapExecution({
         dispatchSwap({ type: "SWAP_ERROR", error: errorMessage });
       }
     } finally {
-      // We NEVER reset or change the state if a swap was successful (has txId)
+      // If we have a transaction ID, ensure success state persists
       if (swapState.txId) {
         if (swapState.swapStep !== "success") {
           dispatchSwap({ type: "SWAP_SUCCESS", txId: swapState.txId });
@@ -462,23 +462,17 @@ export default function useSwapExecution({
         return;
       }
 
-      // We need to handle different final states appropriately
-      if (swapState.swapStep === "success" && swapState.txId) {
-        // Success case - keep the success state and txId
-        // Success case handled
-      } else if (errorMessageRef.current?.includes("User canceled")) {
-        // User canceled case - ensure we reset to a fully interactive state
-        // Reset UI state for user cancellation case
+      // Keep error state visible if an error occurred
+      if (errorMessageRef.current) {
+        // Special case for user cancelation - reset back to idle
+        if (errorMessageRef.current.includes("User canceled")) {
+          dispatchSwap({ type: "SWAP_STEP", step: "idle" });
+        }
+        return;
+      }
 
-        // Set to idle AND explicitly ensure loading state is cleared
-        // This is crucial to ensure the button becomes clickable again
-        dispatchSwap({ type: "SWAP_STEP", step: "idle" });
-      } else if (swapState.quoteExpired) {
-        // Quote expired case - keep expired state to prompt for new quote
-        // Keep expired state for user to refresh
-      } else if (swapState.swapStep !== "success") {
-        // All other non-success cases - reset to idle state
-        // Reset to idle for normal error recovery
+      // Handle non-success states with no errors
+      if (swapState.swapStep !== "success") {
         dispatchSwap({ type: "SWAP_STEP", step: "idle" });
       }
     }
