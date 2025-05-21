@@ -4,27 +4,9 @@ import React, { useRef, useState } from "react";
 import Image from "next/image";
 import styles from "./Layout.module.css";
 import FooterComponent from "./FooterComponent";
-import { useQuery } from "@tanstack/react-query";
 import { useBackground } from "@/context/BackgroundContext";
 import TitleText from "./TitleText";
-
-const COINGECKO_BTC_PRICE_URL =
-  "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd";
-const getBtcPrice = async (): Promise<number> => {
-  const response = await fetch(COINGECKO_BTC_PRICE_URL);
-  if (!response.ok) {
-    if (response.status === 429) {
-      throw new Error("Rate limit exceeded for CoinGecko API");
-    }
-    throw new Error(
-      `Failed to fetch BTC price from CoinGecko: ${response.status}`,
-    );
-  }
-  const data = await response.json();
-  if (!data.bitcoin || !data.bitcoin.usd)
-    throw new Error("Invalid response format from CoinGecko");
-  return data.bitcoin.usd;
-};
+import useBtcPrice from "@/hooks/useBtcPrice";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -33,16 +15,7 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const { backgroundImage, setBackgroundImage, clearBackgroundImage } =
     useBackground();
-  const {
-    data: btcPriceUsd,
-    isLoading: isBtcPriceLoading,
-    error: btcPriceError,
-  } = useQuery<number, Error>({
-    queryKey: ["btcPriceUsd"],
-    queryFn: getBtcPrice,
-    refetchInterval: 60000,
-    staleTime: 30000,
-  });
+  const { btcPriceUsd, isBtcPriceLoading, btcPriceError } = useBtcPrice();
 
   // Background settings
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
