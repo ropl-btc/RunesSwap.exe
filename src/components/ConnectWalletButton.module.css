@@ -2,16 +2,8 @@
 
 .connectButton {
   padding: var(--space-1) var(--space-2);
-  background-color: var(--win98-gray);
-  border: var(--win98-border-outset);
-  border-color: var(--win98-border-outset-colors);
   font-size: var(--font-size-normal);
   line-height: 1.25rem;
-  color: var(--win98-black);
-}
-
-.connectButton:active {
-  border-color: var(--win98-border-inset-colors);
 }
 
 .buttonContainer {

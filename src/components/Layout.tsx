@@ -93,21 +93,23 @@ export function Layout({ children }: LayoutProps) {
       )}
 
       {/* Main window */}
-      <div className={styles.window}>
-        <div className={styles.titleBar}>
-          <span className={styles.titleBarRow}>
-            <Image
-              src="/icons/runesswap_logo.png"
-              alt="RunesSwap.app Logo"
-              width={18}
-              height={18}
-              style={{ imageRendering: "pixelated" }}
-              priority
-            />
-            <TitleText />
-          </span>
+      <div className={`window ${styles.window}`}>
+        <div className={`title-bar ${styles.titleBar}`}>
+          <div className="title-bar-text">
+            <span className={styles.titleBarRow}>
+              <Image
+                src="/icons/runesswap_logo.png"
+                alt="RunesSwap.app Logo"
+                width={18}
+                height={18}
+                style={{ imageRendering: "pixelated" }}
+                priority
+              />
+              <TitleText />
+            </span>
+          </div>
         </div>
-        <div className={styles.content}>{children}</div>
+        <div className={`window-body ${styles.content}`}>{children}</div>
       </div>
       <FooterComponent
         btcPriceUsd={btcPriceUsd}

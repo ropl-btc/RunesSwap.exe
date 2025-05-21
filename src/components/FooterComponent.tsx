@@ -4,7 +4,6 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import styles from "./AppInterface.module.css";
-import buttonStyles from "./Button.module.css";
 
 interface FooterComponentProps {
   btcPriceUsd: number | undefined;
@@ -36,12 +35,12 @@ export function FooterComponent({
       )}
       <div className={styles.socialLinks}>
         <Link href="/docs" legacyBehavior passHref>
-          <a className={buttonStyles.root} title="Documentation">
+          <a className="button" title="Documentation">
             Docs
           </a>
         </Link>
         <Link href="/legal" legacyBehavior passHref>
-          <a className={buttonStyles.root} title="Legal">
+          <a className="button" title="Legal">
             Legal
           </a>
         </Link>

@@ -186,7 +186,7 @@ export const SwapButton: React.FC<SwapButtonProps> = ({
 
   return (
     <button
-      className={styles.swapButton}
+      className={`button ${styles.swapButton}`}
       onClick={handleClick}
       disabled={isDisabled}
     >

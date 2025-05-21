@@ -38,7 +38,10 @@ export function ConnectWalletButton() {
         <span className={styles.connectedText}>
           {connectedWalletName}: {truncateAddress(address)}
         </span>
-        <button onClick={handleDisconnect} className={styles.connectButton}>
+        <button
+          onClick={handleDisconnect}
+          className={`button ${styles.connectButton}`}
+        >
           Disconnect
         </button>
       </div>
@@ -47,7 +50,7 @@ export function ConnectWalletButton() {
 
   if (isConnecting) {
     return (
-      <button className={styles.connectButton} disabled>
+      <button className={`button ${styles.connectButton}`} disabled>
         Connecting...
       </button>
     );
@@ -57,7 +60,7 @@ export function ConnectWalletButton() {
     <div className={styles.connectContainer} ref={dropdownRef}>
       <button
         onClick={toggleDropdown}
-        className={styles.connectButton}
+        className={`button ${styles.connectButton}`}
         disabled={isConnecting}
       >
         Connect Wallet

@@ -67,13 +67,9 @@
 
 /* Window component */
 .window {
-  background-color: var(--win98-gray);
-  border: var(--win98-border-outset);
-  border-color: var(--win98-border-outset-colors);
   width: 100%;
   max-width: 42rem;
   min-height: 610px;
-  box-shadow: 1px 1px 0 1px var(--win98-black);
   margin: auto;
   display: flex;
   flex-direction: column;
@@ -81,11 +77,7 @@
 
 /* Title bar */
 .titleBar {
-  background-color: var(--win98-blue);
-  color: var(--win98-white);
   padding: 0.125rem var(--space-2);
-  font-size: var(--font-size-normal);
-  font-weight: 700;
   display: flex;
   justify-content: space-between;
   align-items: center;
