@@ -34,7 +34,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-supabase-anon-key>
 ORDISCAN_API_KEY=<your-ordiscan-api-key>
 SATS_TERMINAL_API_KEY=<your-satsterminal-api-key>
 TBA_API_URL=<your-satsterminal-api-url>
+LIQUIDIUM_API_URL=<liquidium-server-url>
+LIQUIDIUM_API_KEY=<your-liquidium-api-key>
 ```
+
+`LIQUIDIUM_API_URL` and `LIQUIDIUM_API_KEY` are used on the server to
+authenticate with Liquidium's API. They should never be exposed to the client.
 
 ### Installation & Development
 ```bash
