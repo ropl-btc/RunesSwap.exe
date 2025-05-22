@@ -1,5 +1,4 @@
 import React from "react";
-import "98.css";
 import styles from "./SwapButton.module.css";
 import { Asset } from "@/types/common";
 import { type QuoteResponse } from "satsterminal-sdk";
@@ -187,7 +186,7 @@ export const SwapButton: React.FC<SwapButtonProps> = ({
 
   return (
     <button
-      className={`button ${styles.swapButton}`}
+      className={styles.swapButton}
       onClick={handleClick}
       disabled={isDisabled}
     >
