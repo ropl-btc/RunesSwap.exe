@@ -6,6 +6,7 @@ import {
   handleApiError,
   validateRequest,
 } from "@/lib/apiUtils";
+import { callLiquidiumApi } from "@/lib/liquidiumServer";
 import { supabase } from "@/lib/supabase";
 
 // Schema for query parameters
@@ -113,66 +114,24 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 2. Prepare request to Liquidium
-    // Get API credentials
-    const apiUrl = process.env.LIQUIDIUM_API_URL;
-    if (!apiUrl) {
+    // 2. Call Liquidium API
+    const result = await callLiquidiumApi(
+      `/api/v1/borrower/collateral/runes/${encodeURIComponent(
+        runeId,
+      )}/offers?rune_amount=${runeAmount}`,
+      { method: "GET", userJwt },
+      "Liquidium borrow quotes",
+    );
+
+    if (!result.ok) {
       return createErrorResponse(
-        "Server configuration error",
-        "Missing API URL configuration",
-        500,
+        result.message ?? "Error",
+        result.details,
+        result.status,
       );
     }
 
-    const apiKey = process.env.LIQUIDIUM_API_KEY;
-    if (!apiKey) {
-      return createErrorResponse(
-        "Server configuration error",
-        "Missing API key configuration",
-        500,
-      );
-    }
-
-    // Construct the correct URL according to the OpenAPI spec
-    const fullUrl = `${apiUrl}/api/v1/borrower/collateral/runes/${encodeURIComponent(runeId)}/offers?rune_amount=${runeAmount}`;
-
-    // 3. Call Liquidium API
-    const headers = {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-      "x-user-token": userJwt, // Include user JWT
-    };
-
-    const liquidiumResponse = await fetch(fullUrl, {
-      method: "GET",
-      headers: headers,
-    });
-
-    const liquidiumData = await liquidiumResponse.json();
-
-    if (!liquidiumResponse.ok) {
-      // Try to provide a more helpful error message
-      let errorMessage =
-        liquidiumData?.errorMessage || JSON.stringify(liquidiumData);
-      const errorCode = liquidiumData?.error || liquidiumResponse.statusText;
-
-      if (
-        errorCode === "NOT_FOUND" &&
-        errorMessage.includes("Rune not found")
-      ) {
-        errorMessage = `Rune ID "${runeId}" not found or not supported by Liquidium. Please check if this rune is supported for borrowing.`;
-      }
-
-      return createErrorResponse(
-        `Liquidium API error: ${errorCode}`,
-        errorMessage,
-        liquidiumResponse.status,
-      );
-    }
-
-    // 4. Return successful response
-    return createSuccessResponse(liquidiumData); // Forward Liquidium's response structure
+    return createSuccessResponse(result.data); // Forward Liquidium's response structure
   } catch (error) {
     const errorInfo = handleApiError(error, "Failed to fetch borrow quotes");
     return createErrorResponse(
