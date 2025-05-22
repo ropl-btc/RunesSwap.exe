@@ -22,6 +22,7 @@ import { type RuneData } from "@/lib/runesData";
 // Import our new components
 import { SwapTabForm, useSwapProcessManager } from "./swap";
 import useSwapExecution from "@/hooks/useSwapExecution";
+import useUsdValues from "@/hooks/useUsdValues";
 
 // Mock address for fetching quotes when disconnected
 const MOCK_ADDRESS = "34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo";
@@ -118,8 +119,6 @@ export function SwapTab({
 
   // State for calculated prices
   const [exchangeRate, setExchangeRate] = useState<string | null>(null);
-  const [inputUsdValue, setInputUsdValue] = useState<string | null>(null);
-  const [outputUsdValue, setOutputUsdValue] = useState<string | null>(null);
 
   // Ordiscan Balance Queries
   const {
@@ -188,6 +187,20 @@ export function SwapTab({
         : Promise.resolve(null),
     enabled: !!assetOut && !assetOut.isBTC,
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  const { inputUsdValue, outputUsdValue } = useUsdValues({
+    inputAmount,
+    outputAmount,
+    assetIn,
+    assetOut,
+    btcPriceUsd,
+    isBtcPriceLoading,
+    btcPriceError,
+    quote,
+    quoteError,
+    inputRuneMarketInfo,
+    outputRuneMarketInfo,
   });
 
   // Effect for loading dots animation (with proper cycling animation)
@@ -261,8 +274,6 @@ export function SwapTab({
     setQuote(null);
     dispatchSwap({ type: "FETCH_QUOTE_ERROR", error: "" });
     setExchangeRate(null);
-    setInputUsdValue(null);
-    setOutputUsdValue(null);
   };
 
   const handleSelectAssetOut = (selectedAsset: Asset) => {
@@ -310,8 +321,6 @@ export function SwapTab({
     setQuote(null);
     dispatchSwap({ type: "FETCH_QUOTE_ERROR", error: "" });
     setExchangeRate(null);
-    setInputUsdValue(null);
-    setOutputUsdValue(null);
   };
 
   // --- Swap Direction Logic ---
@@ -330,8 +339,6 @@ export function SwapTab({
     setQuote(null);
     dispatchSwap({ type: "FETCH_QUOTE_ERROR", error: "" });
     setExchangeRate(null);
-    setInputUsdValue(null);
-    setOutputUsdValue(null);
     dispatchSwap({ type: "RESET_SWAP" });
   };
 
@@ -594,8 +601,6 @@ export function SwapTab({
         setQuote(null);
         setOutputAmount("");
         setExchangeRate(null);
-        setInputUsdValue(null);
-        setOutputUsdValue(null);
       }
 
       // Only reset swap state for empty input with cooldown
@@ -641,133 +646,6 @@ export function SwapTab({
     quote,
     outputAmount,
     exchangeRate,
-  ]);
-
-  // UseEffect to calculate input USD value
-  useEffect(() => {
-    if (!inputAmount || !assetIn || isBtcPriceLoading || btcPriceError) {
-      setInputUsdValue(null);
-      setOutputUsdValue(null);
-      return;
-    }
-
-    try {
-      const amountNum = parseFloat(inputAmount);
-      if (isNaN(amountNum) || amountNum <= 0) {
-        setInputUsdValue(null);
-        setOutputUsdValue(null);
-        return;
-      }
-
-      let inputUsdVal: number | null = null;
-
-      if (assetIn.isBTC && btcPriceUsd) {
-        // Input is BTC
-        inputUsdVal = amountNum * btcPriceUsd;
-      } else if (!assetIn.isBTC && inputRuneMarketInfo) {
-        // Input is Rune, use market info
-        inputUsdVal = amountNum * inputRuneMarketInfo.price_in_usd;
-      } else if (
-        !assetIn.isBTC &&
-        quote &&
-        quote.totalPrice &&
-        btcPriceUsd &&
-        !quoteError
-      ) {
-        // Fallback to quote calculation if market info not available
-        const btcPerRune =
-          quote.totalPrice &&
-          quote.totalFormattedAmount &&
-          parseFloat(quote.totalFormattedAmount.replace(/,/g, "")) > 0
-            ? parseFloat(quote.totalPrice.replace(/,/g, "")) /
-              parseFloat(quote.totalFormattedAmount.replace(/,/g, ""))
-            : 0;
-
-        if (btcPerRune > 0) {
-          inputUsdVal = amountNum * btcPerRune * btcPriceUsd;
-        }
-      }
-
-      // Calculate output USD value
-      let outputUsdVal: number | null = null;
-      if (outputAmount && assetOut) {
-        // Remove commas from outputAmount before parsing
-        const sanitizedOutputAmount = outputAmount.replace(/,/g, "");
-        const outputAmountNum = parseFloat(sanitizedOutputAmount);
-
-        if (!isNaN(outputAmountNum) && outputAmountNum > 0) {
-          if (assetOut.isBTC && btcPriceUsd) {
-            // Output is BTC
-            outputUsdVal = outputAmountNum * btcPriceUsd;
-          } else if (!assetOut.isBTC && outputRuneMarketInfo) {
-            // Output is Rune, use market info
-            outputUsdVal = outputAmountNum * outputRuneMarketInfo.price_in_usd;
-          } else if (
-            !assetOut.isBTC &&
-            quote &&
-            quote.totalPrice &&
-            btcPriceUsd &&
-            !quoteError
-          ) {
-            // Fallback to quote calculation if market info not available
-            const btcPerRune =
-              quote.totalPrice &&
-              quote.totalFormattedAmount &&
-              parseFloat(quote.totalFormattedAmount.replace(/,/g, "")) > 0
-                ? parseFloat(quote.totalPrice.replace(/,/g, "")) /
-                  parseFloat(quote.totalFormattedAmount.replace(/,/g, ""))
-                : 0;
-
-            if (btcPerRune > 0) {
-              outputUsdVal = outputAmountNum * btcPerRune * btcPriceUsd;
-            }
-          }
-        }
-      }
-
-      // Format and set input USD value
-      if (inputUsdVal !== null && inputUsdVal > 0) {
-        setInputUsdValue(
-          inputUsdVal.toLocaleString(undefined, {
-            style: "currency",
-            currency: "USD",
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          }),
-        );
-      } else {
-        setInputUsdValue(null);
-      }
-
-      // Format and set output USD value
-      if (outputUsdVal !== null && outputUsdVal > 0) {
-        setOutputUsdValue(
-          outputUsdVal.toLocaleString(undefined, {
-            style: "currency",
-            currency: "USD",
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          }),
-        );
-      } else {
-        setOutputUsdValue(null);
-      }
-    } catch {
-      setInputUsdValue(null);
-      setOutputUsdValue(null);
-    }
-  }, [
-    inputAmount,
-    outputAmount,
-    assetIn,
-    assetOut,
-    btcPriceUsd,
-    isBtcPriceLoading,
-    btcPriceError,
-    quote,
-    quoteError,
-    inputRuneMarketInfo,
-    outputRuneMarketInfo,
   ]);
 
   // Clear stored quote timestamp when quote expires or swap is reset
