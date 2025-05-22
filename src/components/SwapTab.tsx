@@ -1189,6 +1189,7 @@ export function SwapTab({
       isQuoteLoading={swapState.isQuoteLoading}
       isSwapping={swapState.isSwapping}
       quoteError={quoteError}
+      swapError={swapState.swapError}
       quote={quote}
       quoteExpired={quoteExpired}
       swapStep={swapState.swapStep}

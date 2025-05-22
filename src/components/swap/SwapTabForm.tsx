@@ -32,6 +32,7 @@ interface SwapTabFormProps {
   isQuoteLoading: boolean;
   isSwapping: boolean;
   quoteError: string | null;
+  swapError: string | null;
   quote: QuoteResponse | null;
   quoteExpired: boolean;
   swapStep: SwapStep;
@@ -66,6 +67,7 @@ export default function SwapTabForm({
   isQuoteLoading,
   isSwapping,
   quoteError,
+  swapError,
   quote,
   quoteExpired,
   swapStep,
@@ -165,7 +167,7 @@ export default function SwapTabForm({
       <SwapStatusMessages
         isSwapping={isSwapping}
         swapStep={swapStep}
-        swapError={null}
+        swapError={swapError}
         txId={txId}
         loadingDots={loadingDots}
       />

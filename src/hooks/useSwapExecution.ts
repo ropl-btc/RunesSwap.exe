@@ -462,13 +462,21 @@ export default function useSwapExecution({
         return;
       }
 
-      // Keep error state visible if an error occurred
+      // ======================================================================
+      // CRITICAL ERROR HANDLING FIX
+      // This section preserves error states in the UI for the user to see
+      // DO NOT REMOVE THE EARLY RETURN or error messages will disappear immediately
+      // ======================================================================
       if (errorMessageRef.current) {
         // Special case for user cancelation - reset back to idle
         if (errorMessageRef.current.includes("User canceled")) {
           dispatchSwap({ type: "SWAP_STEP", step: "idle" });
+        } else {
+          // IMPORTANT: Do nothing for non-cancelation errors to preserve the error UI
+          // Future improvement: We could add error categorization here for better UX
+          // e.g., network errors, fee errors, liquidity errors with specific messages
         }
-        return;
+        return; // <-- CRITICAL: This early return prevents the error state from being reset
       }
 
       // Handle non-success states with no errors
