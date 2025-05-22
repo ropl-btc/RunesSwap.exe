@@ -223,8 +223,6 @@ export function BorrowTab({
         }}
       />
 
-      <FeeSelector onChange={setFeeRate} />
-
       {borrowRangeError && (
         <div className="errorText" style={{ marginBottom: 8 }}>
           {borrowRangeError}
@@ -245,18 +243,23 @@ export function BorrowTab({
       )}
 
       {selectedQuoteId && (
-        <Button
-          onClick={() => startLoan(selectedQuoteId, collateralAmount, feeRate)}
-          disabled={!canStartLoan}
-        >
-          {isPreparing
-            ? "Preparing..."
-            : isSigning
-              ? "Waiting for Signature..."
-              : isSubmitting
-                ? "Submitting..."
-                : "Start Loan"}
-        </Button>
+        <>
+          <FeeSelector onChange={setFeeRate} />
+          <Button
+            onClick={() =>
+              startLoan(selectedQuoteId, collateralAmount, feeRate)
+            }
+            disabled={!canStartLoan}
+          >
+            {isPreparing
+              ? "Preparing..."
+              : isSigning
+                ? "Waiting for Signature..."
+                : isSubmitting
+                  ? "Submitting..."
+                  : "Start Loan"}
+          </Button>
+        </>
       )}
 
       {loanProcessError && (

@@ -23,7 +23,7 @@ import { type RuneData } from "@/lib/runesData";
 import { SwapTabForm, useSwapProcessManager } from "./swap";
 import useSwapExecution from "@/hooks/useSwapExecution";
 import useUsdValues from "@/hooks/useUsdValues";
-import FeeSelector from "./FeeSelector";
+import SwapFeeSelector from "./SwapFeeSelector";
 
 // Mock address for fetching quotes when disconnected
 const MOCK_ADDRESS = "34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo";
@@ -775,7 +775,9 @@ export function SwapTab({
       showPriceChart={showPriceChart}
       onShowPriceChart={onShowPriceChart}
       isPreselectedRuneLoading={isPreselectedRuneLoading}
-      feeSelector={<FeeSelector onChange={setFeeRate} />}
+      feeSelector={
+        quote && !quoteError ? <SwapFeeSelector onChange={setFeeRate} /> : null
+      }
     />
   );
 }
