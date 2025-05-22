@@ -6,6 +6,7 @@ import {
   handleApiError,
   validateRequest,
 } from "@/lib/apiUtils";
+import { callLiquidiumApi } from "@/lib/liquidiumServer";
 import { supabase } from "@/lib/supabase";
 
 // Schema for request body
@@ -48,99 +49,50 @@ export async function POST(request: NextRequest) {
     }
     const userJwt = tokenRows[0].jwt;
 
-    // 2. Prepare request to Liquidium
-    // Get API credentials
-    const apiUrl = process.env.LIQUIDIUM_API_URL;
-    if (!apiUrl) {
-      return createErrorResponse(
-        "Server configuration error",
-        "Missing API URL configuration",
-        500,
-      );
-    }
-
-    const apiKey = process.env.LIQUIDIUM_API_KEY;
-    if (!apiKey) {
-      return createErrorResponse(
-        "Server configuration error",
-        "Missing API key configuration",
-        500,
-      );
-    }
-
-    const fullUrl = `${apiUrl}/api/v1/borrower/loans/start/submit`;
-
-    // 3. Call Liquidium API
-    const liquidiumResponse = await fetch(fullUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        Authorization: `Bearer ${apiKey}`,
-        "x-user-token": userJwt,
+    // 2. Call Liquidium API
+    const result = await callLiquidiumApi(
+      "/api/v1/borrower/loans/start/submit",
+      {
+        method: "POST",
+        userJwt,
+        body: JSON.stringify(liquidiumPayload),
       },
-      body: JSON.stringify(liquidiumPayload),
-    });
+      "Liquidium submit borrow",
+    );
 
-    // Get response text first to check if it's valid JSON
-    const responseText = await liquidiumResponse.text();
+    if (!result.ok) {
+      return createErrorResponse(
+        result.message ?? "Error",
+        result.details,
+        result.status,
+      );
+    }
 
-    // Check if response is HTML (starts with <!DOCTYPE or <html)
-    if (
-      responseText.trim().startsWith("<!DOCTYPE") ||
-      responseText.trim().startsWith("<html")
-    ) {
-      // Check if it's a successful response (contains success message)
-      if (
-        responseText.includes("success") ||
-        responseText.includes("Success") ||
-        liquidiumResponse.ok
-      ) {
-        return createSuccessResponse({
-          loan_transaction_id: liquidiumPayload.prepare_offer_id, // Use prepare_offer_id as fallback
-          message: "Loan successfully started",
-          html_response: true,
-        });
-      } else {
+    const responseData = result.data;
+    if (typeof responseData === "string") {
+      const trimmed = responseData.trim();
+      if (trimmed.startsWith("<!DOCTYPE") || trimmed.startsWith("<html")) {
+        if (trimmed.includes("success") || trimmed.includes("Success")) {
+          return createSuccessResponse({
+            loan_transaction_id: liquidiumPayload.prepare_offer_id,
+            message: "Loan successfully started",
+            html_response: true,
+          });
+        }
         return createErrorResponse(
           "Liquidium API returned HTML instead of JSON",
           "The loan service returned an unexpected response format. Please try again later.",
           500,
         );
       }
-    }
 
-    // Try to parse JSON response
-    let liquidiumData;
-    try {
-      liquidiumData = JSON.parse(responseText);
-    } catch {
-      // If response is OK but not valid JSON, assume success
-      if (liquidiumResponse.ok) {
-        return createSuccessResponse({
-          loan_transaction_id: liquidiumPayload.prepare_offer_id, // Use prepare_offer_id as fallback
-          message: "Loan successfully started",
-          raw_response: responseText.substring(0, 100), // Include part of the response for debugging
-        });
-      } else {
-        return createErrorResponse(
-          "Invalid response from Liquidium API",
-          "The loan service returned an invalid response. Please try again later.",
-          500,
-        );
-      }
+      return createSuccessResponse({
+        loan_transaction_id: liquidiumPayload.prepare_offer_id,
+        message: "Loan successfully started",
+        raw_response: trimmed.slice(0, 100),
+      });
     }
-
-    if (!liquidiumResponse.ok) {
-      return createErrorResponse(
-        `Liquidium API error: ${liquidiumData?.error || liquidiumResponse.statusText}`,
-        liquidiumData?.errorMessage || JSON.stringify(liquidiumData),
-        liquidiumResponse.status,
-      );
-    }
-
-    // 4. Return successful response
-    return createSuccessResponse(liquidiumData); // Forward Liquidium's response
+    return createSuccessResponse(responseData);
   } catch (error) {
     const errorInfo = handleApiError(
       error,
