@@ -23,6 +23,7 @@ import { type RuneData } from "@/lib/runesData";
 import { SwapTabForm, useSwapProcessManager } from "./swap";
 import useSwapExecution from "@/hooks/useSwapExecution";
 import useUsdValues from "@/hooks/useUsdValues";
+import FeeSelector from "./FeeSelector";
 
 // Mock address for fetching quotes when disconnected
 const MOCK_ADDRESS = "34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo";
@@ -74,6 +75,7 @@ export function SwapTab({
   // State for input/output amounts
   const [inputAmount, setInputAmount] = useState("");
   const [outputAmount, setOutputAmount] = useState("");
+  const [feeRate, setFeeRate] = useState(0);
 
   // State for selected assets
   const [assetIn, setAssetIn] = useState<Asset>(BTC_ASSET);
@@ -546,6 +548,7 @@ export function SwapTab({
     dispatchSwap,
     isThrottledRef,
     quoteKeyRef,
+    selectedFeeRate: feeRate,
   });
 
   // Single useEffect for handling debounced input changes
@@ -772,6 +775,7 @@ export function SwapTab({
       showPriceChart={showPriceChart}
       onShowPriceChart={onShowPriceChart}
       isPreselectedRuneLoading={isPreselectedRuneLoading}
+      feeSelector={<FeeSelector onChange={setFeeRate} />}
     />
   );
 }

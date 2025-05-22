@@ -39,6 +39,7 @@ interface UseSwapExecutionArgs {
   dispatchSwap: React.Dispatch<SwapProcessAction>;
   isThrottledRef: React.MutableRefObject<boolean>;
   quoteKeyRef: React.MutableRefObject<string>;
+  selectedFeeRate?: number;
 }
 
 export default function useSwapExecution({
@@ -56,6 +57,7 @@ export default function useSwapExecution({
   dispatchSwap,
   isThrottledRef,
   quoteKeyRef,
+  selectedFeeRate,
 }: UseSwapExecutionArgs) {
   const errorMessageRef = useRef<string | null>(null);
 
@@ -138,11 +140,14 @@ export default function useSwapExecution({
 
       // Get the optimal fee rate from the mempool.space API, falling back to defaults
       // Use appropriate fee rate based on transaction type (higher for selling runes)
-      const optimalFeeRate = recommendedFeeRates
-        ? !isBtcToRune
-          ? recommendedFeeRates.fastestFee // Use fastest fee for selling runes (higher priority)
-          : recommendedFeeRates.halfHourFee // Use half-hour fee for buying runes (medium priority)
-        : 15; // Fallback if API data isn't available
+      const optimalFeeRate =
+        selectedFeeRate && selectedFeeRate > 0
+          ? selectedFeeRate
+          : recommendedFeeRates
+            ? !isBtcToRune
+              ? recommendedFeeRates.fastestFee
+              : recommendedFeeRates.halfHourFee
+            : 15;
 
       const psbtParams: GetPSBTParams = {
         orders: orders,

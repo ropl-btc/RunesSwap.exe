@@ -37,6 +37,7 @@ export function useBorrowProcess({
   const startLoan = async (
     selectedQuoteId: string | null,
     collateralAmount: string,
+    feeRate: number,
   ) => {
     const parsed = Number(collateralAmount);
     if (
@@ -69,7 +70,6 @@ export function useBorrowProcess({
         );
       }
 
-      const feeRate = 5;
       const prepareResult: LiquidiumPrepareBorrowResponse =
         await prepareLiquidiumBorrow({
           instant_offer_id: selectedQuoteId,
