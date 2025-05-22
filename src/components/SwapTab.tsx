@@ -1,28 +1,18 @@
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-  useRef,
-} from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import styles from "./SwapTab.module.css";
-import debounce from "lodash.debounce";
 import { useDebounce } from "use-debounce";
 import { type QuoteResponse } from "satsterminal-sdk";
 import { normalizeRuneName } from "@/utils/runeUtils";
 import { Asset, BTC_ASSET } from "@/types/common";
-import type { Rune } from "@/types/satsTerminal.ts";
-import { InputArea } from "./InputArea";
 import {
-  fetchRunesFromApi,
-  fetchPopularFromApi,
   fetchQuoteFromApi,
   fetchBtcBalanceFromApi,
   fetchRuneBalancesFromApi,
   fetchRuneInfoFromApi,
   fetchRuneMarketFromApi,
 } from "@/lib/api";
+import useSwapRunes from "@/hooks/useSwapRunes";
 import {
   type RuneBalance as OrdiscanRuneBalance,
   type RuneMarketInfo as OrdiscanRuneMarketInfo,
@@ -30,14 +20,9 @@ import {
 import { type RuneData } from "@/lib/runesData";
 
 // Import our new components
-import {
-  SwapDirectionButton,
-  SwapButton,
-  PriceInfoPanel,
-  SwapStatusMessages,
-  useSwapProcessManager,
-} from "./swap";
+import { SwapTabForm, useSwapProcessManager } from "./swap";
 import useSwapExecution from "@/hooks/useSwapExecution";
+import useUsdValues from "@/hooks/useUsdValues";
 
 // Mock address for fetching quotes when disconnected
 const MOCK_ADDRESS = "34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo";
@@ -94,30 +79,24 @@ export function SwapTab({
   const [assetIn, setAssetIn] = useState<Asset>(BTC_ASSET);
   const [assetOut, setAssetOut] = useState<Asset | null>(null);
 
-  // Track if the preselected rune has been loaded
-  const [hasLoadedPreselectedRune, setHasLoadedPreselectedRune] =
-    useState(false);
-
-  // State for rune fetching/searching
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
-  const [isPopularLoading, setIsPopularLoading] = useState(
+  const {
+    popularRunes,
+    isPopularLoading,
+    popularError,
+    isPreselectedRuneLoading,
+  } = useSwapRunes({
+    cachedPopularRunes,
     isPopularRunesLoading,
-  );
-  const [popularRunes, setPopularRunes] = useState<Asset[]>([]);
-  const [searchResults, setSearchResults] = useState<Asset[]>([]);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [popularError, setPopularError] = useState<string | null>(
-    popularRunesError ? popularRunesError.message : null,
-  );
-  // Add a loading state specifically for a preselected rune
-  const [isPreselectedRuneLoading, setIsPreselectedRuneLoading] =
-    useState(!!preSelectedRune);
+    popularRunesError,
+    preSelectedRune,
+    assetOut,
+    setAssetIn,
+    setAssetOut,
+  });
 
-  // Determine which runes to display
-  const availableRunes = searchQuery.trim() ? searchResults : popularRunes;
-  const isLoadingRunes = searchQuery.trim() ? isSearching : isPopularLoading;
-  const currentRunesError = searchQuery.trim() ? searchError : popularError;
+  const availableRunes = popularRunes;
+  const isLoadingRunes = isPopularLoading;
+  const currentRunesError = popularError;
 
   // Add back loadingDots state for animation
   const [loadingDots, setLoadingDots] = useState(".");
@@ -138,254 +117,8 @@ export function SwapTab({
   // Track the latest quote request to avoid race conditions
   const latestQuoteRequestId = useRef(0);
 
-  // Handle pre-selected rune
-  useEffect(() => {
-    const findAndSelectRune = async () => {
-      if (preSelectedRune && !hasLoadedPreselectedRune) {
-        // Show loading state while searching
-        setIsPreselectedRuneLoading(true);
-
-        // Force search for the rune if it changes
-        // Normalize names by removing spacers for comparison
-        const normalizedPreSelected = normalizeRuneName(preSelectedRune);
-
-        // Try to find in available runes first
-        const rune = availableRunes.find(
-          (r) => normalizeRuneName(r.name) === normalizedPreSelected,
-        );
-
-        if (rune) {
-          // Found in available runes, set it
-          setAssetIn(BTC_ASSET);
-          setAssetOut(rune);
-          setIsPreselectedRuneLoading(false);
-          setHasLoadedPreselectedRune(true);
-
-          // Clear the URL parameter
-          if (typeof window !== "undefined") {
-            const url = new URL(window.location.href);
-            url.searchParams.delete("rune");
-            window.history.replaceState({}, "", url.toString());
-          }
-
-          // Clear search field after loading
-          setSearchQuery("");
-        } else {
-          // Not found in available runes, search for it
-          try {
-            setIsSearching(true);
-            const searchResults = await fetchRunesFromApi(preSelectedRune);
-
-            if (searchResults && searchResults.length > 0) {
-              // Find closest match
-              const matchingRune = searchResults.find(
-                (r) => normalizeRuneName(r.name) === normalizedPreSelected,
-              );
-
-              // If found a match or just take the first result if no exact match
-              const foundRune = matchingRune || searchResults[0];
-
-              // Convert to Asset format
-              const foundAsset: Asset = {
-                id: foundRune.id,
-                name: foundRune.name,
-                imageURI: foundRune.imageURI,
-                isBTC: false,
-              };
-
-              // Add to search results
-              setSearchResults((prev) => {
-                // Avoid duplicates
-                if (!prev.some((r) => r.id === foundAsset.id)) {
-                  return [...prev, foundAsset];
-                }
-                return prev;
-              });
-
-              // Set as output asset
-              setAssetIn(BTC_ASSET);
-              setAssetOut(foundAsset);
-              setIsPreselectedRuneLoading(false);
-              setHasLoadedPreselectedRune(true);
-
-              // Clear the URL parameter
-              if (typeof window !== "undefined") {
-                const url = new URL(window.location.href);
-                url.searchParams.delete("rune");
-                window.history.replaceState({}, "", url.toString());
-              }
-
-              // Clear search field
-              setSearchQuery("");
-            }
-          } catch {
-            // Error handled in finally block
-          } finally {
-            setIsSearching(false);
-            setIsPreselectedRuneLoading(false);
-            setHasLoadedPreselectedRune(true);
-
-            // Clear the URL parameter even if there was an error
-            if (typeof window !== "undefined") {
-              const url = new URL(window.location.href);
-              url.searchParams.delete("rune");
-              window.history.replaceState({}, "", url.toString());
-            }
-
-            // Clear search field
-            setSearchQuery("");
-          }
-        }
-      } else if (!preSelectedRune) {
-        // No preselected rune, ensure loading state is cleared
-        setIsPreselectedRuneLoading(false);
-        setHasLoadedPreselectedRune(false);
-      }
-    };
-
-    findAndSelectRune();
-  }, [preSelectedRune, availableRunes, hasLoadedPreselectedRune, searchQuery]);
-
-  // Fetch popular runes on mount using API
-  const hasLoadedPopularRunes = useRef(false);
-
-  useEffect(() => {
-    const fetchPopular = async () => {
-      if (hasLoadedPopularRunes.current) return;
-
-      // If we already have cached popular runes, use them instead of fetching again
-      if (cachedPopularRunes && cachedPopularRunes.length > 0) {
-        const liquidiumToken: Asset = {
-          id: "liquidiumtoken",
-          name: "LIQUIDIUM•TOKEN",
-          imageURI: "https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN",
-          isBTC: false,
-        };
-
-        // Map the cached data to Asset format
-        const fetchedRunes: Asset[] = cachedPopularRunes
-          .map((collection: Record<string, unknown>) => {
-            const runeName =
-              ((collection?.etching as Record<string, unknown>)
-                ?.runeName as string) ||
-              (collection?.rune as string) ||
-              "Unknown";
-            return {
-              id: (collection?.rune as string) || `unknown_${Math.random()}`,
-              name: runeName,
-              imageURI:
-                (collection?.icon_content_url_data as string) ||
-                (collection?.imageURI as string),
-              isBTC: false,
-            };
-          })
-          .filter(
-            (rune) =>
-              rune.id !== liquidiumToken.id &&
-              normalizeRuneName(rune.name) !==
-                normalizeRuneName(liquidiumToken.name),
-          );
-
-        // Prepend the hardcoded token ONLY if no pre-selected rune
-        const mappedRunes = preSelectedRune
-          ? fetchedRunes
-          : [liquidiumToken, ...fetchedRunes];
-        setPopularRunes(mappedRunes);
-
-        // Only set default assetOut if there's no pre-selected rune and no current assetOut and no search query
-        if (
-          !preSelectedRune &&
-          !assetOut &&
-          !searchQuery &&
-          mappedRunes.length > 0
-        ) {
-          setAssetOut(mappedRunes[0]);
-        }
-
-        setIsPopularLoading(false);
-        hasLoadedPopularRunes.current = true;
-        return;
-      }
-
-      // If no cached data, fetch from API
-      setIsPopularLoading(true);
-      setPopularError(null);
-      setPopularRunes([]);
-      try {
-        // Define the hardcoded asset
-        const liquidiumToken: Asset = {
-          id: "liquidiumtoken",
-          name: "LIQUIDIUM•TOKEN",
-          imageURI: "https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN",
-          isBTC: false,
-        };
-
-        const response = await fetchPopularFromApi();
-        let mappedRunes: Asset[] = [];
-
-        if (!Array.isArray(response)) {
-          mappedRunes = [liquidiumToken];
-        } else {
-          const fetchedRunes: Asset[] = response
-            .map((collection: Record<string, unknown>) => ({
-              id: (collection?.rune as string) || `unknown_${Math.random()}`,
-              name:
-                ((collection?.etching as Record<string, unknown>)
-                  ?.runeName as string) ||
-                (collection?.rune as string) ||
-                "Unknown",
-              imageURI:
-                (collection?.icon_content_url_data as string) ||
-                (collection?.imageURI as string),
-              isBTC: false,
-            }))
-            .filter(
-              (rune) =>
-                rune.id !== liquidiumToken.id &&
-                normalizeRuneName(rune.name) !==
-                  normalizeRuneName(liquidiumToken.name),
-            );
-
-          mappedRunes = [liquidiumToken, ...fetchedRunes];
-        }
-
-        setPopularRunes(mappedRunes);
-
-        // Only set default assetOut if there's no pre-selected rune and no current assetOut
-        if (!preSelectedRune && !assetOut && mappedRunes.length > 0) {
-          setAssetOut(mappedRunes[0]);
-        }
-      } catch (error) {
-        setPopularError(
-          error instanceof Error
-            ? error.message
-            : "Failed to fetch popular runes",
-        );
-        const liquidiumTokenOnError: Asset = {
-          id: "liquidiumtoken",
-          name: "LIQUIDIUM•TOKEN",
-          imageURI: "https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN",
-          isBTC: false,
-        };
-        // Only set Liquidium Token if no pre-selected rune
-        setPopularRunes(preSelectedRune ? [] : [liquidiumTokenOnError]);
-
-        // Only set default assetOut if there's no pre-selected rune and no current assetOut
-        if (!preSelectedRune && !assetOut) {
-          setAssetOut(liquidiumTokenOnError);
-        }
-      } finally {
-        setIsPopularLoading(false);
-        hasLoadedPopularRunes.current = true;
-      }
-    };
-    fetchPopular();
-  }, [cachedPopularRunes, preSelectedRune]);
-
   // State for calculated prices
   const [exchangeRate, setExchangeRate] = useState<string | null>(null);
-  const [inputUsdValue, setInputUsdValue] = useState<string | null>(null);
-  const [outputUsdValue, setOutputUsdValue] = useState<string | null>(null);
 
   // Ordiscan Balance Queries
   const {
@@ -456,15 +189,24 @@ export function SwapTab({
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
+  const { inputUsdValue, outputUsdValue } = useUsdValues({
+    inputAmount,
+    outputAmount,
+    assetIn,
+    assetOut,
+    btcPriceUsd,
+    isBtcPriceLoading,
+    btcPriceError,
+    quote,
+    quoteError,
+    inputRuneMarketInfo,
+    outputRuneMarketInfo,
+  });
+
   // Effect for loading dots animation (with proper cycling animation)
   useEffect(() => {
     let intervalId: NodeJS.Timeout | null = null;
-    if (
-      isBtcPriceLoading ||
-      isSearching ||
-      swapState.isQuoteLoading ||
-      swapState.isSwapping
-    ) {
+    if (isBtcPriceLoading || swapState.isQuoteLoading || swapState.isSwapping) {
       // Create animated dots that cycle through [.,..,...] pattern
       intervalId = setInterval(() => {
         setLoadingDots((dots) => {
@@ -488,52 +230,9 @@ export function SwapTab({
         clearInterval(intervalId);
       }
     };
-  }, [
-    isBtcPriceLoading,
-    isSearching,
-    swapState.isQuoteLoading,
-    swapState.isSwapping,
-  ]); // Added more dependencies
+  }, [isBtcPriceLoading, swapState.isQuoteLoading, swapState.isSwapping]);
 
-  // Create a debounced search function - MEMOIZED
-  const debouncedSearch = useMemo(
-    () =>
-      debounce(async (query: string) => {
-        if (!query) {
-          setSearchResults([]);
-          setIsSearching(false);
-          setSearchError(null);
-          return;
-        }
-        setIsSearching(true);
-        setSearchError(null);
-        try {
-          // *** Ensure this uses the API fetch function ***
-          const results: Rune[] = await fetchRunesFromApi(query);
-          // Map results to Asset type for consistency in the component
-          const mappedResults: Asset[] = results.map((rune) => ({
-            id: rune.id,
-            name: rune.name,
-            imageURI: rune.imageURI,
-            isBTC: false,
-          }));
-          setSearchResults(mappedResults); // Store as Asset[]
-        } catch (error: unknown) {
-          setSearchError(
-            error instanceof Error ? error.message : "Failed to search",
-          );
-          setSearchResults([]); // Clear results on error
-        } finally {
-          setIsSearching(false);
-        }
-      }, 300),
-    [],
-  ); // <-- Empty dependency array ensures it's created only once
-
-  // Clean up the debounced function on component unmount
-  useEffect(() => () => debouncedSearch.cancel(), [debouncedSearch]);
-
-  // Search functionality now handled by InputArea component
+  // Search functionality handled by AssetSelector component
 
   // Define debounced value for input amount with a longer delay to reduce API calls
   // Correctly use the imported useDebounce hook - extract the first element
@@ -575,8 +274,6 @@ export function SwapTab({
     setQuote(null);
     dispatchSwap({ type: "FETCH_QUOTE_ERROR", error: "" });
     setExchangeRate(null);
-    setInputUsdValue(null);
-    setOutputUsdValue(null);
   };
 
   const handleSelectAssetOut = (selectedAsset: Asset) => {
@@ -624,8 +321,6 @@ export function SwapTab({
     setQuote(null);
     dispatchSwap({ type: "FETCH_QUOTE_ERROR", error: "" });
     setExchangeRate(null);
-    setInputUsdValue(null);
-    setOutputUsdValue(null);
   };
 
   // --- Swap Direction Logic ---
@@ -644,8 +339,6 @@ export function SwapTab({
     setQuote(null);
     dispatchSwap({ type: "FETCH_QUOTE_ERROR", error: "" });
     setExchangeRate(null);
-    setInputUsdValue(null);
-    setOutputUsdValue(null);
     dispatchSwap({ type: "RESET_SWAP" });
   };
 
@@ -908,8 +601,6 @@ export function SwapTab({
         setQuote(null);
         setOutputAmount("");
         setExchangeRate(null);
-        setInputUsdValue(null);
-        setOutputUsdValue(null);
       }
 
       // Only reset swap state for empty input with cooldown
@@ -955,133 +646,6 @@ export function SwapTab({
     quote,
     outputAmount,
     exchangeRate,
-  ]);
-
-  // UseEffect to calculate input USD value
-  useEffect(() => {
-    if (!inputAmount || !assetIn || isBtcPriceLoading || btcPriceError) {
-      setInputUsdValue(null);
-      setOutputUsdValue(null);
-      return;
-    }
-
-    try {
-      const amountNum = parseFloat(inputAmount);
-      if (isNaN(amountNum) || amountNum <= 0) {
-        setInputUsdValue(null);
-        setOutputUsdValue(null);
-        return;
-      }
-
-      let inputUsdVal: number | null = null;
-
-      if (assetIn.isBTC && btcPriceUsd) {
-        // Input is BTC
-        inputUsdVal = amountNum * btcPriceUsd;
-      } else if (!assetIn.isBTC && inputRuneMarketInfo) {
-        // Input is Rune, use market info
-        inputUsdVal = amountNum * inputRuneMarketInfo.price_in_usd;
-      } else if (
-        !assetIn.isBTC &&
-        quote &&
-        quote.totalPrice &&
-        btcPriceUsd &&
-        !quoteError
-      ) {
-        // Fallback to quote calculation if market info not available
-        const btcPerRune =
-          quote.totalPrice &&
-          quote.totalFormattedAmount &&
-          parseFloat(quote.totalFormattedAmount.replace(/,/g, "")) > 0
-            ? parseFloat(quote.totalPrice.replace(/,/g, "")) /
-              parseFloat(quote.totalFormattedAmount.replace(/,/g, ""))
-            : 0;
-
-        if (btcPerRune > 0) {
-          inputUsdVal = amountNum * btcPerRune * btcPriceUsd;
-        }
-      }
-
-      // Calculate output USD value
-      let outputUsdVal: number | null = null;
-      if (outputAmount && assetOut) {
-        // Remove commas from outputAmount before parsing
-        const sanitizedOutputAmount = outputAmount.replace(/,/g, "");
-        const outputAmountNum = parseFloat(sanitizedOutputAmount);
-
-        if (!isNaN(outputAmountNum) && outputAmountNum > 0) {
-          if (assetOut.isBTC && btcPriceUsd) {
-            // Output is BTC
-            outputUsdVal = outputAmountNum * btcPriceUsd;
-          } else if (!assetOut.isBTC && outputRuneMarketInfo) {
-            // Output is Rune, use market info
-            outputUsdVal = outputAmountNum * outputRuneMarketInfo.price_in_usd;
-          } else if (
-            !assetOut.isBTC &&
-            quote &&
-            quote.totalPrice &&
-            btcPriceUsd &&
-            !quoteError
-          ) {
-            // Fallback to quote calculation if market info not available
-            const btcPerRune =
-              quote.totalPrice &&
-              quote.totalFormattedAmount &&
-              parseFloat(quote.totalFormattedAmount.replace(/,/g, "")) > 0
-                ? parseFloat(quote.totalPrice.replace(/,/g, "")) /
-                  parseFloat(quote.totalFormattedAmount.replace(/,/g, ""))
-                : 0;
-
-            if (btcPerRune > 0) {
-              outputUsdVal = outputAmountNum * btcPerRune * btcPriceUsd;
-            }
-          }
-        }
-      }
-
-      // Format and set input USD value
-      if (inputUsdVal !== null && inputUsdVal > 0) {
-        setInputUsdValue(
-          inputUsdVal.toLocaleString(undefined, {
-            style: "currency",
-            currency: "USD",
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          }),
-        );
-      } else {
-        setInputUsdValue(null);
-      }
-
-      // Format and set output USD value
-      if (outputUsdVal !== null && outputUsdVal > 0) {
-        setOutputUsdValue(
-          outputUsdVal.toLocaleString(undefined, {
-            style: "currency",
-            currency: "USD",
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          }),
-        );
-      } else {
-        setOutputUsdValue(null);
-      }
-    } catch {
-      setInputUsdValue(null);
-      setOutputUsdValue(null);
-    }
-  }, [
-    inputAmount,
-    outputAmount,
-    assetIn,
-    assetOut,
-    btcPriceUsd,
-    isBtcPriceLoading,
-    btcPriceError,
-    quote,
-    quoteError,
-    inputRuneMarketInfo,
-    outputRuneMarketInfo,
   ]);
 
   // Clear stored quote timestamp when quote expires or swap is reset
@@ -1141,155 +705,74 @@ export function SwapTab({
     return found ? found.balance : "0"; // Return '0' if not found, assuming 0 balance
   };
 
-  // Use new components in the component render logic
+  const availableBalanceNode =
+    connected && assetIn ? (
+      assetIn.isBTC ? (
+        isBtcBalanceLoading ? (
+          <span className={styles.loadingText}>Loading{loadingDots}</span>
+        ) : btcBalanceError ? (
+          <span className={styles.errorText}>Error loading balance</span>
+        ) : btcBalanceSats !== undefined ? (
+          `${(btcBalanceSats / 100_000_000).toLocaleString(undefined, { maximumFractionDigits: 8 })}`
+        ) : (
+          "N/A"
+        )
+      ) : isRuneBalancesLoading || isSwapRuneInfoLoading ? (
+        <span className={styles.loadingText}>Loading{loadingDots}</span>
+      ) : runeBalancesError || swapRuneInfoError ? (
+        <span className={styles.errorText}>Error loading balance</span>
+      ) : (
+        (() => {
+          const rawBalance = getSpecificRuneBalance(assetIn.name);
+          if (rawBalance === null) return "N/A";
+          try {
+            const balanceNum = parseFloat(rawBalance);
+            if (isNaN(balanceNum)) return "Invalid Balance";
+            const decimals = swapRuneInfo?.decimals ?? 0;
+            const displayValue = balanceNum / 10 ** decimals;
+            return `${displayValue.toLocaleString(undefined, { maximumFractionDigits: decimals })}`;
+          } catch {
+            return "Formatting Error";
+          }
+        })()
+      )
+    ) : null;
+
   return (
-    <div className={styles.swapTabContainer}>
-      <h1 className="heading">Swap</h1>
-
-      {/* Input Area */}
-      <InputArea
-        label="You Pay"
-        inputId="input-amount"
-        inputValue={inputAmount}
-        onInputChange={setInputAmount}
-        placeholder="0.0"
-        min="0"
-        step="0.001"
-        assetSelectorEnabled={true}
-        selectedAsset={assetIn}
-        onAssetChange={handleSelectAssetIn}
-        availableAssets={availableRunes}
-        showBtcInSelector={true}
-        isAssetsLoading={isLoadingRunes}
-        assetsError={currentRunesError}
-        showPercentageShortcuts={connected && !!assetIn}
-        onPercentageClick={handlePercentageClick}
-        availableBalance={
-          connected && assetIn ? (
-            assetIn.isBTC ? (
-              isBtcBalanceLoading ? (
-                <span className={styles.loadingText}>Loading{loadingDots}</span>
-              ) : btcBalanceError ? (
-                <span className={styles.errorText}>Error loading balance</span>
-              ) : btcBalanceSats !== undefined ? (
-                `${(btcBalanceSats / 100_000_000).toLocaleString(undefined, { maximumFractionDigits: 8 })}`
-              ) : (
-                "N/A" // Should not happen if connected
-              )
-            ) : isRuneBalancesLoading || isSwapRuneInfoLoading ? (
-              <span className={styles.loadingText}>Loading{loadingDots}</span>
-            ) : runeBalancesError || swapRuneInfoError ? (
-              <span className={styles.errorText}>Error loading balance</span>
-            ) : (
-              (() => {
-                const rawBalance = getSpecificRuneBalance(assetIn.name);
-                if (rawBalance === null) return "N/A";
-
-                try {
-                  const balanceNum = parseFloat(rawBalance);
-                  if (isNaN(balanceNum)) return "Invalid Balance";
-
-                  const decimals = swapRuneInfo?.decimals ?? 0;
-                  const displayValue = balanceNum / 10 ** decimals;
-                  return `${displayValue.toLocaleString(undefined, { maximumFractionDigits: decimals })}`;
-                } catch {
-                  // Formatting error occurred
-                  return "Formatting Error";
-                }
-              })()
-            )
-          ) : null
-        }
-        usdValue={inputUsdValue || undefined}
-      />
-
-      {/* Swap Direction Button */}
-      <SwapDirectionButton
-        assetIn={assetIn}
-        assetOut={assetOut}
-        disabled={
-          !assetIn ||
-          !assetOut ||
-          swapState.isSwapping ||
-          swapState.isQuoteLoading
-        }
-        onClick={handleSwapDirection}
-      />
-
-      {/* Output Area */}
-      <InputArea
-        label="You Receive (Estimated)"
-        inputId="output-amount"
-        inputValue={
-          swapState.isQuoteLoading ? `Loading${loadingDots}` : outputAmount
-        }
-        placeholder="0.0"
-        readOnly={true}
-        assetSelectorEnabled={true}
-        selectedAsset={assetOut}
-        onAssetChange={handleSelectAssetOut}
-        availableAssets={availableRunes}
-        showBtcInSelector={true}
-        isAssetsLoading={isLoadingRunes}
-        assetsError={currentRunesError}
-        isPreselectedAssetLoading={isPreselectedRuneLoading}
-        usdValue={outputUsdValue || undefined}
-        errorMessage={
-          quoteError && !swapState.isQuoteLoading ? quoteError : undefined
-        }
-        bottomContent={
-          quoteError && !swapState.isQuoteLoading ? (
-            <div
-              className="smallText"
-              style={{ whiteSpace: "normal", wordBreak: "break-word" }}
-            >
-              Please retry the swap, reconnect your wallet, or try a different
-              amount.
-            </div>
-          ) : undefined
-        }
-      />
-
-      {/* Price Info Panel */}
-      <PriceInfoPanel
-        assetIn={assetIn}
-        assetOut={assetOut}
-        exchangeRate={exchangeRate}
-        isQuoteLoading={swapState.isQuoteLoading}
-        quoteError={quoteError}
-        debouncedInputAmount={debouncedInputAmount}
-        loadingDots={loadingDots}
-        showPriceChart={showPriceChart}
-        onShowPriceChart={onShowPriceChart}
-      />
-
-      {/* Swap Button */}
-      <SwapButton
-        connected={connected}
-        assetIn={assetIn}
-        assetOut={assetOut}
-        inputAmount={inputAmount}
-        isQuoteLoading={swapState.isQuoteLoading}
-        isSwapping={swapState.isSwapping}
-        quoteError={quoteError}
-        quote={quote}
-        quoteExpired={quoteExpired}
-        swapStep={swapState.swapStep}
-        txId={swapState.txId}
-        loadingDots={loadingDots}
-        onFetchQuote={handleFetchQuote}
-        onSwap={handleSwap}
-      />
-
-      {/* Status Messages */}
-      <SwapStatusMessages
-        isSwapping={swapState.isSwapping}
-        swapStep={swapState.swapStep}
-        swapError={swapState.swapError}
-        txId={swapState.txId}
-        loadingDots={loadingDots}
-      />
-    </div>
+    <SwapTabForm
+      connected={connected}
+      assetIn={assetIn}
+      assetOut={assetOut}
+      inputAmount={inputAmount}
+      outputAmount={outputAmount}
+      onInputAmountChange={setInputAmount}
+      onSelectAssetIn={handleSelectAssetIn}
+      onSelectAssetOut={handleSelectAssetOut}
+      onSwapDirection={handleSwapDirection}
+      onPercentageClick={handlePercentageClick}
+      availableRunes={availableRunes}
+      isLoadingRunes={isLoadingRunes}
+      currentRunesError={currentRunesError}
+      availableBalanceNode={availableBalanceNode}
+      inputUsdValue={inputUsdValue}
+      outputUsdValue={outputUsdValue}
+      exchangeRate={exchangeRate}
+      isQuoteLoading={swapState.isQuoteLoading}
+      isSwapping={swapState.isSwapping}
+      quoteError={quoteError}
+      swapError={swapState.swapError}
+      quote={quote}
+      quoteExpired={quoteExpired}
+      swapStep={swapState.swapStep}
+      txId={swapState.txId}
+      loadingDots={loadingDots}
+      onFetchQuote={handleFetchQuote}
+      onSwap={handleSwap}
+      debouncedInputAmount={debouncedInputAmount}
+      showPriceChart={showPriceChart}
+      onShowPriceChart={onShowPriceChart}
+      isPreselectedRuneLoading={isPreselectedRuneLoading}
+    />
   );
 }
 

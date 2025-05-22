@@ -6,6 +6,7 @@ import {
   handleApiError,
   validateRequest,
 } from "@/lib/apiUtils";
+import { callLiquidiumApi } from "@/lib/liquidiumServer";
 import { supabase } from "@/lib/supabase";
 
 // Schema for request body
@@ -57,55 +58,26 @@ export async function POST(request: NextRequest) {
     }
     const userJwt = tokenRows[0].jwt;
 
-    // 2. Prepare request to Liquidium
-    // Get API credentials
-    const apiUrl = process.env.LIQUIDIUM_API_URL;
-    if (!apiUrl) {
-      return createErrorResponse(
-        "Server configuration error",
-        "Missing API URL configuration",
-        500,
-      );
-    }
-
-    const apiKey = process.env.LIQUIDIUM_API_KEY;
-    if (!apiKey) {
-      return createErrorResponse(
-        "Server configuration error",
-        "Missing API key configuration",
-        500,
-      );
-    }
-
-    const fullUrl = `${apiUrl}/api/v1/borrower/loans/start/prepare`;
-
-    // For the prepare endpoint, we don't need to look up the rune ID
-    // The instant_offer_id already contains the information about which rune is being used
-
-    // 3. Call Liquidium API
-    const liquidiumResponse = await fetch(fullUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        Authorization: `Bearer ${apiKey}`,
-        "x-user-token": userJwt,
+    // 2. Call Liquidium API
+    const result = await callLiquidiumApi(
+      "/api/v1/borrower/loans/start/prepare",
+      {
+        method: "POST",
+        userJwt,
+        body: JSON.stringify(liquidiumPayload),
       },
-      body: JSON.stringify(liquidiumPayload), // Send validated data without the extra 'address' field
-    });
+      "Liquidium prepare borrow",
+    );
 
-    const liquidiumData = await liquidiumResponse.json();
-
-    if (!liquidiumResponse.ok) {
+    if (!result.ok) {
       return createErrorResponse(
-        `Liquidium API error: ${liquidiumData?.error || liquidiumResponse.statusText}`,
-        liquidiumData?.errorMessage || JSON.stringify(liquidiumData),
-        liquidiumResponse.status,
+        result.message ?? "Error",
+        result.details,
+        result.status,
       );
     }
 
-    // 4. Return successful response
-    return createSuccessResponse(liquidiumData); // Forward Liquidium's response
+    return createSuccessResponse(result.data); // Forward Liquidium's response
   } catch (error) {
     const errorInfo = handleApiError(
       error,
