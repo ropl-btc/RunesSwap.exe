@@ -1,0 +1,31 @@
+.container {
+  margin-top: var(--space-2);
+}
+
+.buttonRow {
+  display: flex;
+  gap: var(--space-1);
+  margin-bottom: var(--space-1);
+}
+
+.feeButton {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-small);
+  background-color: var(--win98-gray);
+  color: var(--win98-black);
+  border: var(--win98-border-outset);
+  border-color: var(--win98-border-outset-colors);
+}
+
+.feeButton:active {
+  border-color: var(--win98-border-inset-colors);
+}
+
+.feeButtonActive {
+  border: var(--win98-border-inset);
+  border-color: var(--win98-border-inset-colors);
+}
+
+.customInput {
+  width: 80px;
+}
