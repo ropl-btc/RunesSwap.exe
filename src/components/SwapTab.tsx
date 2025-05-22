@@ -13,7 +13,6 @@ import { type QuoteResponse } from "satsterminal-sdk";
 import { normalizeRuneName } from "@/utils/runeUtils";
 import { Asset, BTC_ASSET } from "@/types/common";
 import type { Rune } from "@/types/satsTerminal.ts";
-import { InputArea } from "./InputArea";
 import {
   fetchRunesFromApi,
   fetchPopularFromApi,
@@ -30,13 +29,7 @@ import {
 import { type RuneData } from "@/lib/runesData";
 
 // Import our new components
-import {
-  SwapDirectionButton,
-  SwapButton,
-  PriceInfoPanel,
-  SwapStatusMessages,
-  useSwapProcessManager,
-} from "./swap";
+import { SwapTabForm, useSwapProcessManager } from "./swap";
 import useSwapExecution from "@/hooks/useSwapExecution";
 
 // Mock address for fetching quotes when disconnected
@@ -1141,155 +1134,73 @@ export function SwapTab({
     return found ? found.balance : "0"; // Return '0' if not found, assuming 0 balance
   };
 
-  // Use new components in the component render logic
+  const availableBalanceNode =
+    connected && assetIn ? (
+      assetIn.isBTC ? (
+        isBtcBalanceLoading ? (
+          <span className={styles.loadingText}>Loading{loadingDots}</span>
+        ) : btcBalanceError ? (
+          <span className={styles.errorText}>Error loading balance</span>
+        ) : btcBalanceSats !== undefined ? (
+          `${(btcBalanceSats / 100_000_000).toLocaleString(undefined, { maximumFractionDigits: 8 })}`
+        ) : (
+          "N/A"
+        )
+      ) : isRuneBalancesLoading || isSwapRuneInfoLoading ? (
+        <span className={styles.loadingText}>Loading{loadingDots}</span>
+      ) : runeBalancesError || swapRuneInfoError ? (
+        <span className={styles.errorText}>Error loading balance</span>
+      ) : (
+        (() => {
+          const rawBalance = getSpecificRuneBalance(assetIn.name);
+          if (rawBalance === null) return "N/A";
+          try {
+            const balanceNum = parseFloat(rawBalance);
+            if (isNaN(balanceNum)) return "Invalid Balance";
+            const decimals = swapRuneInfo?.decimals ?? 0;
+            const displayValue = balanceNum / 10 ** decimals;
+            return `${displayValue.toLocaleString(undefined, { maximumFractionDigits: decimals })}`;
+          } catch {
+            return "Formatting Error";
+          }
+        })()
+      )
+    ) : null;
+
   return (
-    <div className={styles.swapTabContainer}>
-      <h1 className="heading">Swap</h1>
-
-      {/* Input Area */}
-      <InputArea
-        label="You Pay"
-        inputId="input-amount"
-        inputValue={inputAmount}
-        onInputChange={setInputAmount}
-        placeholder="0.0"
-        min="0"
-        step="0.001"
-        assetSelectorEnabled={true}
-        selectedAsset={assetIn}
-        onAssetChange={handleSelectAssetIn}
-        availableAssets={availableRunes}
-        showBtcInSelector={true}
-        isAssetsLoading={isLoadingRunes}
-        assetsError={currentRunesError}
-        showPercentageShortcuts={connected && !!assetIn}
-        onPercentageClick={handlePercentageClick}
-        availableBalance={
-          connected && assetIn ? (
-            assetIn.isBTC ? (
-              isBtcBalanceLoading ? (
-                <span className={styles.loadingText}>Loading{loadingDots}</span>
-              ) : btcBalanceError ? (
-                <span className={styles.errorText}>Error loading balance</span>
-              ) : btcBalanceSats !== undefined ? (
-                `${(btcBalanceSats / 100_000_000).toLocaleString(undefined, { maximumFractionDigits: 8 })}`
-              ) : (
-                "N/A" // Should not happen if connected
-              )
-            ) : isRuneBalancesLoading || isSwapRuneInfoLoading ? (
-              <span className={styles.loadingText}>Loading{loadingDots}</span>
-            ) : runeBalancesError || swapRuneInfoError ? (
-              <span className={styles.errorText}>Error loading balance</span>
-            ) : (
-              (() => {
-                const rawBalance = getSpecificRuneBalance(assetIn.name);
-                if (rawBalance === null) return "N/A";
-
-                try {
-                  const balanceNum = parseFloat(rawBalance);
-                  if (isNaN(balanceNum)) return "Invalid Balance";
-
-                  const decimals = swapRuneInfo?.decimals ?? 0;
-                  const displayValue = balanceNum / 10 ** decimals;
-                  return `${displayValue.toLocaleString(undefined, { maximumFractionDigits: decimals })}`;
-                } catch {
-                  // Formatting error occurred
-                  return "Formatting Error";
-                }
-              })()
-            )
-          ) : null
-        }
-        usdValue={inputUsdValue || undefined}
-      />
-
-      {/* Swap Direction Button */}
-      <SwapDirectionButton
-        assetIn={assetIn}
-        assetOut={assetOut}
-        disabled={
-          !assetIn ||
-          !assetOut ||
-          swapState.isSwapping ||
-          swapState.isQuoteLoading
-        }
-        onClick={handleSwapDirection}
-      />
-
-      {/* Output Area */}
-      <InputArea
-        label="You Receive (Estimated)"
-        inputId="output-amount"
-        inputValue={
-          swapState.isQuoteLoading ? `Loading${loadingDots}` : outputAmount
-        }
-        placeholder="0.0"
-        readOnly={true}
-        assetSelectorEnabled={true}
-        selectedAsset={assetOut}
-        onAssetChange={handleSelectAssetOut}
-        availableAssets={availableRunes}
-        showBtcInSelector={true}
-        isAssetsLoading={isLoadingRunes}
-        assetsError={currentRunesError}
-        isPreselectedAssetLoading={isPreselectedRuneLoading}
-        usdValue={outputUsdValue || undefined}
-        errorMessage={
-          quoteError && !swapState.isQuoteLoading ? quoteError : undefined
-        }
-        bottomContent={
-          quoteError && !swapState.isQuoteLoading ? (
-            <div
-              className="smallText"
-              style={{ whiteSpace: "normal", wordBreak: "break-word" }}
-            >
-              Please retry the swap, reconnect your wallet, or try a different
-              amount.
-            </div>
-          ) : undefined
-        }
-      />
-
-      {/* Price Info Panel */}
-      <PriceInfoPanel
-        assetIn={assetIn}
-        assetOut={assetOut}
-        exchangeRate={exchangeRate}
-        isQuoteLoading={swapState.isQuoteLoading}
-        quoteError={quoteError}
-        debouncedInputAmount={debouncedInputAmount}
-        loadingDots={loadingDots}
-        showPriceChart={showPriceChart}
-        onShowPriceChart={onShowPriceChart}
-      />
-
-      {/* Swap Button */}
-      <SwapButton
-        connected={connected}
-        assetIn={assetIn}
-        assetOut={assetOut}
-        inputAmount={inputAmount}
-        isQuoteLoading={swapState.isQuoteLoading}
-        isSwapping={swapState.isSwapping}
-        quoteError={quoteError}
-        quote={quote}
-        quoteExpired={quoteExpired}
-        swapStep={swapState.swapStep}
-        txId={swapState.txId}
-        loadingDots={loadingDots}
-        onFetchQuote={handleFetchQuote}
-        onSwap={handleSwap}
-      />
-
-      {/* Status Messages */}
-      <SwapStatusMessages
-        isSwapping={swapState.isSwapping}
-        swapStep={swapState.swapStep}
-        swapError={swapState.swapError}
-        txId={swapState.txId}
-        loadingDots={loadingDots}
-      />
-    </div>
+    <SwapTabForm
+      connected={connected}
+      assetIn={assetIn}
+      assetOut={assetOut}
+      inputAmount={inputAmount}
+      outputAmount={outputAmount}
+      onInputAmountChange={setInputAmount}
+      onSelectAssetIn={handleSelectAssetIn}
+      onSelectAssetOut={handleSelectAssetOut}
+      onSwapDirection={handleSwapDirection}
+      onPercentageClick={handlePercentageClick}
+      availableRunes={availableRunes}
+      isLoadingRunes={isLoadingRunes}
+      currentRunesError={currentRunesError}
+      availableBalanceNode={availableBalanceNode}
+      inputUsdValue={inputUsdValue}
+      outputUsdValue={outputUsdValue}
+      exchangeRate={exchangeRate}
+      isQuoteLoading={swapState.isQuoteLoading}
+      isSwapping={swapState.isSwapping}
+      quoteError={quoteError}
+      quote={quote}
+      quoteExpired={quoteExpired}
+      swapStep={swapState.swapStep}
+      txId={swapState.txId}
+      loadingDots={loadingDots}
+      onFetchQuote={handleFetchQuote}
+      onSwap={handleSwap}
+      debouncedInputAmount={debouncedInputAmount}
+      showPriceChart={showPriceChart}
+      onShowPriceChart={onShowPriceChart}
+      isPreselectedRuneLoading={isPreselectedRuneLoading}
+    />
   );
 }
 
