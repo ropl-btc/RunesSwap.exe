@@ -13,19 +13,8 @@ const BorrowQuotesList: React.FC<BorrowQuotesListProps> = ({
   selectedQuoteId,
   onSelectQuote,
 }) => (
-  <div
-    className={styles.infoArea}
-    style={{ marginTop: "var(--space-4)", borderTop: "none" }}
-  >
-    <h2
-      className="heading"
-      style={{
-        fontSize: "var(--font-size-normal)",
-        marginBottom: "var(--space-2)",
-      }}
-    >
-      Available Loan Offers:
-    </h2>
+  <div className={styles.quotesContainer}>
+    <h2 className={styles.quotesTitle}>Available Loan Offers:</h2>
     {quotes.map((quote) => {
       const principalBtc = (quote.loan_breakdown.principal_sats / 1e8).toFixed(
         8,
@@ -45,43 +34,48 @@ const BorrowQuotesList: React.FC<BorrowQuotesListProps> = ({
         <div
           key={quote.offer_id}
           onClick={() => onSelectQuote(quote.offer_id)}
-          style={{
-            border:
-              selectedQuoteId === quote.offer_id
-                ? "2px solid var(--win98-blue)"
-                : "2px solid var(--win98-gray)",
-            padding: "var(--space-2)",
-            marginBottom: "var(--space-2)",
-            cursor: "pointer",
-            backgroundColor:
-              selectedQuoteId === quote.offer_id
-                ? "var(--win98-light-gray)"
-                : "var(--win98-white)",
-          }}
-          className={styles.inputArea}
+          className={`${styles.quoteCard} ${
+            selectedQuoteId === quote.offer_id ? styles.selected : ""
+          }`}
         >
-          <p>
-            <strong>Loan Amount:</strong> {principalBtc} BTC
-          </p>
-          <p>
-            <strong>LTV:</strong> {Number(quote.ltv_rate).toFixed(2)}%
-          </p>
-          <p>
-            <strong>Term:</strong> {quote.loan_term_days ?? "N/A"} days
-          </p>
-          <p>
-            <strong>Interest:</strong> {interestPercent}% (
-            {quote.loan_breakdown.interest_sats} sats)
-          </p>
-          <p>
-            <strong>Total Repayment:</strong> {repaymentBtc} BTC
-          </p>
-          <p>
-            <strong>Due:</strong>{" "}
-            {new Date(
-              quote.loan_breakdown.loan_due_by_date,
-            ).toLocaleDateString()}
-          </p>
+          <div className={styles.quoteGrid}>
+            <div className={styles.quoteField}>
+              <span className={styles.quoteLabel}>Loan Amount</span>
+              <span
+                className={`${styles.quoteValue} ${styles.quoteValueHighlight}`}
+              >
+                {principalBtc} BTC
+              </span>
+            </div>
+            <div className={styles.quoteField}>
+              <span className={styles.quoteLabel}>LTV</span>
+              <span className={styles.quoteValue}>
+                {(Number(quote.ltv_rate) * 100).toFixed(2)}%
+              </span>
+            </div>
+            <div className={styles.quoteField}>
+              <span className={styles.quoteLabel}>Term</span>
+              <span className={styles.quoteValue}>
+                {quote.loan_term_days ?? "N/A"} days
+              </span>
+            </div>
+            <div className={styles.quoteField}>
+              <span className={styles.quoteLabel}>Interest Rate</span>
+              <span className={styles.quoteValue}>{interestPercent}%</span>
+            </div>
+            <div className={styles.quoteField}>
+              <span className={styles.quoteLabel}>Total Repayment</span>
+              <span className={styles.quoteValue}>{repaymentBtc} BTC</span>
+            </div>
+            <div className={styles.quoteField}>
+              <span className={styles.quoteLabel}>Due Date</span>
+              <span className={styles.quoteValue}>
+                {new Date(
+                  quote.loan_breakdown.loan_due_by_date,
+                ).toLocaleDateString()}
+              </span>
+            </div>
+          </div>
         </div>
       );
     })}

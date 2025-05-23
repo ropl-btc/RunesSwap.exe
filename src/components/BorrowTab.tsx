@@ -9,6 +9,7 @@ import Button from "./Button";
 import CollateralInput from "./CollateralInput";
 import BorrowQuotesList from "./BorrowQuotesList";
 import BorrowSuccessMessage from "./BorrowSuccessMessage";
+import FeeSelector from "./FeeSelector";
 import { Asset } from "@/types/common";
 import { FormattedRuneAmount } from "./FormattedRuneAmount";
 import { useBorrowProcess } from "@/hooks/useBorrowProcess";
@@ -59,6 +60,7 @@ export function BorrowTab({
   const router = useRouter();
   const [collateralAsset, setCollateralAsset] = useState<Asset | null>(null);
   const [collateralAmount, setCollateralAmount] = useState("");
+  const [feeRate, setFeeRate] = useState(0);
 
   const { data: runeBalances, isLoading: isRuneBalancesLoading } = useQuery<
     OrdiscanRuneBalance[],
@@ -241,18 +243,23 @@ export function BorrowTab({
       )}
 
       {selectedQuoteId && (
-        <Button
-          onClick={() => startLoan(selectedQuoteId, collateralAmount)}
-          disabled={!canStartLoan}
-        >
-          {isPreparing
-            ? "Preparing..."
-            : isSigning
-              ? "Waiting for Signature..."
-              : isSubmitting
-                ? "Submitting..."
-                : "Start Loan"}
-        </Button>
+        <>
+          <FeeSelector onChange={setFeeRate} />
+          <Button
+            onClick={() =>
+              startLoan(selectedQuoteId, collateralAmount, feeRate)
+            }
+            disabled={!canStartLoan}
+          >
+            {isPreparing
+              ? "Preparing..."
+              : isSigning
+                ? "Waiting for Signature..."
+                : isSubmitting
+                  ? "Submitting..."
+                  : "Start Loan"}
+          </Button>
+        </>
       )}
 
       {loanProcessError && (

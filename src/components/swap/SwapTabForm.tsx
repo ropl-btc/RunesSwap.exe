@@ -44,6 +44,7 @@ interface SwapTabFormProps {
   showPriceChart: boolean;
   onShowPriceChart?: (assetName?: string, shouldToggle?: boolean) => void;
   isPreselectedRuneLoading: boolean;
+  feeSelector: React.ReactNode;
 }
 
 export default function SwapTabForm({
@@ -79,6 +80,7 @@ export default function SwapTabForm({
   showPriceChart,
   onShowPriceChart,
   isPreselectedRuneLoading,
+  feeSelector,
 }: SwapTabFormProps) {
   return (
     <div className={styles.swapTabContainer}>
@@ -148,6 +150,7 @@ export default function SwapTabForm({
         showPriceChart={showPriceChart}
         onShowPriceChart={onShowPriceChart}
       />
+      {feeSelector}
       <SwapButton
         connected={connected}
         assetIn={assetIn}

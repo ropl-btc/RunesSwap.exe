@@ -104,6 +104,69 @@
 
 /* Asset selector styles moved to InputArea.module.css */
 
+/* Quote List Styles */
+.quotesContainer {
+  margin-top: var(--space-4);
+}
+
+.quotesTitle {
+  font-size: var(--font-size-normal);
+  font-weight: bold;
+  margin-bottom: var(--space-2);
+  color: var(--win98-black);
+}
+
+.quoteCard {
+  background-color: var(--win98-white);
+  border: var(--win98-border-inset);
+  border-color: var(--win98-border-inset-colors);
+  padding: var(--space-2);
+  margin-bottom: var(--space-1);
+  cursor: pointer;
+  transition: none;
+}
+
+.quoteCard:hover {
+  background-color: var(--win98-light-gray);
+}
+
+.quoteCard.selected {
+  border-color: var(--win98-border-outset-colors);
+  background-color: var(--win98-light-gray);
+}
+
+.quoteCard:active {
+  border-color: var(--win98-border-inset-colors);
+}
+
+.quoteGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--space-1) var(--space-3);
+}
+
+.quoteField {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.quoteLabel {
+  font-size: var(--font-size-small);
+  color: var(--win98-dark-gray);
+  font-weight: normal;
+}
+
+.quoteValue {
+  font-size: var(--font-size-normal);
+  color: var(--win98-black);
+  font-weight: bold;
+}
+
+.quoteValueHighlight {
+  color: var(--win98-blue);
+}
+
 /* Mobile Responsiveness */
 @media (width <= 768px) {
   .successButtons {
@@ -114,5 +177,9 @@
   .successButtons button {
     width: 100%;
     margin-right: 0 !important;
+  }
+
+  .quoteGrid {
+    grid-template-columns: 1fr 1fr;
   }
 }
