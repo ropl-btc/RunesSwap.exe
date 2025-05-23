@@ -11,6 +11,7 @@ import {
   fetchRuneMarketFromApi,
 } from "@/lib/api";
 import useSwapRunes from "@/hooks/useSwapRunes";
+import useSwapAssets from "@/hooks/useSwapAssets";
 import {
   type RuneBalance as OrdiscanRuneBalance,
   type RuneMarketInfo as OrdiscanRuneMarketInfo,
@@ -114,6 +115,24 @@ export function SwapTab({
 
   // State for calculated prices
   const [exchangeRate, setExchangeRate] = useState<string | null>(null);
+
+  const { handleSelectAssetIn, handleSelectAssetOut, handleSwapDirection } =
+    useSwapAssets({
+      popularRunes,
+      showPriceChart,
+      onShowPriceChart,
+      dispatchSwap,
+      setQuote,
+      setExchangeRate,
+      setInputAmount,
+      setOutputAmount,
+      inputAmount,
+      outputAmount,
+      assetIn,
+      assetOut,
+      setAssetIn,
+      setAssetOut,
+    });
 
   // Ordiscan Balance Queries
   const {
@@ -228,100 +247,6 @@ export function SwapTab({
   }, [isBtcPriceLoading, swapState.isQuoteLoading, swapState.isSwapping]);
 
   // Search functionality handled by AssetSelector component
-
-  // --- Asset Selection Logic ---
-  const handleSelectAssetIn = (selectedAsset: Asset) => {
-    // If user tries to select the same asset that's already in the output,
-    // swap the assets instead of blocking the selection
-    if (assetOut && selectedAsset.id === assetOut.id) {
-      handleSwapDirection();
-      return;
-    }
-
-    setAssetIn(selectedAsset);
-    // If selected asset is BTC, ensure output is a Rune
-    if (selectedAsset.isBTC) {
-      if (!assetOut || assetOut.isBTC) {
-        // Set to first available rune or null if none
-        const newAssetOut = popularRunes.length > 0 ? popularRunes[0] : null;
-        setAssetOut(newAssetOut);
-      }
-    } else {
-      // If selected asset is a Rune, ensure output is BTC
-      setAssetOut(BTC_ASSET);
-    }
-    // Clear amounts and quote when assets change
-    setOutputAmount("");
-    setQuote(null);
-    dispatchSwap({ type: "FETCH_QUOTE_ERROR", error: "" });
-    setExchangeRate(null);
-  };
-
-  const handleSelectAssetOut = (selectedAsset: Asset) => {
-    // If user tries to select the same asset that's already in the input,
-    // swap the assets instead of blocking the selection
-    if (assetIn && selectedAsset.id === assetIn.id) {
-      handleSwapDirection();
-      return;
-    }
-
-    const previousAssetIn = assetIn; // Store previous input asset
-
-    setAssetOut(selectedAsset);
-
-    // If the price chart is visible, update it with the new asset
-    if (showPriceChart) {
-      onShowPriceChart?.(selectedAsset.name, false);
-    }
-
-    // If the NEW output asset is BTC, ensure input is a Rune
-    if (selectedAsset.isBTC) {
-      if (!previousAssetIn || previousAssetIn.isBTC) {
-        // Input was BTC (or null), now must be Rune
-        const newAssetIn =
-          popularRunes.length > 0 ? popularRunes[0] : BTC_ASSET; // Fallback needed if no popular runes
-        setAssetIn(newAssetIn);
-        // Since input asset type changed, reset amounts
-        setOutputAmount("");
-      }
-      // else: Input was already a Rune, keep it. Amount reset handled below.
-    } else {
-      // If the NEW output asset is a Rune, ensure input is BTC
-      setAssetIn(BTC_ASSET);
-      // Check if the input asset type *actually* changed
-      if (!previousAssetIn || !previousAssetIn.isBTC) {
-        // Input was Rune (or null), now is BTC. Reset both amounts.
-        setOutputAmount("");
-      } else {
-        // Input was already BTC and remains BTC. Keep inputAmount, just reset output.
-        setOutputAmount("");
-      }
-    }
-
-    // Always clear quote and related state when output asset changes
-    setQuote(null);
-    dispatchSwap({ type: "FETCH_QUOTE_ERROR", error: "" });
-    setExchangeRate(null);
-  };
-
-  // --- Swap Direction Logic ---
-  const handleSwapDirection = () => {
-    if (!assetOut) {
-      return;
-    }
-    const tempAsset = assetIn;
-    setAssetIn(assetOut);
-    setAssetOut(tempAsset);
-
-    const tempAmount = inputAmount;
-    setInputAmount(outputAmount);
-    setOutputAmount(tempAmount);
-
-    setQuote(null);
-    dispatchSwap({ type: "FETCH_QUOTE_ERROR", error: "" });
-    setExchangeRate(null);
-    dispatchSwap({ type: "RESET_SWAP" });
-  };
 
   const {
     handleFetchQuote,
