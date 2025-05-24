@@ -6,6 +6,7 @@
   justify-content: flex-start;
   padding: var(--space-4);
   background-color: var(--win98-gray);
+  color: var(--win98-black);
   position: relative;
   min-height: 100vh;
 }
@@ -38,7 +39,8 @@
   background-color: var(--win98-gray);
   border: var(--win98-border-outset);
   border-color: var(--win98-border-outset-colors);
-  box-shadow: 1px 1px 0 1px var(--win98-black);
+  border-radius: var(--border-radius);
+  box-shadow: 0 0 8px rgb(0 0 0 / 40%);
   z-index: 2;
   min-width: 150px;
 }
@@ -52,17 +54,21 @@
 
 .uploadButton,
 .clearButton {
-  background-color: var(--win98-gray);
+  background-color: var(--win98-light-gray);
   border: var(--win98-border-outset);
   border-color: var(--win98-border-outset-colors);
+  border-radius: var(--border-radius);
   padding: var(--space-1) var(--space-2);
   font-size: var(--font-size-normal);
   cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .uploadButton:active,
 .clearButton:active {
-  border-color: var(--win98-border-inset-colors);
+  background-color: var(--win98-blue);
+  color: var(--win98-white);
+  border-color: var(--win98-blue);
 }
 
 /* Window component */
@@ -70,10 +76,11 @@
   background-color: var(--win98-gray);
   border: var(--win98-border-outset);
   border-color: var(--win98-border-outset-colors);
+  border-radius: var(--border-radius);
   width: 100%;
   max-width: 42rem;
   min-height: 610px;
-  box-shadow: 1px 1px 0 1px var(--win98-black);
+  box-shadow: 0 0 12px rgb(0 0 0 / 40%);
   margin: auto;
   display: flex;
   flex-direction: column;
@@ -89,6 +96,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-top-left-radius: var(--border-radius);
+  border-top-right-radius: var(--border-radius);
   position: sticky;
   top: 0;
   z-index: 10;

@@ -1,16 +1,19 @@
-/* Win98 Theme Variables */
+/* Modern Dark Theme Variables */
 :root {
   /* Colors */
-  --win98-gray: #c0c0c0;
-  --win98-blue: #000080;
-  --win98-dark-blue: #00a;
-  --win98-white: #fff;
-  --win98-black: #000;
-  --win98-dark-gray: #808080;
-  --win98-light-gray: #dfdfdf;
-  --win98-red: #b20000;
-  --win98-green: #008000;
-  --win98-dark-green: #006400;
+  --win98-gray: #202123;
+  --win98-blue: #10a37f;
+  --win98-dark-blue: #0e8f69;
+  --win98-white: #303136;
+  --win98-black: #fff;
+  --win98-dark-gray: #5b5b5e;
+  --win98-light-gray: #2c2d31;
+  --win98-red: #e5534b;
+  --win98-green: #3ba55c;
+  --win98-dark-green: #2d8659;
+
+  /* Radius */
+  --border-radius: 6px;
 
   /* Typography - just 3 key sizes */
   --font-size-small: 0.75rem; /* 12px */
@@ -26,15 +29,13 @@
   --space-8: 2rem; /* 32px */
 
   /* Border properties */
-  --win98-border-width: 2px;
+  --win98-border-width: 1px;
 
   /* Border styles */
   --win98-border-outset: var(--win98-border-width) solid;
-  --win98-border-outset-colors: var(--win98-light-gray) var(--win98-dark-gray)
-    var(--win98-dark-gray) var(--win98-light-gray);
+  --win98-border-outset-colors: var(--win98-light-gray);
   --win98-border-inset: var(--win98-border-width) solid;
-  --win98-border-inset-colors: var(--win98-dark-gray) var(--win98-light-gray)
-    var(--win98-light-gray) var(--win98-dark-gray);
+  --win98-border-inset-colors: var(--win98-light-gray);
 
   /* Z-index layers - based on actual values used in the codebase */
   --z-dropdown: 20;
@@ -58,8 +59,8 @@ body {
 body {
   background-color: var(--win98-gray);
   color: var(--win98-black);
-  font-family: var(--font-windows, Tahoma, Verdana, sans-serif);
-  font-size: 12px;
+  font-family: Inter, var(--font-windows, Tahoma, Verdana, sans-serif);
+  font-size: 14px;
 }
 
 a {
@@ -125,17 +126,22 @@ input::-webkit-inner-spin-button {
 }
 
 /* Win98 Common Components */
+
 .win98-button {
-  background-color: var(--win98-gray);
+  background-color: var(--win98-light-gray);
   border: var(--win98-border-outset);
   border-color: var(--win98-border-outset-colors);
+  border-radius: var(--border-radius);
   padding: var(--space-1) var(--space-2);
   cursor: pointer;
   font-size: var(--font-size-normal);
+  transition: background-color 0.2s;
 }
 
 .win98-button:active {
-  border-color: var(--win98-border-inset-colors);
+  background-color: var(--win98-blue);
+  color: var(--win98-white);
+  border-color: var(--win98-blue);
 }
 
 .win98-button:disabled {
@@ -147,12 +153,14 @@ input::-webkit-inner-spin-button {
   background-color: var(--win98-white);
   border: var(--win98-border-inset);
   border-color: var(--win98-border-inset-colors);
+  border-radius: var(--border-radius);
   padding: var(--space-1);
   font-size: var(--font-size-normal);
 }
 
 .win98-input:focus {
-  outline: 1px solid var(--win98-blue);
+  outline: none;
+  border-color: var(--win98-blue);
 }
 
 /* Link styles */
