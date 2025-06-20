@@ -13,16 +13,16 @@ export const repayLiquidiumLoan = async (
   loanId: string,
   address: string,
 ): Promise<RepayLiquidiumLoanResponse> => {
-  const response = await fetch("/api/liquidium/repay", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+  const response = await fetch('/api/liquidium/repay', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ loanId, address }),
   });
   let data;
   try {
     data = await response.json();
   } catch {
-    throw new Error("Failed to parse repay response");
+    throw new Error('Failed to parse repay response');
   }
   if (!response.ok) {
     throw new Error(
@@ -62,16 +62,16 @@ export const submitRepayPsbt = async (
   signedPsbt: string,
   address: string,
 ): Promise<SubmitRepayResponse> => {
-  const response = await fetch("/api/liquidium/repay", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+  const response = await fetch('/api/liquidium/repay', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ loanId, signedPsbt, address }),
   });
   let data;
   try {
     data = await response.json();
   } catch {
-    throw new Error("Failed to parse repay submission response");
+    throw new Error('Failed to parse repay submission response');
   }
   if (!response.ok) {
     throw new Error(
@@ -192,10 +192,10 @@ export const fetchBorrowQuotesFromApi = async (
 
     if (!response.ok) {
       // Extract error message in a more robust way
-      let errorMessage = "Unknown error";
+      let errorMessage = 'Unknown error';
       if (data?.error?.message) {
         errorMessage = data.error.message;
-      } else if (typeof data?.error === "string") {
+      } else if (typeof data?.error === 'string') {
         errorMessage = data.error;
       } else if (data?.message) {
         errorMessage = data.message;
@@ -230,16 +230,16 @@ export const prepareLiquidiumBorrow = async (params: {
   borrower_ordinal_pubkey: string;
   address: string; // User's address for JWT lookup
 }): Promise<LiquidiumPrepareBorrowResponse> => {
-  const response = await fetch("/api/liquidium/borrow/prepare", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+  const response = await fetch('/api/liquidium/borrow/prepare', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
   });
   let data;
   try {
     data = await response.json();
   } catch {
-    throw new Error("Failed to parse prepare borrow response");
+    throw new Error('Failed to parse prepare borrow response');
   }
   if (!response.ok) {
     throw new Error(
@@ -257,9 +257,9 @@ export const submitLiquidiumBorrow = async (params: {
   prepare_offer_id: string;
   address: string; // User's address for JWT lookup
 }): Promise<LiquidiumSubmitBorrowResponse> => {
-  const response = await fetch("/api/liquidium/borrow/submit", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+  const response = await fetch('/api/liquidium/borrow/submit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
   });
 
@@ -277,7 +277,7 @@ export const submitLiquidiumBorrow = async (params: {
       };
     }
 
-    throw new Error("Failed to parse submit borrow response");
+    throw new Error('Failed to parse submit borrow response');
   }
 
   if (!response.ok) {
@@ -323,10 +323,10 @@ export const fetchBorrowRangesFromApi = async (
     }
 
     if (!response.ok) {
-      let errorMessage = "Unknown error";
+      let errorMessage = 'Unknown error';
       if (data?.error?.message) {
         errorMessage = data.error.message;
-      } else if (typeof data?.error === "string") {
+      } else if (typeof data?.error === 'string') {
         errorMessage = data.error;
       } else if (data?.message) {
         errorMessage = data.message;

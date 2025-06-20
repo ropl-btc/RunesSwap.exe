@@ -1,7 +1,7 @@
-import React from "react";
-import Image from "next/image";
-import styles from "./ConnectWalletButton.module.css";
-import type { ProviderType } from "@omnisat/lasereyes";
+import type { ProviderType } from '@omnisat/lasereyes';
+import Image from 'next/image';
+import React from 'react';
+import styles from './ConnectWalletButton.module.css';
 
 export interface WalletOption {
   name: string;

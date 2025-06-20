@@ -1,15 +1,15 @@
-import { NextRequest } from "next/server";
-import { getOrdiscanClient } from "@/lib/serverUtils";
-import { supabase } from "@/lib/supabase";
+import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import {
-  createSuccessResponse,
   createErrorResponse,
+  createSuccessResponse,
   handleApiError,
   validateRequest,
-} from "@/lib/apiUtils";
-import { RuneBalance, RuneMarketInfo } from "@/types/ordiscan";
-import { RuneData } from "@/lib/runesData";
-import { z } from "zod";
+} from '@/lib/apiUtils';
+import { RuneData } from '@/lib/runesData';
+import { getOrdiscanClient } from '@/lib/serverUtils';
+import { supabase } from '@/lib/supabase';
+import { RuneBalance, RuneMarketInfo } from '@/types/ordiscan';
 
 export async function GET(request: NextRequest) {
   // const { searchParams } = new URL(request.url);
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
   // Zod validation for 'address'
   const schema = z.object({ address: z.string().min(1) });
-  const validation = await validateRequest(request, schema, "query");
+  const validation = await validateRequest(request, schema, 'query');
   if (!validation.success) {
     return validation.errorResponse;
   }
@@ -50,15 +50,15 @@ export async function GET(request: NextRequest) {
     // Fetch rune info and market data in parallel from Supabase
     const [runeInfoResult, marketDataResult] = await Promise.all([
       // Batch fetch rune info from Supabase
-      supabase.from("runes").select("*").in("name", runeNames),
+      supabase.from('runes').select('*').in('name', runeNames),
 
       // Batch fetch market data from Supabase
       supabase
-        .from("rune_market_data")
-        .select("*")
-        .in("rune_name", runeNames)
+        .from('rune_market_data')
+        .select('*')
+        .in('rune_name', runeNames)
         .gt(
-          "last_updated_at",
+          'last_updated_at',
           new Date(Date.now() - 10 * 60 * 1000).toISOString(),
         ),
     ]);
@@ -69,11 +69,11 @@ export async function GET(request: NextRequest) {
     const marketError = marketDataResult.error;
 
     if (runeInfoError) {
-      console.error("Error fetching rune infos:", runeInfoError);
+      console.error('Error fetching rune infos:', runeInfoError);
     }
 
     if (marketError) {
-      console.error("Error fetching market data:", marketError);
+      console.error('Error fetching market data:', marketError);
     }
 
     // Convert array data to maps for easy client-side lookup
@@ -100,8 +100,8 @@ export async function GET(request: NextRequest) {
     );
 
     // Use lib functions for missing data
-    const { getRuneData } = await import("@/lib/runesData");
-    const { getRuneMarketData } = await import("@/lib/runeMarketData");
+    const { getRuneData } = await import('@/lib/runesData');
+    const { getRuneMarketData } = await import('@/lib/runeMarketData');
 
     // Fetch missing rune info
     const missingRuneInfoResults = await Promise.all(

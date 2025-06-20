@@ -1,13 +1,14 @@
-import { NextRequest } from "next/server";
-import { z } from "zod";
+import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import {
-  createSuccessResponse,
   createErrorResponse,
+  createSuccessResponse,
   handleApiError,
   validateRequest,
-} from "@/lib/apiUtils";
-import { callLiquidiumApi } from "@/lib/liquidiumServer";
-import { supabase } from "@/lib/supabase";
+} from '@/lib/apiUtils';
+import { callLiquidiumApi } from '@/lib/liquidiumServer';
+import { supabase } from '@/lib/supabase';
+import { safeArrayFirst } from '@/utils/typeGuards';
 
 // Schema for request body
 const prepareBodySchema = z.object({
@@ -16,7 +17,7 @@ const prepareBodySchema = z.object({
   token_amount: z
     .string()
     .min(1)
-    .regex(/^\d+$/, "Token amount must be a positive integer string"),
+    .regex(/^\d+$/, 'Token amount must be a positive integer string'),
   borrower_payment_address: z.string().min(1),
   borrower_payment_pubkey: z.string().min(1),
   borrower_ordinal_address: z.string().min(1),
@@ -27,7 +28,7 @@ const prepareBodySchema = z.object({
 
 export async function POST(request: NextRequest) {
   // Validate request body
-  const validation = await validateRequest(request, prepareBodySchema, "body");
+  const validation = await validateRequest(request, prepareBodySchema, 'body');
   if (!validation.success) {
     return validation.errorResponse;
   }
@@ -37,41 +38,44 @@ export async function POST(request: NextRequest) {
   try {
     // 1. Get User JWT from Supabase
     const { data: tokenRows, error: tokenError } = await supabase
-      .from("liquidium_tokens")
-      .select("jwt")
-      .eq("wallet_address", address)
+      .from('liquidium_tokens')
+      .select('jwt')
+      .eq('wallet_address', address)
       .limit(1);
 
     if (tokenError) {
       return createErrorResponse(
-        "Database error retrieving authentication",
+        'Database error retrieving authentication',
         tokenError.message,
         500,
       );
     }
-    if (!tokenRows || tokenRows.length === 0) {
+
+    const firstToken = safeArrayFirst(tokenRows);
+    if (!firstToken?.jwt) {
       return createErrorResponse(
-        "Liquidium authentication required",
-        "No JWT found for this address",
+        'Liquidium authentication required',
+        'No JWT found for this address',
         401,
       );
     }
-    const userJwt = tokenRows[0].jwt;
+
+    const userJwt = firstToken.jwt;
 
     // 2. Call Liquidium API
     const result = await callLiquidiumApi(
-      "/api/v1/borrower/loans/start/prepare",
+      '/api/v1/borrower/loans/start/prepare',
       {
-        method: "POST",
+        method: 'POST',
         userJwt,
         body: JSON.stringify(liquidiumPayload),
       },
-      "Liquidium prepare borrow",
+      'Liquidium prepare borrow',
     );
 
     if (!result.ok) {
       return createErrorResponse(
-        result.message ?? "Error",
+        result.message ?? 'Error',
         result.details,
         result.status,
       );
@@ -81,7 +85,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const errorInfo = handleApiError(
       error,
-      "Failed to prepare borrow transaction",
+      'Failed to prepare borrow transaction',
     );
     return createErrorResponse(
       errorInfo.message,

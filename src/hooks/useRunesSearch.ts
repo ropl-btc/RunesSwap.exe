@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from "react";
-import debounce from "lodash.debounce";
-import { fetchRunesFromApi, fetchPopularFromApi } from "@/lib/apiClient";
-import { useRunesInfoStore } from "@/store/runesInfoStore";
-import type { Rune } from "@/types/satsTerminal";
+import debounce from 'lodash.debounce';
+import { useEffect, useMemo, useState } from 'react';
+import { fetchPopularFromApi, fetchRunesFromApi } from '@/lib/apiClient';
+import { useRunesInfoStore } from '@/store/runesInfoStore';
+import type { Rune } from '@/types/satsTerminal';
 
 interface UseRunesSearchOptions {
   cachedPopularRunes?: Record<string, unknown>[];
@@ -48,9 +48,9 @@ export function useRunesSearch({
 
       if (cachedPopularRunes && cachedPopularRunes.length > 0) {
         const liquidiumToken: Rune = {
-          id: "liquidiumtoken",
-          name: "LIQUIDIUM•TOKEN",
-          imageURI: "https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN",
+          id: 'liquidiumtoken',
+          name: 'LIQUIDIUM•TOKEN',
+          imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
         };
         const fetchedRunes: Rune[] = cachedPopularRunes
           .map((collection: Record<string, unknown>) => ({
@@ -59,7 +59,7 @@ export function useRunesSearch({
               ((collection?.etching as Record<string, unknown>)
                 ?.runeName as string) ||
               (collection?.rune as string) ||
-              "Unknown",
+              'Unknown',
             imageURI:
               (collection?.icon_content_url_data as string) ||
               (collection?.imageURI as string),
@@ -80,9 +80,9 @@ export function useRunesSearch({
       setPopularRunes([]);
       try {
         const liquidiumToken: Rune = {
-          id: "liquidiumtoken",
-          name: "LIQUIDIUM•TOKEN",
-          imageURI: "https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN",
+          id: 'liquidiumtoken',
+          name: 'LIQUIDIUM•TOKEN',
+          imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
         };
         const response = await fetchPopularFromApi();
         let mappedRunes: Rune[] = [];
@@ -96,7 +96,7 @@ export function useRunesSearch({
                 ((collection?.etching as Record<string, unknown>)
                   ?.runeName as string) ||
                 (collection?.rune as string) ||
-                "Unknown",
+                'Unknown',
               imageURI:
                 (collection?.icon_content_url_data as string) ||
                 (collection?.imageURI as string),
@@ -113,12 +113,12 @@ export function useRunesSearch({
         setPopularError(
           error instanceof Error
             ? error.message
-            : "Failed to fetch popular runes",
+            : 'Failed to fetch popular runes',
         );
         const liquidiumTokenOnError: Rune = {
-          id: "liquidiumtoken",
-          name: "LIQUIDIUM•TOKEN",
-          imageURI: "https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN",
+          id: 'liquidiumtoken',
+          name: 'LIQUIDIUM•TOKEN',
+          imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
         };
         setPopularRunes([liquidiumTokenOnError]);
       } finally {
@@ -145,7 +145,7 @@ export function useRunesSearch({
           setSearchResults(results);
         } catch (error: unknown) {
           setSearchError(
-            error instanceof Error ? error.message : "Failed to search",
+            error instanceof Error ? error.message : 'Failed to search',
           );
           setSearchResults([]);
         } finally {

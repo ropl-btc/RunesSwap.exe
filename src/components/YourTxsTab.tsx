@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
-import Image from "next/image";
-import styles from "./AppInterface.module.css"; // Reuse styles for now
-import { RuneActivityEvent } from "@/types/ordiscan"; // Import types
-import { fetchRuneActivityFromApi } from "@/lib/api"; // Import API functions
-import { FormattedRuneAmount } from "./FormattedRuneAmount"; // Import component
-import { FormattedRuneName } from "./FormattedRuneName"; // Import the new component
-import { interpretRuneTransaction } from "@/utils/transactionHelpers"; // Import the new utility function
+import { useQuery } from '@tanstack/react-query';
+import Image from 'next/image';
+import React from 'react';
+import { fetchRuneActivityFromApi } from '@/lib/api'; // Import API functions
+import { RuneActivityEvent } from '@/types/ordiscan'; // Import types
+import { interpretRuneTransaction } from '@/utils/transactionHelpers'; // Import the new utility function
+import styles from './AppInterface.module.css'; // Reuse styles for now
+import { FormattedRuneAmount } from './FormattedRuneAmount'; // Import component
+import { FormattedRuneName } from './FormattedRuneName'; // Import the new component
 
 interface YourTxsTabProps {
   connected: boolean;
@@ -23,7 +23,7 @@ export function YourTxsTab({ connected, address }: YourTxsTabProps) {
     error: runeActivityError,
     // Add pagination state/controls later if needed
   } = useQuery<RuneActivityEvent[], Error>({
-    queryKey: ["runeActivityApi", address],
+    queryKey: ['runeActivityApi', address],
     queryFn: () => fetchRuneActivityFromApi(address!), // Use API function
     enabled: !!connected && !!address, // Only fetch when connected and address exists
     staleTime: 60 * 1000, // Stale after 1 minute
@@ -53,7 +53,7 @@ export function YourTxsTab({ connected, address }: YourTxsTabProps) {
             height={16}
           />
           <span>
-            Error loading transactions:{" "}
+            Error loading transactions:{' '}
             {runeActivityError instanceof Error
               ? runeActivityError.message
               : String(runeActivityError)}
@@ -69,7 +69,7 @@ export function YourTxsTab({ connected, address }: YourTxsTabProps) {
             // Get transaction interpretation using the utility function
             const { action, runeName, runeAmountRaw } = address
               ? interpretRuneTransaction(tx, address)
-              : { action: "Unknown", runeName: "N/A", runeAmountRaw: "N/A" };
+              : { action: 'Unknown', runeName: 'N/A', runeAmountRaw: 'N/A' };
 
             return (
               <div key={tx.txid} className={styles.txListItem}>
@@ -90,7 +90,7 @@ export function YourTxsTab({ connected, address }: YourTxsTabProps) {
                 <div className={styles.txDetails}>
                   <div className={styles.txDetailRow}>
                     <span>Action:</span>
-                    <span style={{ fontWeight: "bold" }}>{action}</span>
+                    <span style={{ fontWeight: 'bold' }}>{action}</span>
                   </div>
                   <div className={styles.txDetailRow}>
                     <span>Rune:</span>

@@ -1,7 +1,7 @@
-import React from "react";
-import Image from "next/image";
-import styles from "./BorrowTab.module.css";
-import Button from "./Button";
+import Image from 'next/image';
+import React from 'react';
+import styles from './BorrowTab.module.css';
+import Button from './Button';
 
 interface BorrowSuccessMessageProps {
   loanTxId: string | null;
@@ -33,7 +33,7 @@ const BorrowSuccessMessage: React.FC<BorrowSuccessMessageProps> = ({
         <div className={styles.successButtons}>
           <Button
             onClick={onViewPortfolio}
-            style={{ marginRight: "var(--space-2)" }}
+            style={{ marginRight: 'var(--space-2)' }}
           >
             View Portfolio
           </Button>

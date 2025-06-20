@@ -1,11 +1,17 @@
-import { Asset, BTC_ASSET } from "@/types/common";
-import type { SwapProcessAction } from "@/components/swap/SwapProcessManager";
-import { type QuoteResponse } from "satsterminal-sdk";
+import { type QuoteResponse } from 'satsterminal-sdk';
+import type { SwapProcessAction } from '@/components/swap/SwapProcessManager';
+import { Asset, BTC_ASSET } from '@/types/common';
+import { safeArrayFirst } from '@/utils/typeGuards';
 
 interface UseSwapAssetsArgs {
   popularRunes: Asset[];
   showPriceChart: boolean;
-  onShowPriceChart?: (assetName?: string, shouldToggle?: boolean) => void;
+  onShowPriceChart:
+    | ((
+        assetName?: string | undefined,
+        shouldToggle?: boolean | undefined,
+      ) => void)
+    | undefined;
   dispatchSwap: React.Dispatch<SwapProcessAction>;
   setQuote: React.Dispatch<React.SetStateAction<QuoteResponse | null>>;
   setExchangeRate: React.Dispatch<React.SetStateAction<string | null>>;
@@ -37,7 +43,7 @@ export function useSwapAssets({
 }: UseSwapAssetsArgs) {
   const clearQuoteState = () => {
     setQuote(null);
-    dispatchSwap({ type: "FETCH_QUOTE_ERROR", error: "" });
+    dispatchSwap({ type: 'FETCH_QUOTE_ERROR', error: '' });
     setExchangeRate(null);
   };
 
@@ -53,7 +59,7 @@ export function useSwapAssets({
     setOutputAmount(tempAmount);
 
     clearQuoteState();
-    dispatchSwap({ type: "RESET_SWAP" });
+    dispatchSwap({ type: 'RESET_SWAP' });
   };
 
   const handleSelectAssetIn = (selectedAsset: Asset) => {
@@ -65,14 +71,14 @@ export function useSwapAssets({
     setAssetIn(selectedAsset);
     if (selectedAsset.isBTC) {
       if (!assetOut || assetOut.isBTC) {
-        const newAssetOut = popularRunes.length > 0 ? popularRunes[0] : null;
-        setAssetOut(newAssetOut);
+        const newAssetOut = safeArrayFirst(popularRunes);
+        setAssetOut(newAssetOut || null);
       }
     } else {
       setAssetOut(BTC_ASSET);
     }
 
-    setOutputAmount("");
+    setOutputAmount('');
     clearQuoteState();
   };
 
@@ -91,14 +97,13 @@ export function useSwapAssets({
 
     if (selectedAsset.isBTC) {
       if (!previousAssetIn || previousAssetIn.isBTC) {
-        const newAssetIn =
-          popularRunes.length > 0 ? popularRunes[0] : BTC_ASSET;
+        const newAssetIn = safeArrayFirst(popularRunes) || BTC_ASSET;
         setAssetIn(newAssetIn);
-        setOutputAmount("");
+        setOutputAmount('');
       }
     } else {
       setAssetIn(BTC_ASSET);
-      setOutputAmount("");
+      setOutputAmount('');
     }
 
     clearQuoteState();

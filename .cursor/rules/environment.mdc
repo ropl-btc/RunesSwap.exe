@@ -1,0 +1,104 @@
+---
+description: Environment configuration, API keys, and security guidelines for server-side vs client-side variable handling
+globs: 
+alwaysApply: false
+---
+# Environment Configuration Guide
+
+## Required Environment Variables
+
+### Core API Keys (Server-side only)
+```bash
+# External API keys - NEVER use NEXT_PUBLIC_ prefix for these
+SATS_TERMINAL_API_KEY=your_sats_terminal_key
+ORDISCAN_API_KEY=your_ordiscan_key  
+RUNES_FLOOR_API_KEY=your_runes_floor_key
+LIQUIDIUM_API_KEY=your_liquidium_key
+```
+
+### Database & Storage (Supabase/Postgres)
+```bash
+# Database connection strings
+POSTGRES_URL=postgresql://user:pass@host:port/db
+POSTGRES_PRISMA_URL=postgresql://user:pass@host:port/db?pgbouncer=true
+POSTGRES_URL_NON_POOLING=postgresql://user:pass@host:port/db
+POSTGRES_HOST=your_host
+POSTGRES_USER=your_user
+POSTGRES_PASSWORD=your_password
+POSTGRES_DATABASE=your_database
+
+# Supabase configuration
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_JWT_SECRET=your_jwt_secret
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+```
+
+### Client-side Environment Variables
+```bash
+# These are exposed to the browser - use NEXT_PUBLIC_ prefix
+NEXT_PUBLIC_LIQUIDIUM_API_URL=https://api.liquidium.com
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+```
+
+### Optional/Legacy Variables
+```bash
+TBA_API_URL=your_tba_url  # Legacy - may not be actively used
+```
+
+## Security Guidelines
+
+### ❌ Never Do This
+```typescript
+// Don't expose sensitive keys to the client
+const LIQUIDIUM_API_KEY = process.env.NEXT_PUBLIC_LIQUIDIUM_API_KEY; // Wrong!
+```
+
+### ✅ Correct Patterns
+```typescript
+// Server-side API calls only
+const apiKey = process.env.LIQUIDIUM_API_KEY;
+if (!apiKey) {
+  throw new Error('LIQUIDIUM_API_KEY is required but not set');
+}
+
+// Client-side configuration
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+```
+
+## Environment Validation
+
+Always validate required environment variables at application startup:
+
+```typescript
+// In API routes or server-side code
+function validateServerEnv() {
+  const required = [
+    'SATS_TERMINAL_API_KEY',
+    'ORDISCAN_API_KEY', 
+    'LIQUIDIUM_API_KEY',
+    'POSTGRES_URL'
+  ];
+  
+  for (const key of required) {
+    if (!process.env[key]) {
+      throw new Error(`Environment variable ${key} is required but not set`);
+    }
+  }
+}
+```
+
+## Development Setup
+
+1. Copy environment template (when available):
+   ```bash
+   cp .env.example .env.local
+   ```
+
+2. Fill in your actual API keys and database credentials
+
+3. Verify configuration:
+   ```bash
+   pnpm ai-check  # Includes environment validation
+   ```

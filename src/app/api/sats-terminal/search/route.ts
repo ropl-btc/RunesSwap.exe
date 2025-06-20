@@ -1,105 +1,53 @@
-import { NextRequest } from "next/server";
-import { getSatsTerminalClient } from "@/lib/serverUtils";
-import type { Rune } from "@/types/satsTerminal";
+import { NextRequest, NextResponse } from 'next/server';
+import type { SearchParams } from 'satsterminal-sdk';
+import { z } from 'zod';
 import {
-  createSuccessResponse,
   createErrorResponse,
   handleApiError,
   validateRequest,
-} from "@/lib/apiUtils";
-import { z } from "zod";
+} from '@/lib/apiUtils';
+import { getSatsTerminalClient } from '@/lib/serverUtils';
 
-// Define types for rune responses locally or import if shared
-// interface Rune {
-//   id: string;
-//   name: string;
-//   imageURI?: string;
-//   formattedAmount?: string;
-//   formattedUnitPrice?: string;
-//   price?: number;
-// }
+const searchParamsSchema = z.object({
+  rune_name: z.string().min(1, 'Rune name is required'),
+  sell: z.boolean().optional(),
+});
 
-// Simple internal type for expected order structure from search
-interface SearchOrder {
-  id?: string;
-  rune?: string;
-  etching?: { runeName?: string };
-  icon_content_url_data?: string;
-  imageURI?: string;
-  formattedAmount?: string;
-  formattedUnitPrice?: string;
-  price?: number;
-}
-
-export async function GET(request: NextRequest) {
-  // const { searchParams } = new URL(request.url);
-  // const query = searchParams.get('query');
-
-  // Zod validation for 'query'
-  const schema = z.object({
-    query: z.string().min(1),
-    sell: z.coerce.boolean().optional().default(false),
-  });
-  const validation = await validateRequest(request, schema, "query");
+export async function POST(request: NextRequest) {
+  const validation = await validateRequest(request, searchParamsSchema, 'body');
   if (!validation.success) return validation.errorResponse;
-  const { query: validQuery, sell } = validation.data;
+
+  const { rune_name, sell } = validation.data;
 
   try {
     const terminal = getSatsTerminalClient();
-    const searchResults = await terminal.search({
-      rune_name: validQuery,
-      sell,
-    });
 
-    // Map the response with improved type checking
-    const orders: SearchOrder[] = Array.isArray(searchResults)
-      ? searchResults
-      : searchResults &&
-          typeof searchResults === "object" &&
-          "orders" in searchResults &&
-          Array.isArray(searchResults.orders)
-        ? (searchResults.orders as SearchOrder[])
-        : [];
-
-    // Generate a stable ID using a hash of properties instead of random
-    const generateStableId = (order: SearchOrder, index: number): string => {
-      const base = order.id || order.rune || order.etching?.runeName;
-      if (base) return base;
-      // Fallback to a stable ID based on properties and index
-      return `unknown_rune_${index}_${order.formattedAmount || ""}_${order.price || 0}`;
+    // Convert to SDK-compatible format by ensuring all optional fields have defaults
+    const searchParams: SearchParams = {
+      rune_name,
+      sell: sell ?? false,
     };
 
-    const runes: Rune[] = orders.map((order: SearchOrder, index: number) => ({
-      id: generateStableId(order, index),
-      name: order.etching?.runeName || order.rune || "Unknown Rune",
-      imageURI: order.icon_content_url_data || order.imageURI,
-      formattedAmount: order.formattedAmount,
-      formattedUnitPrice: order.formattedUnitPrice,
-      price: order.price,
-    }));
-
-    return createSuccessResponse(runes);
+    const searchResponse = await terminal.search(searchParams);
+    return NextResponse.json(searchResponse);
   } catch (error) {
-    const errorInfo = handleApiError(
-      error,
-      `Failed to search for runes with query "${validQuery}"`,
-    );
+    const errorInfo = handleApiError(error, 'Failed to search');
+    const errorMessage = error instanceof Error ? error.message : String(error);
 
     // Special handling for rate limiting
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.includes("Rate limit") || errorInfo.status === 429) {
+    if (errorMessage.includes('Rate limit') || errorInfo.status === 429) {
       return createErrorResponse(
-        "Rate limit exceeded",
-        "Please try again later",
+        'Rate limit exceeded',
+        'Please try again later',
         429,
       );
     }
 
     // Handle unexpected token errors (HTML responses instead of JSON)
-    if (errorMessage.includes("Unexpected token")) {
+    if (errorMessage.includes('Unexpected token')) {
       return createErrorResponse(
-        "API service unavailable",
-        "The SatsTerminal API is currently unavailable. Please try again later.",
+        'API service unavailable',
+        'The SatsTerminal API is currently unavailable. Please try again later.',
         503,
       );
     }

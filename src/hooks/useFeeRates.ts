@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { fetchRecommendedFeeRates, QUERY_KEYS } from "@/lib/api";
+import { useQuery } from '@tanstack/react-query';
+import { QUERY_KEYS, fetchRecommendedFeeRates } from '@/lib/api';
 
 export const useFeeRates = () =>
   useQuery({

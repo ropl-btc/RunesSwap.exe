@@ -19,6 +19,45 @@ RunesSwap.app is a Next.js application written in **TypeScript**. It offers a sw
 The main source code lives in `src/` and uses the Next.js App Router.
 API routes under `src/app/api` act as a thin backend to proxy and cache requests to the above services. Server data is fetched with React Query, and client state is handled by Zustand. Type definitions are organised under `src/types`.
 
+## AI-Optimized Code Standards
+
+### Type Safety Requirements
+- **ALWAYS use TypeScript strict mode** - The codebase uses `exactOptionalPropertyTypes` and `noUncheckedIndexedAccess`
+- **Never access arrays directly** - Use `safeArrayFirst()` or `safeArrayAccess()` from `@/utils/typeGuards`
+- **Explicit optional types** - Use `| undefined` for exact optional property types, not `?:` alone
+- **JWT parsing safety** - Use `safeParseJWT()` from `@/utils/typeGuards` for token handling
+
+### Safe Utility Functions (Always Use These)
+```typescript
+// From @/utils/typeGuards - MANDATORY for array access
+safeArrayFirst<T>(array: T[]): T | undefined
+safeArrayAccess<T>(array: T[], index: number): T | undefined  
+safeParseJWT(jwt: string): Record<string, unknown> | null
+```
+
+### Component Interface Standards
+When defining component props, use explicit undefined unions for optional functions:
+```typescript
+// ✅ CORRECT - AI-friendly
+interface Props {
+  onCallback: ((value: string) => void) | undefined;
+  optionalProp?: string | undefined;
+}
+
+// ❌ AVOID - causes exactOptionalPropertyTypes errors  
+interface Props {
+  onCallback?: (value: string) => void;
+  optionalProp?: string;
+}
+```
+
+### Code Formatting Standards
+- **80-character line width** for optimal AI scanning
+- **Single quotes** for string literals  
+- **Trailing commas** everywhere for clean diffs
+- **Import organization** - automatic alphabetical sorting enabled
+- Run `pnpm ai-check` before committing to verify AI-friendliness
+
 ## Repository Layout
 ```text
 / (repo root)
@@ -34,7 +73,7 @@ API routes under `src/app/api` act as a thin backend to proxy and cache requests
 │   ├── lib/             # API client utilities, data helpers
 │   ├── store/           # Zustand stores
 │   ├── types/           # Shared TypeScript types
-│   └── utils/           # Helper functions
+│   └── utils/           # Helper functions (including type safety utilities)
 ├── liquidium-openapi/   # OpenAPI specs for Liquidium
 ├── public/              # Static assets and fonts
 └── ...                  # Config files and scripts
@@ -72,6 +111,11 @@ pnpm start
 - Linting uses **ESLint** and Prettier:
   ```bash
   pnpm lint
+  pnpm lint:fix  # Auto-fix imports and formatting
+  ```
+- **AI verification command:**
+  ```bash
+  pnpm ai-check  # Runs type-check, lint, and format verification
   ```
 The pre‑commit hook runs `lint-staged`, the test suite, and a production build. Commit messages are checked by **commitlint** and must follow the Conventional Commits format.
 
@@ -107,12 +151,42 @@ The pre‑commit hook runs `lint-staged`, the test suite, and a production build
 ## Component Guidelines
 Break larger components into smaller ones where possible. Stateful logic should live in custom hooks under `src/hooks`. Reusable UI pieces belong in `src/components`.
 
+**Type Safety in Components:**
+- Always handle potentially undefined props explicitly
+- Use the safe utility functions for array operations
+- Prefer explicit error boundaries over uncaught exceptions
+
+## API Route Patterns
+When working with API routes, follow these patterns for maximum AI comprehensibility:
+
+```typescript
+// ✅ CORRECT - Safe array access pattern
+const { data: tokenRows } = await supabase.from('table').select('*');
+const firstToken = safeArrayFirst(tokenRows);
+if (!firstToken?.jwt) {
+  return createErrorResponse('Error message', 'Details', 401);
+}
+
+// ❌ AVOID - Unsafe array access
+const userJwt = tokenRows[0].jwt; // Could throw if array is empty
+```
+
 ## Contributing
 When adding features:
 1. Create or update API routes in `src/app/api` if needed.
 2. Extend API client methods in `src/lib/apiClient.ts`.
 3. Implement or update React components and hooks.
 4. Add Jest tests for new utilities or routes.
-5. Run `pnpm lint`, `pnpm test`, and `pnpm build` before committing.
+5. **Always use safe utility functions** for array access and null checks.
+6. Run `pnpm ai-check` to verify AI-friendliness before committing.
+7. Run `pnpm lint`, `pnpm test`, and `pnpm build` before committing.
+
+### Code Review Checklist for AI Agents
+- [ ] No direct array access (`array[0]` → use `safeArrayFirst(array)`)
+- [ ] Optional props use explicit `| undefined` unions
+- [ ] All imports are auto-organized (run `pnpm lint:fix`)
+- [ ] Line length stays under 80 characters
+- [ ] Type safety utilities are used consistently
+- [ ] `pnpm ai-check` passes without errors
 
 Refer to `README.md` for additional details.

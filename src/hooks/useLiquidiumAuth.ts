@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react";
-import { LiquidiumLoanOffer } from "@/types/liquidium";
+import { useEffect, useState } from 'react';
+import { LiquidiumLoanOffer } from '@/types/liquidium';
 
 interface Args {
   address: string | null;
   paymentAddress: string | null;
-  signMessage?: (message: string, address: string) => Promise<string>;
+  signMessage:
+    | ((message: string, address: string) => Promise<string>)
+    | undefined;
 }
 
 export function useLiquidiumAuth({
@@ -26,21 +28,21 @@ export function useLiquidiumAuth({
     setLiquidiumError(null);
     try {
       const res = await fetch(
-        `/api/liquidium/portfolio?address=${encodeURIComponent(address || "")}`,
+        `/api/liquidium/portfolio?address=${encodeURIComponent(address || '')}`,
       );
       const data = await res.json();
       if (!res.ok) {
-        setLiquidiumError(data?.error || "Failed to fetch loans");
+        setLiquidiumError(data?.error || 'Failed to fetch loans');
         setLoans([]);
         return;
       }
       setLoans(data.data || []);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setLiquidiumError(err.message || "Unknown error");
+        setLiquidiumError(err.message || 'Unknown error');
         setLoans([]);
       } else {
-        setLiquidiumError("Unknown error");
+        setLiquidiumError('Unknown error');
         setLoans([]);
       }
     } finally {
@@ -53,12 +55,12 @@ export function useLiquidiumAuth({
     setAuthError(null);
     try {
       if (!address || !paymentAddress) {
-        setAuthError("Wallet connection required for authentication");
+        setAuthError('Wallet connection required for authentication');
         setIsAuthenticating(false);
         return;
       }
       if (!signMessage) {
-        setAuthError("Your wallet does not support message signing");
+        setAuthError('Your wallet does not support message signing');
         setIsAuthenticating(false);
         return;
       }
@@ -69,7 +71,7 @@ export function useLiquidiumAuth({
       );
       const challengeData = await challengeRes.json();
       if (!challengeRes.ok) {
-        setAuthError(challengeData?.error || "Failed to get challenge");
+        setAuthError(challengeData?.error || 'Failed to get challenge');
         setIsAuthenticating(false);
         return;
       }
@@ -79,9 +81,9 @@ export function useLiquidiumAuth({
       if (payment) {
         paymentSignature = await signMessage(payment.message, paymentAddress);
       }
-      const authRes = await fetch("/api/liquidium/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const authRes = await fetch('/api/liquidium/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ordinalsAddress: address,
           paymentAddress,
@@ -93,14 +95,14 @@ export function useLiquidiumAuth({
       });
       const authData = await authRes.json();
       if (!authRes.ok) {
-        setAuthError(authData?.error || "Authentication failed");
+        setAuthError(authData?.error || 'Authentication failed');
         setIsAuthenticating(false);
         return;
       }
       setLiquidiumAuthenticated(true);
       fetchLiquidiumLoans();
     } catch (err: unknown) {
-      setAuthError(err instanceof Error ? err.message : "Unknown error");
+      setAuthError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsAuthenticating(false);
     }

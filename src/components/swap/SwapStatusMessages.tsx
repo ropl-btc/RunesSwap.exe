@@ -1,7 +1,7 @@
-import React from "react";
-import Image from "next/image";
-import styles from "./SwapStatusMessages.module.css";
-import { SwapStep } from "./SwapButton";
+import Image from 'next/image';
+import React from 'react';
+import { SwapStep } from './SwapButton';
+import styles from './SwapStatusMessages.module.css';
 
 interface SwapStatusMessagesProps {
   /**
@@ -42,10 +42,10 @@ export const SwapStatusMessages: React.FC<SwapStatusMessagesProps> = ({
 }) => (
   <>
     {/* Display Swap Process Status */}
-    {isSwapping && swapStep !== "error" && swapStep !== "success" && (
+    {isSwapping && swapStep !== 'error' && swapStep !== 'success' && (
       <div
         className={`smallText ${styles.messageWithIcon}`}
-        style={{ paddingTop: "0.5rem" }}
+        style={{ paddingTop: '0.5rem' }}
       >
         <Image
           src="/icons/windows_hourglass.png"
@@ -55,10 +55,10 @@ export const SwapStatusMessages: React.FC<SwapStatusMessagesProps> = ({
           height={16}
         />
         <span>
-          {swapStep === "getting_psbt" && "Preparing transaction..."}
-          {swapStep === "signing" && "Waiting for wallet signature..."}
-          {swapStep === "confirming" && "Broadcasting transaction..."}
-          {swapStep === "idle" && "Processing..."}
+          {swapStep === 'getting_psbt' && 'Preparing transaction...'}
+          {swapStep === 'signing' && 'Waiting for wallet signature...'}
+          {swapStep === 'confirming' && 'Broadcasting transaction...'}
+          {swapStep === 'idle' && 'Processing...'}
         </span>
       </div>
     )}
@@ -78,15 +78,15 @@ export const SwapStatusMessages: React.FC<SwapStatusMessagesProps> = ({
         </div>
         <div
           className={`smallText ${styles.subMessage}`}
-          style={{ whiteSpace: "normal", wordBreak: "break-word" }}
+          style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}
         >
-          {swapError.includes("fee rate") ? (
+          {swapError.includes('fee rate') ? (
             <>
               The Bitcoin network is experiencing high congestion. The app is
               automatically trying with a higher fee rate. If it fails again,
               please try later.
             </>
-          ) : swapError.includes("congested") ? (
+          ) : swapError.includes('congested') ? (
             <>
               The Bitcoin network is currently congested. Please try again later
               when network fees have decreased.
@@ -105,7 +105,7 @@ export const SwapStatusMessages: React.FC<SwapStatusMessagesProps> = ({
     {!swapError && txId && (
       <div
         className={`smallText ${styles.messageWithIcon}`}
-        style={{ paddingTop: "0.5rem", color: "#16a34a" }}
+        style={{ paddingTop: '0.5rem', color: '#16a34a' }}
       >
         <Image
           src="/icons/check-0.png"
@@ -115,7 +115,7 @@ export const SwapStatusMessages: React.FC<SwapStatusMessagesProps> = ({
           height={16}
         />
         <span>
-          Swap successful!{" "}
+          Swap successful!{' '}
           <a
             href={`https://ordiscan.com/tx/${txId}`}
             target="_blank"

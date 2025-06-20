@@ -44,19 +44,19 @@ export interface LiquidiumLoanOffer {
 
 // Explicit Enum for Loan State
 export type LoanStateEnum =
-  | "OFFERED"
-  | "ACCEPTED"
-  | "ACTIVATING"
-  | "ACTIVE"
-  | "REPAYING"
-  | "REPAID"
-  | "DEFAULTED"
-  | "CLAIMING"
-  | "CLAIMED"
-  | "LIQUIDATING"
-  | "LIQUIDATED"
-  | "CANCELLED"
-  | "FAILED";
+  | 'OFFERED'
+  | 'ACCEPTED'
+  | 'ACTIVATING'
+  | 'ACTIVE'
+  | 'REPAYING'
+  | 'REPAID'
+  | 'DEFAULTED'
+  | 'CLAIMING'
+  | 'CLAIMED'
+  | 'LIQUIDATING'
+  | 'LIQUIDATED'
+  | 'CANCELLED'
+  | 'FAILED';
 
 export interface LiquidiumLoanDetails {
   state: LoanStateEnum; // Example: "ACTIVE"
@@ -72,7 +72,7 @@ export interface LiquidiumLoanDetails {
   total_repayment_sats?: number; // Example: 51000000 (Calculated or from API)
 }
 
-export type CollateralTypeEnum = "Rune" | "Brc20" | "Inscription"; // Example: "Rune"
+export type CollateralTypeEnum = 'Rune' | 'Brc20' | 'Inscription'; // Example: "Rune"
 
 export interface LiquidiumCollateralDetails {
   rune_id: string; // Example: "840010:907"

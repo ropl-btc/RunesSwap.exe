@@ -1,14 +1,14 @@
 import {
-  createSuccessResponse,
   createErrorResponse,
+  createSuccessResponse,
   handleApiError,
-} from "@/lib/apiUtils";
+} from '@/lib/apiUtils';
 import {
-  getCachedPopularRunesWithMetadata,
   cachePopularRunes,
+  getCachedPopularRunesWithMetadata,
   updateLastRefreshAttempt,
-} from "@/lib/popularRunesCache";
-import { getSatsTerminalClient } from "@/lib/serverUtils";
+} from '@/lib/popularRunesCache';
+import { getSatsTerminalClient } from '@/lib/serverUtils';
 
 /**
  * Optimized popular runes endpoint with improved caching strategy
@@ -40,7 +40,7 @@ export async function GET() {
 
         // Start background refresh without awaiting or blocking
         refreshPopularRunesInBackground().catch((error) => {
-          console.warn("Background refresh of popular runes failed:", error);
+          console.warn('Background refresh of popular runes failed:', error);
         });
       }
 
@@ -60,8 +60,8 @@ export async function GET() {
       const popularResponse = await terminal.popularCollections({});
 
       // Validate response
-      if (!popularResponse || typeof popularResponse !== "object") {
-        throw new Error("Invalid response from SatsTerminal API");
+      if (!popularResponse || typeof popularResponse !== 'object') {
+        throw new Error('Invalid response from SatsTerminal API');
       }
 
       // Cache the fresh data and return it
@@ -69,24 +69,24 @@ export async function GET() {
         await cachePopularRunes(popularResponse);
         return createSuccessResponse(popularResponse);
       } else {
-        throw new Error("Unexpected response format from SatsTerminal API");
+        throw new Error('Unexpected response format from SatsTerminal API');
       }
     } catch (error) {
       // Something went wrong, but we have fallbacks in the cache module
       const { cachedData } = await getCachedPopularRunesWithMetadata();
 
       // Log the error but return whatever we have (which would be at least the fallback list)
-      console.error("Failed to fetch initial popular runes:", error);
+      console.error('Failed to fetch initial popular runes:', error);
       return createSuccessResponse({
         data: cachedData,
         isStale: true,
-        error: "Failed to fetch fresh data",
+        error: 'Failed to fetch fresh data',
       });
     }
   } catch (error) {
     const errorInfo = handleApiError(
       error,
-      "Failed to fetch cached popular collections",
+      'Failed to fetch cached popular collections',
     );
     return createErrorResponse(
       errorInfo.message,
@@ -108,15 +108,15 @@ async function refreshPopularRunesInBackground(): Promise<void> {
     // Validate and cache if valid
     if (
       popularResponse &&
-      typeof popularResponse === "object" &&
+      typeof popularResponse === 'object' &&
       Array.isArray(popularResponse)
     ) {
       await cachePopularRunes(popularResponse);
     } else {
-      console.warn("Invalid response format from SatsTerminal API");
+      console.warn('Invalid response format from SatsTerminal API');
     }
   } catch (error) {
-    console.error("Failed to refresh popular runes in background:", error);
+    console.error('Failed to refresh popular runes in background:', error);
     // The error is caught and logged, but never thrown, so it doesn't affect the user experience
   }
 }

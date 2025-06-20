@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import React from "react";
-import styles from "./RunesInfoTab.module.css";
-import { FormattedRuneAmount } from "./FormattedRuneAmount";
-import { formatNumberString, truncateTxid } from "@/utils/formatters";
+import React from 'react';
+import type { RuneData } from '@/lib/runesData';
 import type {
   RuneInfo as OrdiscanRuneInfo,
   RuneMarketInfo as OrdiscanRuneMarketInfo,
-} from "@/types/ordiscan";
-import type { RuneData } from "@/lib/runesData";
+} from '@/types/ordiscan';
+import { formatNumberString, truncateTxid } from '@/utils/formatters';
+import { FormattedRuneAmount } from './FormattedRuneAmount';
+import styles from './RunesInfoTab.module.css';
 
 interface RuneDetailsProps {
   selectedRune: OrdiscanRuneInfo | null;
@@ -19,8 +19,13 @@ interface RuneDetailsProps {
   isRuneMarketInfoLoading: boolean;
   runeMarketInfoError: Error | null;
   showLoading: boolean;
-  onShowPriceChart?: (assetName?: string, shouldToggle?: boolean) => void;
-  showPriceChart?: boolean;
+  onShowPriceChart:
+    | ((
+        assetName?: string | undefined,
+        shouldToggle?: boolean | undefined,
+      ) => void)
+    | undefined;
+  showPriceChart?: boolean | undefined;
 }
 
 const RuneDetails: React.FC<RuneDetailsProps> = ({
@@ -36,7 +41,7 @@ const RuneDetails: React.FC<RuneDetailsProps> = ({
   showPriceChart = false,
 }) => (
   <div
-    className={`${styles.runeDetailsContainer} ${showPriceChart ? styles.narrowRightPanel : ""}`}
+    className={`${styles.runeDetailsContainer} ${showPriceChart ? styles.narrowRightPanel : ''}`}
   >
     {(isDetailedRuneInfoLoading || showLoading) && selectedRune && (
       <p>Loading details for {selectedRune.formatted_name}...</p>
@@ -61,7 +66,7 @@ const RuneDetails: React.FC<RuneDetailsProps> = ({
           <strong>Decimals:</strong> {detailedRuneInfo.decimals}
         </p>
         <p>
-          <strong>Etching Tx:</strong>{" "}
+          <strong>Etching Tx:</strong>{' '}
           {detailedRuneInfo.etching_txid ? (
             <a
               href={`https://ordiscan.com/tx/${detailedRuneInfo.etching_txid}`}
@@ -72,60 +77,60 @@ const RuneDetails: React.FC<RuneDetailsProps> = ({
               {truncateTxid(detailedRuneInfo.etching_txid)}
             </a>
           ) : (
-            "N/A"
+            'N/A'
           )}
         </p>
         {runeMarketInfo && (
           <>
             <p>
-              <strong>Price:</strong>{" "}
+              <strong>Price:</strong>{' '}
               <span className={styles.priceHighlight}>
                 {runeMarketInfo.price_in_usd.toFixed(6)} USD
-              </span>{" "}
+              </span>{' '}
               ({runeMarketInfo.price_in_sats.toFixed(2)} sats)
             </p>
             <p>
-              <strong>Market Cap:</strong>{" "}
+              <strong>Market Cap:</strong>{' '}
               {runeMarketInfo.market_cap_in_usd.toLocaleString()} USD
             </p>
           </>
         )}
         {isRuneMarketInfoLoading && (
           <p>
-            <strong>Price:</strong>{" "}
+            <strong>Price:</strong>{' '}
             <span className={styles.loadingText}>Loading market data...</span>
           </p>
         )}
         {runeMarketInfoError && (
           <p>
-            <strong>Price:</strong>{" "}
+            <strong>Price:</strong>{' '}
             <span className={styles.errorText}>
               Market data unavailable: {runeMarketInfoError.message}
             </span>
           </p>
         )}
         <p>
-          <strong>Premined Supply:</strong>{" "}
+          <strong>Premined Supply:</strong>{' '}
           <FormattedRuneAmount
             runeName={detailedRuneInfo.name}
             rawAmount={detailedRuneInfo.premined_supply}
           />
         </p>
         <p>
-          <strong>Total Supply:</strong>{" "}
+          <strong>Total Supply:</strong>{' '}
           {detailedRuneInfo.current_supply !== undefined ? (
             <FormattedRuneAmount
               runeName={detailedRuneInfo.name}
               rawAmount={detailedRuneInfo.current_supply}
             />
           ) : (
-            "N/A"
+            'N/A'
           )}
         </p>
         {detailedRuneInfo.amount_per_mint !== null &&
           detailedRuneInfo.amount_per_mint !== undefined && (
             <p>
-              <strong>Amount/Mint:</strong>{" "}
+              <strong>Amount/Mint:</strong>{' '}
               <FormattedRuneAmount
                 runeName={detailedRuneInfo.name}
                 rawAmount={detailedRuneInfo.amount_per_mint}
@@ -134,13 +139,13 @@ const RuneDetails: React.FC<RuneDetailsProps> = ({
           )}
         {detailedRuneInfo.mint_count_cap && (
           <p>
-            <strong>Mint Cap:</strong>{" "}
+            <strong>Mint Cap:</strong>{' '}
             {formatNumberString(detailedRuneInfo.mint_count_cap)}
           </p>
         )}
         {detailedRuneInfo.mint_start_block !== null && (
           <p>
-            <strong>Mint Start Block:</strong>{" "}
+            <strong>Mint Start Block:</strong>{' '}
             {detailedRuneInfo.mint_start_block}
           </p>
         )}
@@ -151,8 +156,8 @@ const RuneDetails: React.FC<RuneDetailsProps> = ({
         )}
         {detailedRuneInfo.current_mint_count !== undefined && (
           <p>
-            <strong>Current Mint Count:</strong>{" "}
-            {detailedRuneInfo.current_mint_count?.toLocaleString() || "N/A"}
+            <strong>Current Mint Count:</strong>{' '}
+            {detailedRuneInfo.current_mint_count?.toLocaleString() || 'N/A'}
           </p>
         )}
         {onShowPriceChart && (
@@ -161,7 +166,7 @@ const RuneDetails: React.FC<RuneDetailsProps> = ({
               className={styles.showPriceChartButton}
               onClick={() => onShowPriceChart(detailedRuneInfo.name, true)}
             >
-              {showPriceChart ? "Hide Price Chart" : "Show Price Chart"}
+              {showPriceChart ? 'Hide Price Chart' : 'Show Price Chart'}
             </button>
           </div>
         )}

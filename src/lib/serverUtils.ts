@@ -2,8 +2,8 @@
  * Server-side utility functions.
  */
 
-import { Ordiscan } from "ordiscan";
-import { SatsTerminal } from "satsterminal-sdk";
+import { Ordiscan } from 'ordiscan';
+import { SatsTerminal } from 'satsterminal-sdk';
 
 /**
  * Gets an initialized Ordiscan SDK client instance.
@@ -17,9 +17,9 @@ export function getOrdiscanClient(): Ordiscan {
 
   if (!apiKey) {
     console.error(
-      "Ordiscan API key not found. Please set ORDISCAN_API_KEY environment variable on the server.",
+      'Ordiscan API key not found. Please set ORDISCAN_API_KEY environment variable on the server.',
     );
-    throw new Error("Server configuration error: Missing Ordiscan API Key");
+    throw new Error('Server configuration error: Missing Ordiscan API Key');
   }
 
   // Note: The Ordiscan constructor expects the API key directly.
@@ -39,9 +39,9 @@ export function getSatsTerminalClient(): SatsTerminal {
 
   if (!apiKey) {
     console.error(
-      "SatsTerminal API key not found. Please set SATS_TERMINAL_API_KEY environment variable on the server.",
+      'SatsTerminal API key not found. Please set SATS_TERMINAL_API_KEY environment variable on the server.',
     );
-    throw new Error("Server configuration error: Missing SatsTerminal API Key");
+    throw new Error('Server configuration error: Missing SatsTerminal API Key');
   }
 
   // Note: The SatsTerminal constructor expects an options object.
@@ -55,17 +55,17 @@ export function getSatsTerminalClient(): SatsTerminal {
  */
 export function getLiquidiumClient() {
   const apiKey = process.env.LIQUIDIUM_API_KEY;
-  const apiUrl = process.env.LIQUIDIUM_API_URL || "https://alpha.liquidium.wtf";
+  const apiUrl = process.env.LIQUIDIUM_API_URL || 'https://alpha.liquidium.wtf';
   if (!apiKey) {
-    throw new Error("Server configuration error: Missing Liquidium API Key");
+    throw new Error('Server configuration error: Missing Liquidium API Key');
   }
   return {
     async authPrepare(paymentAddress: string, ordinalsAddress: string) {
       const response = await fetch(`${apiUrl}/api/v1/auth/prepare`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
@@ -73,32 +73,32 @@ export function getLiquidiumClient() {
           ordinals_address: ordinalsAddress,
         }),
       });
-      if (!response.ok) throw new Error("Liquidium authPrepare failed");
+      if (!response.ok) throw new Error('Liquidium authPrepare failed');
       return response.json();
     },
     async authSubmit(submitData: unknown) {
       const response = await fetch(`${apiUrl}/api/v1/auth/submit`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify(submitData),
       });
-      if (!response.ok) throw new Error("Liquidium authSubmit failed");
+      if (!response.ok) throw new Error('Liquidium authSubmit failed');
       return response.json();
     },
     async getPortfolio(userJwt: string) {
       const response = await fetch(`${apiUrl}/api/v1/borrower/portfolio`, {
-        method: "GET",
+        method: 'GET',
         headers: {
-          Accept: "application/json",
-          "x-user-token": userJwt,
+          Accept: 'application/json',
+          'x-user-token': userJwt,
           Authorization: `Bearer ${apiKey}`,
         },
       });
-      if (!response.ok) throw new Error("Liquidium getPortfolio failed");
+      if (!response.ok) throw new Error('Liquidium getPortfolio failed');
       return response.json();
     },
   };

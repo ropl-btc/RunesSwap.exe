@@ -4,10 +4,10 @@ export const handleApiResponse = <T>(
 ): T => {
   if (
     data &&
-    typeof data === "object" &&
-    "success" in data &&
+    typeof data === 'object' &&
+    'success' in data &&
     (data as Record<string, unknown>).success === true &&
-    "data" in data
+    'data' in data
   ) {
     const responseData = (data as { data: unknown }).data;
     if (expectedArrayType && !Array.isArray(responseData)) {

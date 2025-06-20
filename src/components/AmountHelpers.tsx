@@ -1,11 +1,11 @@
-import React from "react";
-import styles from "./InputArea.module.css";
+import React from 'react';
+import styles from './InputArea.module.css';
 
 interface AmountHelpersProps {
-  showPercentageShortcuts?: boolean;
-  onPercentageClick?: (percentage: number) => void;
-  availableBalance?: React.ReactNode;
-  disabled?: boolean;
+  showPercentageShortcuts?: boolean | undefined;
+  onPercentageClick: ((percentage: number) => void) | undefined;
+  availableBalance?: React.ReactNode | undefined;
+  disabled?: boolean | undefined;
 }
 
 const AmountHelpers: React.FC<AmountHelpersProps> = ({
@@ -30,7 +30,7 @@ const AmountHelpers: React.FC<AmountHelpersProps> = ({
           >
             25%
           </button>
-          {" | "}
+          {' | '}
           <button
             className={styles.percentageButton}
             onClick={() => onPercentageClick(0.5)}
@@ -39,7 +39,7 @@ const AmountHelpers: React.FC<AmountHelpersProps> = ({
           >
             50%
           </button>
-          {" | "}
+          {' | '}
           <button
             className={styles.percentageButton}
             onClick={() => onPercentageClick(0.75)}
@@ -48,7 +48,7 @@ const AmountHelpers: React.FC<AmountHelpersProps> = ({
           >
             75%
           </button>
-          {" | "}
+          {' | '}
           <button
             className={styles.percentageButton}
             onClick={() => onPercentageClick(1)}
@@ -57,7 +57,7 @@ const AmountHelpers: React.FC<AmountHelpersProps> = ({
           >
             Max
           </button>
-          {availableBalance ? " • " : ""}
+          {availableBalance ? ' • ' : ''}
         </span>
       )}
       {availableBalance && <>Available: {availableBalance}</>}

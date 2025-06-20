@@ -1,5 +1,5 @@
-import { supabase } from "./supabase";
-import { getOrdiscanClient } from "./serverUtils";
+import { getOrdiscanClient } from './serverUtils';
+import { supabase } from './supabase';
 
 export interface RuneData {
   id: string;
@@ -25,9 +25,9 @@ export async function getRuneData(runeName: string): Promise<RuneData | null> {
   try {
     // First, try to get from Supabase
     const { data: existingRune, error: dbError } = await supabase
-      .from("runes")
-      .select("*")
-      .eq("name", runeName)
+      .from('runes')
+      .select('*')
+      .eq('name', runeName)
       .single();
 
     if (dbError) {
@@ -52,7 +52,7 @@ export async function getRuneData(runeName: string): Promise<RuneData | null> {
       last_updated_at: new Date().toISOString(),
     };
 
-    await supabase.from("runes").upsert([dataToInsert]).select();
+    await supabase.from('runes').upsert([dataToInsert]).select();
 
     // Insert errors are non-critical - we can still return the data
     // even if caching to DB fails

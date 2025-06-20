@@ -1,12 +1,12 @@
-import { useRouter } from "next/navigation";
-import { useSharedLaserEyes } from "@/context/LaserEyesContext";
-import styles from "./PortfolioTab.module.css";
-import RunesPortfolioTable from "./RunesPortfolioTable";
-import LiquidiumLoansSection from "./LiquidiumLoansSection";
-import RepayModal from "./RepayModal";
-import { usePortfolioData } from "@/hooks/usePortfolioData";
-import { useLiquidiumAuth } from "@/hooks/useLiquidiumAuth";
-import { useRepayModal } from "@/hooks/useRepayModal";
+import { useRouter } from 'next/navigation';
+import { useSharedLaserEyes } from '@/context/LaserEyesContext';
+import { useLiquidiumAuth } from '@/hooks/useLiquidiumAuth';
+import { usePortfolioData } from '@/hooks/usePortfolioData';
+import { useRepayModal } from '@/hooks/useRepayModal';
+import LiquidiumLoansSection from './LiquidiumLoansSection';
+import styles from './PortfolioTab.module.css';
+import RepayModal from './RepayModal';
+import RunesPortfolioTable from './RunesPortfolioTable';
 
 export default function PortfolioTab() {
   const router = useRouter();
@@ -50,7 +50,7 @@ export default function PortfolioTab() {
       scroll: false,
     });
     window.dispatchEvent(
-      new CustomEvent("tabChange", { detail: { tab: "swap", rune: runeName } }),
+      new CustomEvent('tabChange', { detail: { tab: 'swap', rune: runeName } }),
     );
   };
 
@@ -109,9 +109,9 @@ export default function PortfolioTab() {
       />
 
       <div className={styles.sectionDivider}>
-        <div className={styles.dividerLine + " " + styles.top}></div>
-        <div className={styles.dividerLine + " " + styles.bottom}></div>
-        <div className="heading" style={{ marginTop: "1rem" }}>
+        <div className={styles.dividerLine + ' ' + styles.top}></div>
+        <div className={styles.dividerLine + ' ' + styles.bottom}></div>
+        <div className="heading" style={{ marginTop: '1rem' }}>
           Liquidium Loans
         </div>
       </div>
@@ -138,9 +138,9 @@ export default function PortfolioTab() {
                   repayModal.loan.loan_details.principal_amount_sats *
                     (1 + repayModal.loan.loan_details.discount.discount_rate),
               )} BTC`
-            : "..."
+            : '...'
         }
-        psbtPreview={repayModal.repayInfo?.psbt?.slice(0, 32) || ""}
+        psbtPreview={repayModal.repayInfo?.psbt?.slice(0, 32) || ''}
         loading={repayModal.loading}
         error={repayModal.error}
         onCancel={handleRepayModalClose}
