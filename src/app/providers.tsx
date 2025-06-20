@@ -39,8 +39,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
     setIsClient(true);
   }, []);
 
+  // Render a fallback structure during SSR to prevent hydration mismatch
   if (!isClient) {
-    return null;
+    return (
+      <LaserEyesProvider config={{ network: MAINNET }}>
+        <SharedLaserEyesProvider>
+          <QueryClientProvider client={queryClient}>
+            <BackgroundProvider>
+              <div style={{ visibility: "hidden" }}>{children}</div>
+            </BackgroundProvider>
+          </QueryClientProvider>
+        </SharedLaserEyesProvider>
+      </LaserEyesProvider>
+    );
   }
 
   return (

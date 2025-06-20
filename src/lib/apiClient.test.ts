@@ -193,14 +193,13 @@ describe("apiClient", () => {
       expect(result).toEqual(mockRuneInfo);
     });
 
-    it("throws error for non-OK responses", async () => {
+    it("returns null for 404 responses", async () => {
       (fetch as jest.Mock).mockImplementationOnce(() =>
         mockFetchResponse({ error: "Not found" }, false, 404),
       );
 
-      await expect(fetchRuneInfoFromApi("NONEXISTENT")).rejects.toThrow(
-        "Not found",
-      );
+      const result = await fetchRuneInfoFromApi("NONEXISTENT");
+      expect(result).toBeNull();
       expect(fetch).toHaveBeenCalledWith(
         "/api/ordiscan/rune-info?name=NONEXISTENT",
       );

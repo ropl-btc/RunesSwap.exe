@@ -39,10 +39,12 @@ A `.env.example` file shows all environment variables needed for development. Im
 - `TBA_API_URL`
 - `ORDISCAN_API_KEY`
 - `RUNES_FLOOR_API_KEY`
+- `LIQUIDIUM_API_KEY` (server-side only)
 - `NEXT_PUBLIC_LIQUIDIUM_API_URL`
-- `NEXT_PUBLIC_LIQUIDIUM_API_KEY`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+**Security Note:** Never use `NEXT_PUBLIC_` prefix for sensitive API keys as it exposes them to the client-side. Use server-side environment variables for authentication tokens.
 
 ## Development
 Install dependencies and start the development server with **pnpm**:

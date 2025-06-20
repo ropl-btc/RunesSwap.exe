@@ -67,14 +67,14 @@ export const fetchRuneInfoFromApi = async (
     throw new Error(`Failed to parse rune info for ${name}`);
   }
   if (!response.ok) {
+    if (response.status === 404) {
+      return null;
+    }
     throw new Error(
       data?.error?.message ||
         data?.error ||
         `Failed to fetch rune info: ${response.statusText}`,
     );
-  }
-  if (response.status === 404) {
-    return null;
   }
   return handleApiResponse<RuneData | null>(data, false);
 };
