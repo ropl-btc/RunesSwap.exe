@@ -50,6 +50,7 @@ export function AppInterface({ activeTab }: AppInterfaceProps) {
     paymentAddress,
     paymentPublicKey,
     signPsbt,
+    signMessage,
   } = useSharedLaserEyes();
 
   const { btcPriceUsd, isBtcPriceLoading, btcPriceError } = useBtcPrice();
@@ -145,6 +146,7 @@ export function AppInterface({ activeTab }: AppInterfaceProps) {
             publicKey={publicKey} // Needed for prepare
             paymentPublicKey={paymentPublicKey} // Needed for prepare
             signPsbt={signPsbt} // Needed for submit
+            signMessage={signMessage} // Needed for authentication
             btcPriceUsd={btcPriceUsd}
             isBtcPriceLoading={isBtcPriceLoading}
             btcPriceError={btcPriceError}

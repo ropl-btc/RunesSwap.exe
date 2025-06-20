@@ -14,6 +14,7 @@ import { Asset } from "@/types/common";
 import { FormattedRuneAmount } from "./FormattedRuneAmount";
 import { useBorrowProcess } from "@/hooks/useBorrowProcess";
 import useBorrowQuotes from "@/hooks/useBorrowQuotes";
+import { useLiquidiumAuth } from "@/hooks/useLiquidiumAuth";
 import {
   fetchRuneBalancesFromApi,
   fetchRuneInfoFromApi,
@@ -41,6 +42,7 @@ interface BorrowTabProps {
     | { signedPsbtHex?: string; signedPsbtBase64?: string; txId?: string }
     | undefined
   >;
+  signMessage?: (message: string, address: string) => Promise<string>;
   btcPriceUsd: number | undefined;
   isBtcPriceLoading: boolean;
   btcPriceError: Error | null;
@@ -56,6 +58,7 @@ export function BorrowTab({
   publicKey,
   paymentPublicKey,
   signPsbt,
+  signMessage,
 }: BorrowTabProps) {
   const router = useRouter();
   const [collateralAsset, setCollateralAsset] = useState<Asset | null>(null);
@@ -117,6 +120,14 @@ export function BorrowTab({
   });
 
   const {
+    isCheckingAuth,
+    liquidiumAuthenticated,
+    isAuthenticating,
+    authError,
+    handleLiquidiumAuth,
+  } = useLiquidiumAuth({ address, paymentAddress, signMessage });
+
+  const {
     startLoan,
     reset: resetLoanProcess,
     isPreparing,
@@ -155,7 +166,8 @@ export function BorrowTab({
     connected &&
     collateralAsset &&
     parseFloat(collateralAmount) > 0 &&
-    !isLoading;
+    !isLoading &&
+    liquidiumAuthenticated;
   const canStartLoan = connected && selectedQuoteId && !isLoading && !loanTxId;
 
   const availableBalanceDisplay =
@@ -229,9 +241,20 @@ export function BorrowTab({
         </div>
       )}
 
-      <Button onClick={handleGetQuotes} disabled={!canGetQuotes || isLoading}>
-        {isQuotesLoading ? "Fetching Quotes..." : "Get Loan Quotes"}
-      </Button>
+      {isCheckingAuth ? (
+        <Button disabled>Checking Liquidium connection...</Button>
+      ) : !liquidiumAuthenticated ? (
+        <>
+          <Button onClick={handleLiquidiumAuth} disabled={isAuthenticating}>
+            {isAuthenticating ? "Authenticating..." : "Connect to Liquidium"}
+          </Button>
+          {authError && <div className="errorText">{authError}</div>}
+        </>
+      ) : (
+        <Button onClick={handleGetQuotes} disabled={!canGetQuotes || isLoading}>
+          {isQuotesLoading ? "Fetching Quotes..." : "Get Loan Quotes"}
+        </Button>
+      )}
 
       {quotesError && <div className="errorText">{quotesError}</div>}
       {quotes.length > 0 && (

@@ -26,6 +26,56 @@
   border-color: var(--win98-border-inset-colors);
 }
 
+.customInputContainer {
+  margin-top: var(--space-2);
+  padding: var(--space-2);
+  background-color: var(--win98-gray);
+  border: var(--win98-border-inset);
+  border-color: var(--win98-border-inset-colors);
+}
+
+.customInputWrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-bottom: var(--space-1);
+}
+
 .customInput {
-  width: 80px;
+  width: 100px;
+  padding: var(--space-1);
+  background-color: var(--win98-white);
+  border: var(--win98-border-inset);
+  border-color: var(--win98-border-inset-colors);
+  font-size: var(--font-size-small);
+  color: var(--win98-black);
+}
+
+.customInput:focus {
+  outline: 1px solid var(--win98-blue);
+}
+
+.customInputError {
+  border-color: var(--win98-red) var(--win98-red) var(--win98-red)
+    var(--win98-red);
+  background-color: #fff8f8;
+}
+
+.customInputLabel {
+  font-size: var(--font-size-small);
+  color: var(--win98-black);
+  font-weight: normal;
+}
+
+.validationError {
+  font-size: var(--font-size-small);
+  color: var(--win98-red);
+  line-height: 1.3;
+  margin-bottom: var(--space-1);
+}
+
+.customInputHint {
+  font-size: var(--font-size-small);
+  color: var(--win98-dark-gray);
+  line-height: 1.3;
 }
