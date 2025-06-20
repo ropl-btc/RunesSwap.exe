@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { AppInterface } from "@/components/AppInterface";
 import TabNavigation, { ActiveTab } from "@/components/TabNavigation";
 import styles from "./page.module.css";
@@ -11,7 +11,9 @@ export default function Home() {
   return (
     <div className={styles.mainContainer}>
       <TabNavigation onTabChange={setActiveTab} />
-      <AppInterface activeTab={activeTab} />
+      <Suspense fallback={<div>Loading...</div>}>
+        <AppInterface activeTab={activeTab} />
+      </Suspense>
     </div>
   );
 }
