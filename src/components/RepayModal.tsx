@@ -1,6 +1,6 @@
-import React from "react";
-import Button from "./Button";
-import styles from "./PortfolioTab.module.css";
+import React from 'react';
+import Button from './Button';
+import styles from './PortfolioTab.module.css';
 
 interface RepayModalProps {
   open: boolean;
@@ -39,24 +39,24 @@ const RepayModal: React.FC<RepayModalProps> = ({
         </div>
         <div
           className="smallText"
-          style={{ margin: "8px 0", wordBreak: "break-all" }}
+          style={{ margin: '8px 0', wordBreak: 'break-all' }}
         >
-          PSBT:{" "}
+          PSBT:{' '}
           <code title="Full PSBT (truncated for display)">
             {psbtPreview}...
           </code>
         </div>
         {error && (
-          <div className="errorText" style={{ margin: "8px 0" }}>
+          <div className="errorText" style={{ margin: '8px 0' }}>
             {error}
           </div>
         )}
-        <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button onClick={onCancel} disabled={loading}>
             Cancel
           </Button>
           <Button onClick={onConfirm} disabled={loading}>
-            {loading ? "Processing..." : "Sign & Repay"}
+            {loading ? 'Processing...' : 'Sign & Repay'}
           </Button>
         </div>
       </div>

@@ -1,19 +1,19 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import {
-  createSuccessResponse,
   createErrorResponse,
+  createSuccessResponse,
   handleApiError,
   validateRequest,
-} from "@/lib/apiUtils";
-import { z } from "zod";
-import { getOrdiscanClient } from "@/lib/serverUtils";
-import { supabase } from "@/lib/supabase";
-import { RuneData } from "@/lib/runesData";
+} from '@/lib/apiUtils';
+import { RuneData } from '@/lib/runesData';
+import { getOrdiscanClient } from '@/lib/serverUtils';
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   // Zod validation for 'name'
   const schema = z.object({ name: z.string().min(1) });
-  const validation = await validateRequest(request, schema, "body");
+  const validation = await validateRequest(request, schema, 'body');
   if (!validation.success) return validation.errorResponse;
   const { name: runeName } = validation.data;
 
@@ -34,21 +34,21 @@ export async function POST(request: NextRequest) {
     };
 
     const { error: updateError } = await supabase
-      .from("runes")
+      .from('runes')
       .update(dataToUpdate)
-      .eq("name", runeName)
+      .eq('name', runeName)
       .select();
 
     if (updateError) {
-      console.error("[API Route] Error updating rune data:", updateError);
-      console.error("[API Route] Update error details:", {
+      console.error('[API Route] Error updating rune data:', updateError);
+      console.error('[API Route] Update error details:', {
         code: updateError.code,
         message: updateError.message,
         details: updateError.details,
         hint: updateError.hint,
       });
       return createErrorResponse(
-        "Database update failed",
+        'Database update failed',
         JSON.stringify(updateError),
         500,
       );

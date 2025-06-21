@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
-import debounce from "lodash.debounce";
-import { fetchRunesFromApi } from "@/lib/api";
-import { Asset } from "@/types/common";
-import type { Rune } from "@/types/satsTerminal";
+import debounce from 'lodash.debounce';
+import { useEffect, useMemo, useState } from 'react';
+import { fetchRunesFromApi } from '@/lib/api';
+import { Asset } from '@/types/common';
+import type { Rune } from '@/types/satsTerminal';
 
 interface UseAssetSearchArgs {
   availableAssets: Asset[];
@@ -15,7 +15,7 @@ export function useAssetSearch({
   isAssetsLoading = false,
   assetsError = null,
 }: UseAssetSearchArgs) {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<Asset[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -42,7 +42,7 @@ export function useAssetSearch({
           setSearchResults(mapped);
         } catch (error: unknown) {
           setSearchError(
-            error instanceof Error ? error.message : "Failed to search",
+            error instanceof Error ? error.message : 'Failed to search',
           );
           setSearchResults([]);
         } finally {

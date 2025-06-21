@@ -1,15 +1,15 @@
-import React from "react";
-import styles from "../SwapTab.module.css";
-import { Asset } from "@/types/common";
-import { QuoteResponse } from "satsterminal-sdk";
-import { InputArea } from "../InputArea";
+import React from 'react';
+import { QuoteResponse } from 'satsterminal-sdk';
+import { Asset } from '@/types/common';
+import { InputArea } from '../InputArea';
+import styles from '../SwapTab.module.css';
 import {
-  SwapDirectionButton,
-  SwapButton,
   PriceInfoPanel,
+  SwapButton,
+  SwapDirectionButton,
   SwapStatusMessages,
   SwapStep,
-} from ".";
+} from '.';
 
 interface SwapTabFormProps {
   connected: boolean;
@@ -42,7 +42,12 @@ interface SwapTabFormProps {
   onSwap: () => void;
   debouncedInputAmount: number;
   showPriceChart: boolean;
-  onShowPriceChart?: (assetName?: string, shouldToggle?: boolean) => void;
+  onShowPriceChart:
+    | ((
+        assetName?: string | undefined,
+        shouldToggle?: boolean | undefined,
+      ) => void)
+    | undefined;
   isPreselectedRuneLoading: boolean;
   feeSelector: React.ReactNode;
 }
@@ -104,6 +109,7 @@ export default function SwapTabForm({
         onPercentageClick={onPercentageClick}
         availableBalance={availableBalanceNode}
         usdValue={inputUsdValue || undefined}
+        errorMessage={undefined}
       />
       <SwapDirectionButton
         assetIn={assetIn}
@@ -125,13 +131,14 @@ export default function SwapTabForm({
         isAssetsLoading={isLoadingRunes}
         assetsError={currentRunesError}
         isPreselectedAssetLoading={isPreselectedRuneLoading}
+        onPercentageClick={undefined}
         usdValue={outputUsdValue || undefined}
         errorMessage={quoteError && !isQuoteLoading ? quoteError : undefined}
         bottomContent={
           quoteError && !isQuoteLoading ? (
             <div
               className="smallText"
-              style={{ whiteSpace: "normal", wordBreak: "break-word" }}
+              style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}
             >
               Please retry the swap, reconnect your wallet, or try a different
               amount.

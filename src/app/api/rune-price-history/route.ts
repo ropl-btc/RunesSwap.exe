@@ -1,11 +1,11 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import {
-  createSuccessResponse,
   createErrorResponse,
+  createSuccessResponse,
   validateRequest,
-} from "@/lib/apiUtils";
-import { normalizeRuneName } from "@/utils/runeUtils";
-import { z } from "zod";
+} from '@/lib/apiUtils';
+import { normalizeRuneName } from '@/utils/runeUtils';
 
 // Define the schema for the query parameters
 const QuerySchema = z.object({
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     // Extract and validate the query parameters
     // const { searchParams } = new URL(request.url);
     // const slug = searchParams.get('slug');
-    const validation = await validateRequest(request, QuerySchema, "query");
+    const validation = await validateRequest(request, QuerySchema, 'query');
     if (!validation.success) {
       return validation.errorResponse;
     }
@@ -48,9 +48,9 @@ export async function GET(request: NextRequest) {
 
     // Define a mapping for known runes that might have formatting issues
     const knownRunes: Record<string, string> = {
-      "LIQUIDIUM•TOKEN": "LIQUIDIUMTOKEN",
-      LIQUIDIUMTOKEN: "LIQUIDIUMTOKEN",
-      LIQUIDIUM: "LIQUIDIUMTOKEN",
+      'LIQUIDIUM•TOKEN': 'LIQUIDIUMTOKEN',
+      LIQUIDIUMTOKEN: 'LIQUIDIUMTOKEN',
+      LIQUIDIUM: 'LIQUIDIUMTOKEN',
     };
 
     // Check if we have a direct mapping first
@@ -59,8 +59,8 @@ export async function GET(request: NextRequest) {
     // If not a direct match, try partial matching for known runes
     if (!knownRunes[originalSlug]) {
       // Check if it includes any known rune names
-      if (originalSlug.toUpperCase().includes("LIQUIDIUM")) {
-        apiSlug = "LIQUIDIUMTOKEN";
+      if (originalSlug.toUpperCase().includes('LIQUIDIUM')) {
+        apiSlug = 'LIQUIDIUMTOKEN';
       }
     }
 
@@ -71,8 +71,8 @@ export async function GET(request: NextRequest) {
     const apiKey = process.env.RUNES_FLOOR_API_KEY;
     if (!apiKey) {
       return createErrorResponse(
-        "API key not configured",
-        "Missing RUNES_FLOOR_API_KEY environment variable",
+        'API key not configured',
+        'Missing RUNES_FLOOR_API_KEY environment variable',
         500,
       );
     }
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
     // Fetch data from the external API
     const response = await fetch(apiUrl, {
       headers: {
-        "X-API-Key": apiKey,
+        'X-API-Key': apiKey,
       },
       next: {
         revalidate: 300, // Cache for 5 minutes
@@ -136,10 +136,10 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: unknown) {
     return createErrorResponse(
-      error instanceof Error ? error.message : "Unknown error occurred",
+      error instanceof Error ? error.message : 'Unknown error occurred',
       error instanceof Error
-        ? error.stack || "No stack trace available"
-        : "Unknown error details",
+        ? error.stack || 'No stack trace available'
+        : 'Unknown error details',
       500,
     );
   }

@@ -1,6 +1,6 @@
-import React from "react";
-import styles from "./PriceInfoPanel.module.css";
-import { Asset } from "@/types/common";
+import React from 'react';
+import { Asset } from '@/types/common';
+import styles from './PriceInfoPanel.module.css';
 
 interface PriceInfoPanelProps {
   /**
@@ -41,12 +41,17 @@ interface PriceInfoPanelProps {
   /**
    * Whether to show the price chart
    */
-  showPriceChart?: boolean;
+  showPriceChart?: boolean | undefined;
 
   /**
    * Function to show the price chart
    */
-  onShowPriceChart?: (assetName?: string, shouldToggle?: boolean) => void;
+  onShowPriceChart:
+    | ((
+        assetName?: string | undefined,
+        shouldToggle?: boolean | undefined,
+      ) => void)
+    | undefined;
 }
 
 /**
@@ -68,8 +73,8 @@ export const PriceInfoPanel: React.FC<PriceInfoPanelProps> = ({
     if (isQuoteLoading) return loadingDots;
     if (exchangeRate) return exchangeRate;
     // Show N/A only if amount entered, but no quote/rate yet and no specific quote error
-    if (debouncedInputAmount > 0 && !quoteError) return "N/A";
-    return ""; // Otherwise, display nothing
+    if (debouncedInputAmount > 0 && !quoteError) return 'N/A';
+    return ''; // Otherwise, display nothing
   };
 
   return (
@@ -78,7 +83,7 @@ export const PriceInfoPanel: React.FC<PriceInfoPanelProps> = ({
       {!showPriceChart && onShowPriceChart && (
         <button
           className={styles.showPriceChartButton}
-          onClick={() => onShowPriceChart(assetOut?.name || "LIQUIDIUM•TOKEN")}
+          onClick={() => onShowPriceChart(assetOut?.name || 'LIQUIDIUM•TOKEN')}
         >
           Show Price Chart
         </button>

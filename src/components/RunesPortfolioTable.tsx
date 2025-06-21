@@ -1,8 +1,8 @@
-import React from "react";
-import Image from "next/image";
-import { FormattedRuneAmount } from "./FormattedRuneAmount";
-import Button from "./Button";
-import styles from "./PortfolioTab.module.css";
+import Image from 'next/image';
+import React from 'react';
+import Button from './Button';
+import { FormattedRuneAmount } from './FormattedRuneAmount';
+import styles from './PortfolioTab.module.css';
 
 interface RuneBalanceItem {
   name: string;
@@ -18,9 +18,9 @@ interface RunesPortfolioTableProps {
   balances: RuneBalanceItem[];
   totalBtcValue: number;
   totalUsdValue: number;
-  sortField: "name" | "balance" | "value";
-  sortDirection: "asc" | "desc";
-  onSort: (field: "name" | "balance" | "value") => void;
+  sortField: 'name' | 'balance' | 'value';
+  sortDirection: 'asc' | 'desc';
+  onSort: (field: 'name' | 'balance' | 'value') => void;
   onSwap: (name: string) => void;
 }
 
@@ -37,71 +37,71 @@ const RunesPortfolioTable: React.FC<RunesPortfolioTableProps> = ({
     <div className={`${styles.listHeader} ${styles.grid4col}`}>
       <div
         className="sortable"
-        style={{ fontWeight: "bold" }}
-        onClick={() => onSort("name")}
+        style={{ fontWeight: 'bold' }}
+        onClick={() => onSort('name')}
         role="columnheader"
         tabIndex={0}
         aria-sort={
-          sortField === "name"
-            ? sortDirection === "asc"
-              ? "ascending"
-              : "descending"
-            : "none"
+          sortField === 'name'
+            ? sortDirection === 'asc'
+              ? 'ascending'
+              : 'descending'
+            : 'none'
         }
-        onKeyDown={(e) => e.key === "Enter" && onSort("name")}
+        onKeyDown={(e) => e.key === 'Enter' && onSort('name')}
       >
         Rune Name
-        {sortField === "name" && (
+        {sortField === 'name' && (
           <span className={styles.sortArrow}>
-            {sortDirection === "asc" ? "↑" : "↓"}
+            {sortDirection === 'asc' ? '↑' : '↓'}
           </span>
         )}
       </div>
       <div
         className="sortable"
-        style={{ fontWeight: "bold" }}
-        onClick={() => onSort("balance")}
+        style={{ fontWeight: 'bold' }}
+        onClick={() => onSort('balance')}
         role="columnheader"
         tabIndex={0}
         aria-sort={
-          sortField === "balance"
-            ? sortDirection === "asc"
-              ? "ascending"
-              : "descending"
-            : "none"
+          sortField === 'balance'
+            ? sortDirection === 'asc'
+              ? 'ascending'
+              : 'descending'
+            : 'none'
         }
-        onKeyDown={(e) => e.key === "Enter" && onSort("balance")}
+        onKeyDown={(e) => e.key === 'Enter' && onSort('balance')}
       >
         Balance
-        {sortField === "balance" && (
+        {sortField === 'balance' && (
           <span className={styles.sortArrow}>
-            {sortDirection === "asc" ? "↑" : "↓"}
+            {sortDirection === 'asc' ? '↑' : '↓'}
           </span>
         )}
       </div>
       <div
         className="sortable"
-        style={{ fontWeight: "bold" }}
-        onClick={() => onSort("value")}
+        style={{ fontWeight: 'bold' }}
+        onClick={() => onSort('value')}
         role="columnheader"
         tabIndex={0}
         aria-sort={
-          sortField === "value"
-            ? sortDirection === "asc"
-              ? "ascending"
-              : "descending"
-            : "none"
+          sortField === 'value'
+            ? sortDirection === 'asc'
+              ? 'ascending'
+              : 'descending'
+            : 'none'
         }
-        onKeyDown={(e) => e.key === "Enter" && onSort("value")}
+        onKeyDown={(e) => e.key === 'Enter' && onSort('value')}
       >
         Value (USD)
-        {sortField === "value" && (
+        {sortField === 'value' && (
           <span className={styles.sortArrow}>
-            {sortDirection === "asc" ? "↑" : "↓"}
+            {sortDirection === 'asc' ? '↑' : '↓'}
           </span>
         )}
       </div>
-      <div style={{ fontWeight: "bold" }}>Action</div>
+      <div style={{ fontWeight: 'bold' }}>Action</div>
     </div>
     <div className={styles.listContent}>
       {balances.map((rune) => {
@@ -122,7 +122,7 @@ const RunesPortfolioTable: React.FC<RunesPortfolioTableProps> = ({
                     height={24}
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      if (target) target.style.display = "none";
+                      if (target) target.style.display = 'none';
                     }}
                   />
                 )}

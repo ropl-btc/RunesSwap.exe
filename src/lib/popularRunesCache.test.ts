@@ -1,4 +1,4 @@
-import { getCachedPopularRunesWithMetadata } from "./popularRunesCache";
+import { getCachedPopularRunesWithMetadata } from './popularRunesCache';
 
 type SupabaseMock = {
   from: jest.Mock;
@@ -8,7 +8,7 @@ type SupabaseMock = {
   maybeSingle: jest.Mock;
 };
 
-jest.mock("./supabase", () => {
+jest.mock('./supabase', () => {
   const mock = {
     from: jest.fn().mockReturnThis(),
     select: jest.fn().mockReturnThis(),
@@ -19,8 +19,8 @@ jest.mock("./supabase", () => {
   return { supabase: mock };
 });
 
-describe("getCachedPopularRunesWithMetadata", () => {
-  it("returns fallback data when cache is empty", async () => {
+describe('getCachedPopularRunesWithMetadata', () => {
+  it('returns fallback data when cache is empty', async () => {
     const result = await getCachedPopularRunesWithMetadata();
     expect(result.cachedData).toBeDefined();
     expect(Array.isArray(result.cachedData)).toBe(true);

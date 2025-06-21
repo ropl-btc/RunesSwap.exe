@@ -1,7 +1,7 @@
-import React from "react";
-import { ArrowPathIcon } from "@heroicons/react/24/solid";
-import styles from "./SwapDirectionButton.module.css";
-import { Asset } from "@/types/common";
+import { ArrowPathIcon } from '@heroicons/react/24/solid';
+import React from 'react';
+import { Asset } from '@/types/common';
+import styles from './SwapDirectionButton.module.css';
 
 interface SwapDirectionButtonProps {
   /**

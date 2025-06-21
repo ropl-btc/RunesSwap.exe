@@ -1,33 +1,33 @@
-import { supabase } from "./supabase";
+import { supabase } from './supabase';
 
 // Fallback list of popular runes to use when API is completely unreachable
 // This ensures the app will always have some basic functionality
 const FALLBACK_POPULAR_RUNES = [
   {
-    id: "liquidiumtoken",
-    rune: "LIQUIDIUM•TOKEN",
-    name: "LIQUIDIUM•TOKEN",
-    imageURI: "https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN",
+    id: 'liquidiumtoken',
+    rune: 'LIQUIDIUM•TOKEN',
+    name: 'LIQUIDIUM•TOKEN',
+    imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
     etching: {
-      runeName: "LIQUIDIUM•TOKEN",
+      runeName: 'LIQUIDIUM•TOKEN',
     },
   },
   {
-    id: "ordinals_ethtoken",
-    rune: "ETH•TOKEN",
-    name: "ETH•TOKEN",
-    imageURI: "https://icon.unisat.io/icon/runes/ETH%E2%80%A2TOKEN",
+    id: 'ordinals_ethtoken',
+    rune: 'ETH•TOKEN',
+    name: 'ETH•TOKEN',
+    imageURI: 'https://icon.unisat.io/icon/runes/ETH%E2%80%A2TOKEN',
     etching: {
-      runeName: "ETH•TOKEN",
+      runeName: 'ETH•TOKEN',
     },
   },
   {
-    id: "ordinals_dogtoken",
-    rune: "DOG•TOKEN",
-    name: "DOG•TOKEN",
-    imageURI: "https://icon.unisat.io/icon/runes/DOG%E2%80%A2TOKEN",
+    id: 'ordinals_dogtoken',
+    rune: 'DOG•TOKEN',
+    name: 'DOG•TOKEN',
+    imageURI: 'https://icon.unisat.io/icon/runes/DOG%E2%80%A2TOKEN',
     etching: {
-      runeName: "DOG•TOKEN",
+      runeName: 'DOG•TOKEN',
     },
   },
 ];
@@ -67,9 +67,9 @@ export async function getCachedPopularRunesWithMetadata(): Promise<CacheMetadata
   try {
     // Check for cached popular runes
     const { data } = await supabase
-      .from("popular_runes_cache")
-      .select("*")
-      .order("created_at", { ascending: false })
+      .from('popular_runes_cache')
+      .select('*')
+      .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
@@ -111,7 +111,7 @@ export async function getCachedPopularRunesWithMetadata(): Promise<CacheMetadata
       lastRefreshAttempt,
     };
   } catch (error) {
-    console.error("Error fetching popular runes cache:", error);
+    console.error('Error fetching popular runes cache:', error);
     return {
       cachedData: FALLBACK_POPULAR_RUNES,
       isExpired: true,
@@ -177,21 +177,21 @@ export async function updateLastRefreshAttempt(): Promise<void> {
   try {
     // Find the latest cache entry
     const { data } = await supabase
-      .from("popular_runes_cache")
-      .select("id")
-      .order("created_at", { ascending: false })
+      .from('popular_runes_cache')
+      .select('id')
+      .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
     if (data?.id) {
       // Update the last_refresh_attempt field
       await supabase
-        .from("popular_runes_cache")
+        .from('popular_runes_cache')
         .update({ last_refresh_attempt: new Date().toISOString() })
-        .eq("id", data.id);
+        .eq('id', data.id);
     }
   } catch (error) {
-    console.error("Error updating last refresh attempt:", error);
+    console.error('Error updating last refresh attempt:', error);
   }
 }
 
@@ -203,12 +203,12 @@ export async function cachePopularRunes(
   runesData: Record<string, unknown>[],
 ): Promise<void> {
   if (!runesData || !Array.isArray(runesData) || runesData.length === 0) {
-    console.warn("Not caching empty or invalid popular runes data");
+    console.warn('Not caching empty or invalid popular runes data');
     return;
   }
 
   try {
-    await supabase.from("popular_runes_cache").insert([
+    await supabase.from('popular_runes_cache').insert([
       {
         runes_data: runesData,
         created_at: new Date().toISOString(),
@@ -218,7 +218,7 @@ export async function cachePopularRunes(
 
     // Operation completed successfully
   } catch (error) {
-    console.error("Error caching popular runes:", error);
+    console.error('Error caching popular runes:', error);
     // Errors in caching are non-critical
   }
 }

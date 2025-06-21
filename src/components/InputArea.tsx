@@ -1,9 +1,9 @@
-import React, { ReactNode } from "react";
-import Image from "next/image";
-import styles from "./InputArea.module.css";
-import { Asset } from "@/types/common";
-import AssetSelector from "./AssetSelector";
-import AmountHelpers from "./AmountHelpers";
+import Image from 'next/image';
+import React, { ReactNode } from 'react';
+import { Asset } from '@/types/common';
+import AmountHelpers from './AmountHelpers';
+import AssetSelector from './AssetSelector';
+import styles from './InputArea.module.css';
 
 interface InputAreaProps {
   label: string;
@@ -27,13 +27,13 @@ interface InputAreaProps {
 
   assetSelectorComponent?: ReactNode;
 
-  showPercentageShortcuts?: boolean;
-  onPercentageClick?: (percentage: number) => void;
-  availableBalance?: ReactNode;
+  showPercentageShortcuts?: boolean | undefined;
+  onPercentageClick: ((percentage: number) => void) | undefined;
+  availableBalance?: ReactNode | undefined;
 
-  usdValue?: string;
-  minMaxRange?: string;
-  errorMessage?: string;
+  usdValue?: string | undefined;
+  minMaxRange?: string | undefined;
+  errorMessage: string | undefined;
   bottomContent?: ReactNode;
 }
 
@@ -42,11 +42,11 @@ export const InputArea: React.FC<InputAreaProps> = ({
   inputId,
   inputValue,
   onInputChange,
-  placeholder = "0.0",
+  placeholder = '0.0',
   readOnly = false,
   disabled = false,
-  min = "0",
-  step = "0.001",
+  min = '0',
+  step = '0.001',
   assetSelectorEnabled = false,
   selectedAsset = null,
   onAssetChange,
@@ -79,7 +79,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
 
     <div className={styles.inputRow}>
       <input
-        type={readOnly ? "text" : "number"}
+        type={readOnly ? 'text' : 'number'}
         id={inputId}
         placeholder={placeholder}
         value={inputValue}
@@ -111,7 +111,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
     {(usdValue || minMaxRange) && (
       <div
         className={styles.usdValueText}
-        style={{ display: "flex", justifyContent: "space-between" }}
+        style={{ display: 'flex', justifyContent: 'space-between' }}
       >
         <div>{usdValue && `≈ ${usdValue}`}</div>
         <div>{minMaxRange}</div>
@@ -121,7 +121,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
     {errorMessage && (
       <div
         className={`${styles.errorText} ${styles.messageWithIcon}`}
-        style={{ paddingTop: "0.25rem", width: "100%" }}
+        style={{ paddingTop: '0.25rem', width: '100%' }}
       >
         <Image
           src="/icons/msg_error-0.png"

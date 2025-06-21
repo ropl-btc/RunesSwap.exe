@@ -1,41 +1,41 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useSharedLaserEyes } from "@/context/LaserEyesContext";
-import styles from "./AppInterface.module.css";
-import { fetchPopularFromApi, QUERY_KEYS } from "@/lib/api";
-import { useSearchParams } from "next/navigation";
-import useBtcPrice from "@/hooks/useBtcPrice";
+import { useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
+import { useSharedLaserEyes } from '@/context/LaserEyesContext';
+import useBtcPrice from '@/hooks/useBtcPrice';
+import { QUERY_KEYS, fetchPopularFromApi } from '@/lib/api';
+import styles from './AppInterface.module.css';
 
 // Import the tab components
-import SwapTab from "./SwapTab";
-import RunesInfoTab from "./RunesInfoTab";
-import YourTxsTab from "./YourTxsTab";
-import PortfolioTab from "./PortfolioTab";
-import BorrowTab from "./BorrowTab"; // <-- Import BorrowTab
-import PriceChart from "./PriceChart";
+import BorrowTab from './BorrowTab'; // <-- Import BorrowTab
+import PortfolioTab from './PortfolioTab';
+import PriceChart from './PriceChart';
+import RunesInfoTab from './RunesInfoTab';
+import SwapTab from './SwapTab';
+import YourTxsTab from './YourTxsTab';
 
 // --- Props Interface --- Update the activeTab type
 interface AppInterfaceProps {
-  activeTab: "swap" | "runesInfo" | "yourTxs" | "portfolio" | "borrow"; // <-- Added 'borrow'
+  activeTab: 'swap' | 'runesInfo' | 'yourTxs' | 'portfolio' | 'borrow'; // <-- Added 'borrow'
 }
 // --- End Props ---
 
 // --- Component ---
 export function AppInterface({ activeTab }: AppInterfaceProps) {
   const searchParams = useSearchParams();
-  const preSelectedRune = searchParams.get("rune");
+  const preSelectedRune = searchParams.get('rune');
 
   const [showSwapTabPriceChart, setShowSwapTabPriceChart] = useState(false);
   const [showRunesInfoTabPriceChart, setShowRunesInfoTabPriceChart] =
     useState(false);
 
   const [swapTabSelectedAsset, setSwapTabSelectedAsset] = useState(
-    preSelectedRune || "LIQUIDIUM•TOKEN",
+    preSelectedRune || 'LIQUIDIUM•TOKEN',
   );
   const [runesInfoTabSelectedAsset, setRunesInfoTabSelectedAsset] =
-    useState("LIQUIDIUM•TOKEN");
+    useState('LIQUIDIUM•TOKEN');
 
   useEffect(() => {
     if (preSelectedRune) {
@@ -73,10 +73,10 @@ export function AppInterface({ activeTab }: AppInterfaceProps) {
 
   const togglePriceChart = React.useCallback(
     (assetName?: string, shouldToggle: boolean = true) => {
-      if (activeTab === "swap") {
+      if (activeTab === 'swap') {
         if (assetName) setSwapTabSelectedAsset(assetName);
         if (shouldToggle) setShowSwapTabPriceChart((prev) => !prev);
-      } else if (activeTab === "runesInfo") {
+      } else if (activeTab === 'runesInfo') {
         if (assetName) setRunesInfoTabSelectedAsset(assetName);
         if (shouldToggle) setShowRunesInfoTabPriceChart((prev) => !prev);
       }
@@ -88,7 +88,7 @@ export function AppInterface({ activeTab }: AppInterfaceProps) {
   useEffect(() => {
     const handleTabChangeEvent = (event: CustomEvent) => {
       const { tab, rune } = event.detail;
-      if (tab === "swap" && rune) {
+      if (tab === 'swap' && rune) {
         setSwapTabSelectedAsset(rune);
         if (showSwapTabPriceChart) {
           togglePriceChart(rune, false);
@@ -96,27 +96,27 @@ export function AppInterface({ activeTab }: AppInterfaceProps) {
       }
       // Handle other tab changes if needed
     };
-    window.addEventListener("tabChange", handleTabChangeEvent as EventListener);
+    window.addEventListener('tabChange', handleTabChangeEvent as EventListener);
     return () =>
       window.removeEventListener(
-        "tabChange",
+        'tabChange',
         handleTabChangeEvent as EventListener,
       );
   }, [showSwapTabPriceChart, togglePriceChart]);
 
   const isPriceChartVisible =
-    (activeTab === "swap" && showSwapTabPriceChart) ||
-    (activeTab === "runesInfo" && showRunesInfoTabPriceChart);
+    (activeTab === 'swap' && showSwapTabPriceChart) ||
+    (activeTab === 'runesInfo' && showRunesInfoTabPriceChart);
 
   const selectedAssetForActiveTab =
-    activeTab === "swap"
+    activeTab === 'swap'
       ? swapTabSelectedAsset
-      : activeTab === "runesInfo"
+      : activeTab === 'runesInfo'
         ? runesInfoTabSelectedAsset
-        : ""; // No specific asset needed for borrow chart yet
+        : ''; // No specific asset needed for borrow chart yet
   const renderActiveTab = () => {
     switch (activeTab) {
-      case "swap":
+      case 'swap':
         return (
           <SwapTab
             connected={connected}
@@ -137,7 +137,7 @@ export function AppInterface({ activeTab }: AppInterfaceProps) {
           />
         );
       // --- Add Borrow Tab Case ---
-      case "borrow":
+      case 'borrow':
         return (
           <BorrowTab
             connected={connected}
@@ -156,7 +156,7 @@ export function AppInterface({ activeTab }: AppInterfaceProps) {
           />
         );
       // --- End Borrow Tab Case ---
-      case "runesInfo":
+      case 'runesInfo':
         return (
           <RunesInfoTab
             cachedPopularRunes={popularRunes || []}
@@ -166,9 +166,9 @@ export function AppInterface({ activeTab }: AppInterfaceProps) {
             showPriceChart={showRunesInfoTabPriceChart}
           />
         );
-      case "yourTxs":
+      case 'yourTxs':
         return <YourTxsTab connected={connected} address={address} />;
-      case "portfolio":
+      case 'portfolio':
         return <PortfolioTab />;
       default:
         // Optionally render SwapTab as default or null
@@ -196,10 +196,10 @@ export function AppInterface({ activeTab }: AppInterfaceProps) {
 
   return (
     <div
-      className={`${styles.container} ${isPriceChartVisible ? styles.containerWithChart : ""}`}
+      className={`${styles.container} ${isPriceChartVisible ? styles.containerWithChart : ''}`}
     >
       {/* Conditionally render layout based on whether price chart is needed */}
-      {activeTab === "swap" || activeTab === "runesInfo" ? (
+      {activeTab === 'swap' || activeTab === 'runesInfo' ? (
         <div className={styles.appLayout}>
           <div className={styles.swapContainer}>{renderActiveTab()}</div>
           {isPriceChartVisible && (

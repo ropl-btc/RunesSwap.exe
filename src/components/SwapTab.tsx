@@ -1,29 +1,29 @@
-import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import styles from "./SwapTab.module.css";
-import { type QuoteResponse } from "satsterminal-sdk";
-import { normalizeRuneName } from "@/utils/runeUtils";
-import { Asset, BTC_ASSET } from "@/types/common";
+import { useQuery } from '@tanstack/react-query';
+import React, { useEffect, useState } from 'react';
+import { type QuoteResponse } from 'satsterminal-sdk';
+import useSwapAssets from '@/hooks/useSwapAssets';
+
+// Import our new components
+import useSwapExecution from '@/hooks/useSwapExecution';
+import useSwapQuote from '@/hooks/useSwapQuote';
+import useSwapRunes from '@/hooks/useSwapRunes';
+import useUsdValues from '@/hooks/useUsdValues';
 import {
   fetchBtcBalanceFromApi,
   fetchRuneBalancesFromApi,
   fetchRuneInfoFromApi,
   fetchRuneMarketFromApi,
-} from "@/lib/api";
-import useSwapRunes from "@/hooks/useSwapRunes";
-import useSwapAssets from "@/hooks/useSwapAssets";
+} from '@/lib/api';
+import { type RuneData } from '@/lib/runesData';
+import { Asset, BTC_ASSET } from '@/types/common';
 import {
   type RuneBalance as OrdiscanRuneBalance,
   type RuneMarketInfo as OrdiscanRuneMarketInfo,
-} from "@/types/ordiscan";
-import { type RuneData } from "@/lib/runesData";
-
-// Import our new components
-import { SwapTabForm, useSwapProcessManager } from "./swap";
-import useSwapExecution from "@/hooks/useSwapExecution";
-import useSwapQuote from "@/hooks/useSwapQuote";
-import useUsdValues from "@/hooks/useUsdValues";
-import SwapFeeSelector from "./SwapFeeSelector";
+} from '@/types/ordiscan';
+import { normalizeRuneName } from '@/utils/runeUtils';
+import { SwapTabForm, useSwapProcessManager } from './swap';
+import SwapFeeSelector from './SwapFeeSelector';
+import styles from './SwapTab.module.css';
 
 interface SwapTabProps {
   connected: boolean;
@@ -36,7 +36,11 @@ interface SwapTabProps {
     finalize?: boolean,
     broadcast?: boolean,
   ) => Promise<
-    | { signedPsbtHex?: string; signedPsbtBase64?: string; txId?: string }
+    | {
+        signedPsbtHex: string | undefined;
+        signedPsbtBase64: string | undefined;
+        txId?: string;
+      }
     | undefined
   >;
   btcPriceUsd: number | undefined;
@@ -70,8 +74,8 @@ export function SwapTab({
   preSelectedRune = null,
 }: SwapTabProps) {
   // State for input/output amounts
-  const [inputAmount, setInputAmount] = useState("");
-  const [outputAmount, setOutputAmount] = useState("");
+  const [inputAmount, setInputAmount] = useState('');
+  const [outputAmount, setOutputAmount] = useState('');
   const [feeRate, setFeeRate] = useState(0);
 
   // State for selected assets
@@ -98,7 +102,7 @@ export function SwapTab({
   const currentRunesError = popularError;
 
   // Add back loadingDots state for animation
-  const [loadingDots, setLoadingDots] = useState(".");
+  const [loadingDots, setLoadingDots] = useState('.');
   // Add back quote, quoteError, quoteExpired for quote data and error
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
   const [quoteTimestamp, setQuoteTimestamp] = useState<number | null>(null);
@@ -140,7 +144,7 @@ export function SwapTab({
     isLoading: isBtcBalanceLoading,
     error: btcBalanceError,
   } = useQuery<number, Error>({
-    queryKey: ["btcBalance", paymentAddress], // Include address in key
+    queryKey: ['btcBalance', paymentAddress], // Include address in key
     queryFn: () => fetchBtcBalanceFromApi(paymentAddress!), // Use API function
     enabled: !!connected && !!paymentAddress, // Only run query if connected and address exists
     staleTime: 30000, // Consider balance stale after 30 seconds
@@ -151,7 +155,7 @@ export function SwapTab({
     isLoading: isRuneBalancesLoading,
     error: runeBalancesError,
   } = useQuery<OrdiscanRuneBalance[], Error>({
-    queryKey: ["runeBalancesApi", address],
+    queryKey: ['runeBalancesApi', address],
     queryFn: () => fetchRuneBalancesFromApi(address!), // Use API function
     enabled: !!connected && !!address, // Only run query if connected and address exists
     staleTime: 30000, // Consider balances stale after 30 seconds
@@ -164,7 +168,7 @@ export function SwapTab({
     error: swapRuneInfoError,
   } = useQuery<RuneData | null, Error>({
     queryKey: [
-      "runeInfoApi",
+      'runeInfoApi',
       assetIn?.name ? normalizeRuneName(assetIn.name) : undefined,
     ],
     queryFn: () =>
@@ -180,7 +184,7 @@ export function SwapTab({
     OrdiscanRuneMarketInfo | null,
     Error
   >({
-    queryKey: ["runeMarketApi", assetIn?.name],
+    queryKey: ['runeMarketApi', assetIn?.name],
     queryFn: () =>
       assetIn && !assetIn.isBTC
         ? fetchRuneMarketFromApi(assetIn.name)
@@ -194,7 +198,7 @@ export function SwapTab({
     OrdiscanRuneMarketInfo | null,
     Error
   >({
-    queryKey: ["runeMarketApi", assetOut?.name],
+    queryKey: ['runeMarketApi', assetOut?.name],
     queryFn: () =>
       assetOut && !assetOut.isBTC
         ? fetchRuneMarketFromApi(assetOut.name)
@@ -225,17 +229,17 @@ export function SwapTab({
       intervalId = setInterval(() => {
         setLoadingDots((dots) => {
           switch (dots) {
-            case ".":
-              return "..";
-            case "..":
-              return "...";
+            case '.':
+              return '..';
+            case '..':
+              return '...';
             default:
-              return "."; // Reset to single dot
+              return '.'; // Reset to single dot
           }
         });
       }, 400); // Update every 400ms for smoother animation
     } else {
-      setLoadingDots("."); // Reset when not loading
+      setLoadingDots('.'); // Reset when not loading
     }
 
     // Cleanup function to clear interval
@@ -335,7 +339,7 @@ export function SwapTab({
     // Ordiscan returns names without spacers, so compare without them
     const formattedRuneName = normalizeRuneName(runeName);
     const found = runeBalances?.find((rb) => rb.name === formattedRuneName);
-    return found ? found.balance : "0"; // Return '0' if not found, assuming 0 balance
+    return found ? found.balance : '0'; // Return '0' if not found, assuming 0 balance
   };
 
   const availableBalanceNode =
@@ -348,7 +352,7 @@ export function SwapTab({
         ) : btcBalanceSats !== undefined ? (
           `${(btcBalanceSats / 100_000_000).toLocaleString(undefined, { maximumFractionDigits: 8 })}`
         ) : (
-          "N/A"
+          'N/A'
         )
       ) : isRuneBalancesLoading || isSwapRuneInfoLoading ? (
         <span className={styles.loadingText}>Loading{loadingDots}</span>
@@ -357,15 +361,15 @@ export function SwapTab({
       ) : (
         (() => {
           const rawBalance = getSpecificRuneBalance(assetIn.name);
-          if (rawBalance === null) return "N/A";
+          if (rawBalance === null) return 'N/A';
           try {
             const balanceNum = parseFloat(rawBalance);
-            if (isNaN(balanceNum)) return "Invalid Balance";
+            if (isNaN(balanceNum)) return 'Invalid Balance';
             const decimals = swapRuneInfo?.decimals ?? 0;
             const displayValue = balanceNum / 10 ** decimals;
             return `${displayValue.toLocaleString(undefined, { maximumFractionDigits: decimals })}`;
           } catch {
-            return "Formatting Error";
+            return 'Formatting Error';
           }
         })()
       )

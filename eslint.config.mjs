@@ -2,6 +2,8 @@ import { dirname } from "path";
 import { fileURLToPath } from "url";
 import { FlatCompat } from "@eslint/eslintrc";
 import eslintConfigPrettier from "eslint-config-prettier/flat";
+import importPlugin from "eslint-plugin-import";
+import typescriptParser from "@typescript-eslint/parser";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -108,9 +110,33 @@ const eslintConfig = [
   // Base configurations
   ...compat.extends("next/core-web-vitals", "next/typescript"),
 
-  // Custom rules
+  // Import plugin configuration
   {
     files: ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx"],
+    plugins: {
+      import: importPlugin,
+    },
+    languageOptions: {
+      parser: typescriptParser,
+      parserOptions: {
+        ecmaVersion: "latest",
+        sourceType: "module",
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
+    },
+    settings: {
+      "import/resolver": {
+        typescript: {
+          alwaysTryTypes: true,
+          project: "./tsconfig.json",
+        },
+        node: {
+          extensions: [".js", ".jsx", ".ts", ".tsx"],
+        },
+      },
+    },
     rules: {
       // Possible errors
       "no-console": ["warn", { allow: ["warn", "error", "info"] }],
@@ -125,12 +151,38 @@ const eslintConfig = [
 
       // Stylistic issues
       "max-len": ["warn", {
-        code: 100,
+        code: 80,
         ignoreUrls: true,
         ignoreStrings: true,
         ignoreTemplateLiterals: true,
         ignoreRegExpLiterals: true,
         ignoreComments: true
+      }],
+
+      // Import organization for AI readability (relaxed rules)
+      "import/order": ["warn", {
+        "groups": [
+          "builtin",
+          "external", 
+          "internal",
+          "parent",
+          "sibling",
+          "index"
+        ],
+        "newlines-between": "ignore",
+        "alphabetize": {
+          "order": "asc",
+          "caseInsensitive": true
+        }
+      }],
+      "import/newline-after-import": "warn",
+      "import/no-duplicates": "error",
+      "sort-imports": ["warn", {
+        "ignoreCase": false,
+        "ignoreDeclarationSort": true,
+        "ignoreMemberSort": false,
+        "memberSyntaxSortOrder": ["none", "all", "multiple", "single"],
+        "allowSeparatedGroups": true
       }],
     },
   },

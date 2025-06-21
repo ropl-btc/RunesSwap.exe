@@ -1,14 +1,14 @@
-import { supabase, hasSupabase } from "./supabase";
+import { hasSupabase, supabase } from './supabase';
 
-describe("supabase client", () => {
-  it("throws when accessed without configuration", () => {
+describe('supabase client', () => {
+  it('throws when accessed without configuration', () => {
     if (hasSupabase) {
       // If environment variables are set in this environment, skip
       return;
     }
 
     expect(() => {
-      (supabase as unknown as { from: () => void }).from("test");
+      (supabase as unknown as { from: () => void }).from();
     }).toThrow();
   });
 });

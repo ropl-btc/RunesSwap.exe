@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
 /**
  * Creates a standardized success response object
@@ -30,7 +30,7 @@ export function createErrorResponse(
   details?: string,
   status = 500,
 ): NextResponse {
-  console.error(`[API Error] ${message}${details ? `: ${details}` : ""}`);
+  console.error(`[API Error] ${message}${details ? `: ${details}` : ''}`);
 
   return NextResponse.json(
     {
@@ -53,36 +53,37 @@ export function createErrorResponse(
  */
 export function handleApiError(
   error: unknown,
-  defaultMessage = "An error occurred",
+  defaultMessage = 'An error occurred',
 ): { message: string; status: number; details?: string } {
   // For standard Error objects
   if (error instanceof Error) {
     return {
       message: error.message || defaultMessage,
       status: 500,
-      details: error.stack,
+      ...(error.stack && { details: error.stack }),
     };
   }
 
   // For errors with HTTP status (like from external APIs)
-  if (error && typeof error === "object") {
+  if (error && typeof error === 'object') {
     // Check for status property
-    if ("status" in error) {
+    if ('status' in error) {
       const status = (error as { status: number }).status;
 
       // Handle common HTTP status codes
       if (status === 404) {
-        return { message: "Resource not found", status: 404 };
+        return { message: 'Resource not found', status: 404 };
       }
 
       if (status === 400) {
+        const responseDetails =
+          'response' in error
+            ? JSON.stringify((error as Record<string, unknown>).response)
+            : undefined;
         return {
-          message: "Bad request",
+          message: 'Bad request',
           status: 400,
-          details:
-            "response" in error
-              ? JSON.stringify((error as Record<string, unknown>).response)
-              : undefined,
+          ...(responseDetails && { details: responseDetails }),
         };
       }
 
@@ -94,7 +95,7 @@ export function handleApiError(
     }
 
     // If it has a message property
-    if ("message" in error) {
+    if ('message' in error) {
       return {
         message: (error as { message: string }).message || defaultMessage,
         status: 500,
@@ -104,10 +105,12 @@ export function handleApiError(
   }
 
   // Default case for unknown error types
+  const errorDetails =
+    typeof error === 'string' ? error : JSON.stringify(error);
   return {
     message: defaultMessage,
     status: 500,
-    details: typeof error === "string" ? error : JSON.stringify(error),
+    details: errorDetails,
   };
 }
 
@@ -121,17 +124,17 @@ export function handleApiError(
  */
 export async function validateRequest<T>(
   request: Request,
-  schema: import("zod").ZodSchema<T>,
-  source: "body" | "query" = "body",
+  schema: import('zod').ZodSchema<T>,
+  source: 'body' | 'query' = 'body',
 ): Promise<
   | { success: true; data: T }
-  | { success: false; errorResponse: import("next/server").NextResponse }
+  | { success: false; errorResponse: import('next/server').NextResponse }
 > {
   let rawData: unknown;
   try {
-    if (source === "body") {
+    if (source === 'body') {
       rawData = await request.json();
-    } else if (source === "query") {
+    } else if (source === 'query') {
       const url = new URL(request.url);
       rawData = Object.fromEntries(url.searchParams.entries());
     }
@@ -139,10 +142,10 @@ export async function validateRequest<T>(
     return {
       success: false,
       errorResponse: createErrorResponse(
-        "Invalid request",
-        source === "body"
-          ? "The request body could not be parsed as JSON"
-          : "Invalid query parameters",
+        'Invalid request',
+        source === 'body'
+          ? 'The request body could not be parsed as JSON'
+          : 'Invalid query parameters',
         400,
       ),
     };
@@ -153,7 +156,7 @@ export async function validateRequest<T>(
     return {
       success: false,
       errorResponse: createErrorResponse(
-        "Invalid request parameters",
+        'Invalid request parameters',
         JSON.stringify(validation.error.flatten().fieldErrors),
         400,
       ),

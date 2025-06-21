@@ -1,13 +1,14 @@
-import { NextRequest } from "next/server";
-import { z } from "zod";
+import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import {
-  createSuccessResponse,
   createErrorResponse,
+  createSuccessResponse,
   handleApiError,
   validateRequest,
-} from "@/lib/apiUtils";
-import { callLiquidiumApi } from "@/lib/liquidiumServer";
-import { supabase } from "@/lib/supabase";
+} from '@/lib/apiUtils';
+import { callLiquidiumApi } from '@/lib/liquidiumServer';
+import { supabase } from '@/lib/supabase';
+import { safeArrayFirst } from '@/utils/typeGuards';
 
 // Schema for request body
 const submitBodySchema = z.object({
@@ -18,7 +19,7 @@ const submitBodySchema = z.object({
 
 export async function POST(request: NextRequest) {
   // Validate request body
-  const validation = await validateRequest(request, submitBodySchema, "body");
+  const validation = await validateRequest(request, submitBodySchema, 'body');
   if (!validation.success) {
     return validation.errorResponse;
   }
@@ -28,67 +29,70 @@ export async function POST(request: NextRequest) {
   try {
     // 1. Get User JWT from Supabase
     const { data: tokenRows, error: tokenError } = await supabase
-      .from("liquidium_tokens")
-      .select("jwt")
-      .eq("wallet_address", address)
+      .from('liquidium_tokens')
+      .select('jwt')
+      .eq('wallet_address', address)
       .limit(1);
 
     if (tokenError) {
       return createErrorResponse(
-        "Database error retrieving authentication",
+        'Database error retrieving authentication',
         tokenError.message,
         500,
       );
     }
-    if (!tokenRows || tokenRows.length === 0) {
+
+    const firstToken = safeArrayFirst(tokenRows);
+    if (!firstToken?.jwt) {
       return createErrorResponse(
-        "Liquidium authentication required",
-        "No JWT found for this address",
+        'Liquidium authentication required',
+        'No JWT found for this address',
         401,
       );
     }
-    const userJwt = tokenRows[0].jwt;
+
+    const userJwt = firstToken.jwt;
 
     // 2. Call Liquidium API
     const result = await callLiquidiumApi(
-      "/api/v1/borrower/loans/start/submit",
+      '/api/v1/borrower/loans/start/submit',
       {
-        method: "POST",
+        method: 'POST',
         userJwt,
         body: JSON.stringify(liquidiumPayload),
       },
-      "Liquidium submit borrow",
+      'Liquidium submit borrow',
     );
 
     if (!result.ok) {
       return createErrorResponse(
-        result.message ?? "Error",
+        result.message ?? 'Error',
         result.details,
         result.status,
       );
     }
 
     const responseData = result.data;
-    if (typeof responseData === "string") {
+    if (typeof responseData === 'string') {
       const trimmed = responseData.trim();
-      if (trimmed.startsWith("<!DOCTYPE") || trimmed.startsWith("<html")) {
-        if (trimmed.includes("success") || trimmed.includes("Success")) {
+      if (trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<html')) {
+        if (trimmed.includes('success') || trimmed.includes('Success')) {
           return createSuccessResponse({
             loan_transaction_id: liquidiumPayload.prepare_offer_id,
-            message: "Loan successfully started",
+            message: 'Loan successfully started',
             html_response: true,
           });
         }
         return createErrorResponse(
-          "Liquidium API returned HTML instead of JSON",
-          "The loan service returned an unexpected response format. Please try again later.",
+          'Liquidium API returned HTML instead of JSON',
+          'The loan service returned an unexpected response format. Please try again later.',
           500,
         );
       }
 
       return createSuccessResponse({
         loan_transaction_id: liquidiumPayload.prepare_offer_id,
-        message: "Loan successfully started",
+        message: 'Loan successfully started',
         raw_response: trimmed.slice(0, 100),
       });
     }
@@ -96,7 +100,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const errorInfo = handleApiError(
       error,
-      "Failed to submit borrow transaction",
+      'Failed to submit borrow transaction',
     );
     return createErrorResponse(
       errorInfo.message,

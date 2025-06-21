@@ -1,7 +1,8 @@
-import { useEffect, useState, useRef } from "react";
-import { Asset, BTC_ASSET } from "@/types/common";
-import { normalizeRuneName } from "@/utils/runeUtils";
-import { fetchPopularFromApi, fetchRunesFromApi } from "@/lib/api";
+import { useEffect, useRef, useState } from 'react';
+import { fetchPopularFromApi, fetchRunesFromApi } from '@/lib/api';
+import { Asset, BTC_ASSET } from '@/types/common';
+import { normalizeRuneName } from '@/utils/runeUtils';
+import { safeArrayFirst } from '@/utils/typeGuards';
 
 interface UseSwapRunesArgs {
   cachedPopularRunes?: Record<string, unknown>[];
@@ -41,9 +42,9 @@ export function useSwapRunes({
 
       if (cachedPopularRunes && cachedPopularRunes.length > 0) {
         const liquidiumToken: Asset = {
-          id: "liquidiumtoken",
-          name: "LIQUIDIUM•TOKEN",
-          imageURI: "https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN",
+          id: 'liquidiumtoken',
+          name: 'LIQUIDIUM•TOKEN',
+          imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
           isBTC: false,
         };
 
@@ -53,7 +54,7 @@ export function useSwapRunes({
               ((collection?.etching as Record<string, unknown>)
                 ?.runeName as string) ||
               (collection?.rune as string) ||
-              "Unknown";
+              'Unknown';
             return {
               id: (collection?.rune as string) || `unknown_${Math.random()}`,
               name: runeName,
@@ -76,7 +77,10 @@ export function useSwapRunes({
         setPopularRunes(mappedRunes);
 
         if (!preSelectedRune && !assetOut && mappedRunes.length > 0) {
-          setAssetOut(mappedRunes[0]);
+          const firstRune = safeArrayFirst(mappedRunes);
+          if (firstRune) {
+            setAssetOut(firstRune);
+          }
         }
 
         setIsPopularLoading(false);
@@ -89,9 +93,9 @@ export function useSwapRunes({
       setPopularRunes([]);
       try {
         const liquidiumToken: Asset = {
-          id: "liquidiumtoken",
-          name: "LIQUIDIUM•TOKEN",
-          imageURI: "https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN",
+          id: 'liquidiumtoken',
+          name: 'LIQUIDIUM•TOKEN',
+          imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
           isBTC: false,
         };
 
@@ -108,7 +112,7 @@ export function useSwapRunes({
                 ((collection?.etching as Record<string, unknown>)
                   ?.runeName as string) ||
                 (collection?.rune as string) ||
-                "Unknown",
+                'Unknown',
               imageURI:
                 (collection?.icon_content_url_data as string) ||
                 (collection?.imageURI as string),
@@ -126,18 +130,21 @@ export function useSwapRunes({
 
         setPopularRunes(mappedRunes);
         if (!preSelectedRune && !assetOut && mappedRunes.length > 0) {
-          setAssetOut(mappedRunes[0]);
+          const firstRune = safeArrayFirst(mappedRunes);
+          if (firstRune) {
+            setAssetOut(firstRune);
+          }
         }
       } catch (error) {
         setPopularError(
           error instanceof Error
             ? error.message
-            : "Failed to fetch popular runes",
+            : 'Failed to fetch popular runes',
         );
         const fallback: Asset = {
-          id: "liquidiumtoken",
-          name: "LIQUIDIUM•TOKEN",
-          imageURI: "https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN",
+          id: 'liquidiumtoken',
+          name: 'LIQUIDIUM•TOKEN',
+          imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
           isBTC: false,
         };
         setPopularRunes(preSelectedRune ? [] : [fallback]);
@@ -166,10 +173,10 @@ export function useSwapRunes({
           setAssetOut(rune);
           setIsPreselectedRuneLoading(false);
           setHasLoadedPreselectedRune(true);
-          if (typeof window !== "undefined") {
+          if (typeof window !== 'undefined') {
             const url = new URL(window.location.href);
-            url.searchParams.delete("rune");
-            window.history.replaceState({}, "", url.toString());
+            url.searchParams.delete('rune');
+            window.history.replaceState({}, '', url.toString());
           }
         } else {
           try {
@@ -178,25 +185,27 @@ export function useSwapRunes({
               const matchingRune = searchResults.find(
                 (r) => normalizeRuneName(r.name) === normalized,
               );
-              const foundRune = matchingRune || searchResults[0];
-              const foundAsset: Asset = {
-                id: foundRune.id,
-                name: foundRune.name,
-                imageURI: foundRune.imageURI,
-                isBTC: false,
-              };
-              setAssetIn(BTC_ASSET);
-              setAssetOut(foundAsset);
+              const foundRune = matchingRune || safeArrayFirst(searchResults);
+              if (foundRune) {
+                const foundAsset: Asset = {
+                  id: foundRune.id,
+                  name: foundRune.name,
+                  imageURI: foundRune.imageURI,
+                  isBTC: false,
+                };
+                setAssetIn(BTC_ASSET);
+                setAssetOut(foundAsset);
+              }
             }
           } catch {
             // ignore
           } finally {
             setIsPreselectedRuneLoading(false);
             setHasLoadedPreselectedRune(true);
-            if (typeof window !== "undefined") {
+            if (typeof window !== 'undefined') {
               const url = new URL(window.location.href);
-              url.searchParams.delete("rune");
-              window.history.replaceState({}, "", url.toString());
+              url.searchParams.delete('rune');
+              window.history.replaceState({}, '', url.toString());
             }
           }
         }

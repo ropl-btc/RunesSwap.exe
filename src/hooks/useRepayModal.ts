@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState } from 'react';
 import {
+  RepayLiquidiumLoanResponse,
   repayLiquidiumLoan,
   submitRepayPsbt,
-  RepayLiquidiumLoanResponse,
-} from "@/lib/api";
-import { LiquidiumLoanOffer } from "@/types/liquidium";
+} from '@/lib/api';
+import { LiquidiumLoanOffer } from '@/types/liquidium';
 
 interface Args {
   address: string | null;
@@ -13,7 +13,11 @@ interface Args {
     finalize?: boolean,
     broadcast?: boolean,
   ) => Promise<
-    { signedPsbtHex?: string; signedPsbtBase64?: string } | undefined
+    | {
+        signedPsbtHex: string | undefined;
+        signedPsbtBase64: string | undefined;
+      }
+    | undefined
   >;
 }
 
@@ -22,7 +26,7 @@ export function useRepayModal({ address, signPsbt }: Args) {
   const [repayModal, setRepayModal] = useState<{
     open: boolean;
     loan: LiquidiumLoanOffer | null;
-    repayInfo: RepayLiquidiumLoanResponse["data"] | null;
+    repayInfo: RepayLiquidiumLoanResponse['data'] | null;
     loading: boolean;
     error: string | null;
   }>({ open: false, loan: null, repayInfo: null, loading: false, error: null });
@@ -30,7 +34,7 @@ export function useRepayModal({ address, signPsbt }: Args) {
   const handleRepay = async (loan: LiquidiumLoanOffer) => {
     setIsRepayingLoanId(loan.id);
     try {
-      if (!address) throw new Error("Wallet address required");
+      if (!address) throw new Error('Wallet address required');
       const result = await repayLiquidiumLoan(loan.id, address);
       if (result.success && result.data) {
         setRepayModal({
@@ -41,7 +45,7 @@ export function useRepayModal({ address, signPsbt }: Args) {
           error: null,
         });
       } else {
-        throw new Error(result.error || "Failed to prepare repayment");
+        throw new Error(result.error || 'Failed to prepare repayment');
       }
     } catch (err) {
       setRepayModal({
@@ -85,7 +89,7 @@ export function useRepayModal({ address, signPsbt }: Args) {
       }
       const signedPsbt =
         signResult?.signedPsbtBase64 || signResult?.signedPsbtHex;
-      if (!signedPsbt) throw new Error("Wallet did not return a signed PSBT");
+      if (!signedPsbt) throw new Error('Wallet did not return a signed PSBT');
       let submitResult;
       try {
         submitResult = await submitRepayPsbt(
@@ -107,7 +111,7 @@ export function useRepayModal({ address, signPsbt }: Args) {
         setRepayModal((m) => ({
           ...m,
           loading: false,
-          error: submitResult.error || "Failed to submit repayment",
+          error: submitResult.error || 'Failed to submit repayment',
         }));
       }
     } catch (err) {

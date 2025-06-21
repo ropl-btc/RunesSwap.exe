@@ -3,7 +3,7 @@ import {
   RunestoneMessage,
   RunicInput,
   RunicOutput,
-} from "@/types/ordiscan";
+} from '@/types/ordiscan';
 
 /**
  * Result of interpreting a Rune transaction
@@ -37,24 +37,24 @@ export function interpretRuneTransaction(
   tx: RuneActivityEvent,
   userAddress: string,
 ): RuneTransactionInterpretation {
-  let action = "Unknown";
-  let runeName = "N/A";
-  let runeAmountRaw = "N/A";
+  let action = 'Unknown';
+  let runeName = 'N/A';
+  let runeAmountRaw = 'N/A';
 
   try {
     // Check for MINT or ETCH message types first
     const mintEtchMessage = tx.runestone_messages.find(
-      (m: RunestoneMessage) => m.type === "MINT" || m.type === "ETCH",
+      (m: RunestoneMessage) => m.type === 'MINT' || m.type === 'ETCH',
     );
 
     if (mintEtchMessage) {
       // Case 1: This is a minting or etching transaction
-      action = mintEtchMessage.type === "MINT" ? "Minted" : "Etched";
+      action = mintEtchMessage.type === 'MINT' ? 'Minted' : 'Etched';
       runeName = mintEtchMessage.rune;
       const userOutput = tx.outputs.find(
         (o: RunicOutput) => o.address === userAddress && o.rune === runeName,
       );
-      runeAmountRaw = userOutput ? userOutput.rune_amount : "N/A";
+      runeAmountRaw = userOutput ? userOutput.rune_amount : 'N/A';
     } else {
       // Determine if user sent or received runes
       const userSent = tx.inputs.some(
@@ -66,7 +66,7 @@ export function interpretRuneTransaction(
 
       if (userSent && !userReceived) {
         // Case 2: User only sent runes (no change back)
-        action = "Sent";
+        action = 'Sent';
         const sentInput = tx.inputs.find(
           (i: RunicInput) => i.address === userAddress,
         );
@@ -76,7 +76,7 @@ export function interpretRuneTransaction(
         }
       } else if (userReceived && !userSent) {
         // Case 3: User only received runes
-        action = "Received";
+        action = 'Received';
         const receivedOutput = tx.outputs.find(
           (o: RunicOutput) => o.address === userAddress,
         );
@@ -98,13 +98,13 @@ export function interpretRuneTransaction(
 
         if (sentOutput) {
           // Found an output sending runes to another address - this is a Send
-          action = "Sent";
+          action = 'Sent';
           runeName = sentOutput.rune;
           runeAmountRaw = sentOutput.rune_amount;
         } else {
           // No runes sent externally, but user is sender & receiver.
           // This is an Internal Transfer (e.g., UTXO consolidation)
-          action = "Internal Transfer";
+          action = 'Internal Transfer';
 
           // Try to find the relevant rune from the runestone message
           const relevantRune = tx.runestone_messages[0]?.rune;
@@ -135,23 +135,23 @@ export function interpretRuneTransaction(
                 tx.inputs.find(
                   (i: RunicInput) => i.address === userAddress && i.rune,
                 )?.rune ||
-                "N/A";
-              runeAmountRaw = "N/A"; // Can't reliably determine amount
+                'N/A';
+              runeAmountRaw = 'N/A'; // Can't reliably determine amount
             }
           }
         }
       } else {
         // Case 5: User was not involved as sender or receiver
         // This might be an external event related to a rune they watch
-        action = "Transfer (External)";
+        action = 'Transfer (External)';
 
         // Try to find any rune involved in the transaction
         runeName =
           tx.runestone_messages[0]?.rune ||
           tx.inputs.find((i: RunicInput) => i.rune)?.rune ||
           tx.outputs.find((o: RunicOutput) => o.rune)?.rune ||
-          "N/A";
-        runeAmountRaw = "N/A"; // Amount for external transfers is ambiguous
+          'N/A';
+        runeAmountRaw = 'N/A'; // Amount for external transfers is ambiguous
       }
     }
   } catch {

@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import React from "react";
-import Image from "next/image";
-import styles from "./RunesInfoTab.module.css";
-import useRunesSearch from "@/hooks/useRunesSearch";
-import type { Rune } from "@/types/satsTerminal";
+import Image from 'next/image';
+import React from 'react';
+import useRunesSearch from '@/hooks/useRunesSearch';
+import type { Rune } from '@/types/satsTerminal';
+import styles from './RunesInfoTab.module.css';
 
 interface RuneSearchBarProps {
   onRuneSelect: (rune: Rune) => void;
@@ -65,7 +65,7 @@ const RuneSearchBar: React.FC<RuneSearchBarProps> = ({
             <div className={styles.listboxLoadingOrEmpty}>
               {searchQuery.trim()
                 ? `Searching for "${searchQuery}"...`
-                : "Loading Latest Runes..."}
+                : 'Loading Latest Runes...'}
             </div>
           )}
           {currentRunesError && (
@@ -86,7 +86,7 @@ const RuneSearchBar: React.FC<RuneSearchBarProps> = ({
               <div className={styles.listboxLoadingOrEmpty}>
                 {searchQuery.trim()
                   ? `Rune "${searchQuery}" not found.`
-                  : "No recent runes found"}
+                  : 'No recent runes found'}
               </div>
             )}
           {!isLoadingRunes &&
@@ -94,7 +94,7 @@ const RuneSearchBar: React.FC<RuneSearchBarProps> = ({
             availableRunes.map((rune) => (
               <button
                 key={rune.id}
-                className={`${styles.runeListItem} ${selectedRuneName === rune.name ? styles.runeListItemSelected : ""}`}
+                className={`${styles.runeListItem} ${selectedRuneName === rune.name ? styles.runeListItemSelected : ''}`}
                 onClick={() => onRuneSelect(rune)}
               >
                 <div className={styles.runeListItemContent}>
@@ -108,7 +108,7 @@ const RuneSearchBar: React.FC<RuneSearchBarProps> = ({
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         if (target) {
-                          target.style.display = "none";
+                          target.style.display = 'none';
                         }
                       }}
                     />

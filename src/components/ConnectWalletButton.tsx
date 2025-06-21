@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import React from "react";
-import styles from "./ConnectWalletButton.module.css";
+import React from 'react';
 import {
-  useWalletConnection,
   AVAILABLE_WALLETS,
-} from "@/hooks/useWalletConnection";
-import WalletOptionsList from "./WalletOptionsList";
+  useWalletConnection,
+} from '@/hooks/useWalletConnection';
+import styles from './ConnectWalletButton.module.css';
+import WalletOptionsList from './WalletOptionsList';
 
 const truncateAddress = (address: string) => {
-  if (!address) return "";
+  if (!address) return '';
   return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
 };
 
@@ -32,7 +32,7 @@ export function ConnectWalletButton() {
     const connectedWalletName =
       AVAILABLE_WALLETS.find((w) => w.provider === provider)?.name ||
       provider ||
-      "Wallet";
+      'Wallet';
     return (
       <div className={styles.connectedInfo}>
         <span className={styles.connectedText}>

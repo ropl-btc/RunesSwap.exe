@@ -1,5 +1,5 @@
-import React from "react";
-import styles from "./AppInterface.module.css";
+import React from 'react';
+import styles from './AppInterface.module.css';
 
 interface PriceTooltipProps {
   show: boolean;

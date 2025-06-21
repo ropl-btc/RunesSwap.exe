@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { Asset } from "@/types/common";
-import useAssetSearch from "@/hooks/useAssetSearch";
-import AssetSelectorDropdown from "./AssetSelectorDropdown";
+import React, { useEffect, useState } from 'react';
+import useAssetSearch from '@/hooks/useAssetSearch';
+import { Asset } from '@/types/common';
+import AssetSelectorDropdown from './AssetSelectorDropdown';
 
 interface AssetSelectorProps {
   selectedAsset: Asset | null;
@@ -32,18 +32,18 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
     currentError,
   } = useAssetSearch({ availableAssets, isAssetsLoading, assetsError });
 
-  const [loadingDots, setLoadingDots] = useState("");
+  const [loadingDots, setLoadingDots] = useState('');
 
   useEffect(() => {
     const shouldAnimate = isLoadingAssets || isPreselectedAssetLoading;
 
     if (!shouldAnimate) {
-      setLoadingDots("");
+      setLoadingDots('');
       return;
     }
 
     const interval = setInterval(() => {
-      setLoadingDots((prev) => (prev === "..." ? "" : prev + "."));
+      setLoadingDots((prev) => (prev === '...' ? '' : prev + '.'));
     }, 500);
 
     return () => clearInterval(interval);

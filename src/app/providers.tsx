@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { LaserEyesProvider, MAINNET, useLaserEyes } from "@omnisat/lasereyes";
-import { LaserEyesContext } from "@/context/LaserEyesContext";
-import { BackgroundProvider } from "@/context/BackgroundContext";
+import { LaserEyesProvider, MAINNET, useLaserEyes } from '@omnisat/lasereyes';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React, { useEffect, useState } from 'react';
+import { BackgroundProvider } from '@/context/BackgroundContext';
+import { LaserEyesContext } from '@/context/LaserEyesContext';
 
 function SharedLaserEyesProvider({ children }: { children: React.ReactNode }) {
   const laserEyesData = useLaserEyes();
@@ -46,7 +46,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <SharedLaserEyesProvider>
           <QueryClientProvider client={queryClient}>
             <BackgroundProvider>
-              <div style={{ visibility: "hidden" }}>{children}</div>
+              <div style={{ visibility: 'hidden' }}>{children}</div>
             </BackgroundProvider>
           </QueryClientProvider>
         </SharedLaserEyesProvider>

@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
-const STORAGE_KEY = "runesswap-background";
+const STORAGE_KEY = 'runesswap-background';
 
 interface BackgroundContextType {
   backgroundImage: string | null;
@@ -57,6 +57,6 @@ export function BackgroundProvider({
 export const useBackground = () => {
   const context = useContext(BackgroundContext);
   if (!context)
-    throw new Error("useBackground must be used within a BackgroundProvider");
+    throw new Error('useBackground must be used within a BackgroundProvider');
   return context;
 };

@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import React, { useRef, useState } from "react";
-import Image from "next/image";
-import styles from "./Layout.module.css";
-import FooterComponent from "./FooterComponent";
-import { useBackground } from "@/context/BackgroundContext";
-import TitleText from "./TitleText";
-import useBtcPrice from "@/hooks/useBtcPrice";
+import Image from 'next/image';
+import React, { useRef, useState } from 'react';
+import { useBackground } from '@/context/BackgroundContext';
+import useBtcPrice from '@/hooks/useBtcPrice';
+import FooterComponent from './FooterComponent';
+import styles from './Layout.module.css';
+import TitleText from './TitleText';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -26,7 +26,7 @@ export function Layout({ children }: LayoutProps) {
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      alert("Image is too large. Please select an image under 2MB.");
+      alert('Image is too large. Please select an image under 2MB.');
       return;
     }
 
@@ -47,8 +47,8 @@ export function Layout({ children }: LayoutProps) {
         backgroundImage
           ? {
               backgroundImage: `url(${backgroundImage})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
             }
           : {}
       }
@@ -86,7 +86,7 @@ export function Layout({ children }: LayoutProps) {
               type="file"
               accept="image/*"
               onChange={handleFileUpload}
-              style={{ display: "none" }}
+              style={{ display: 'none' }}
             />
           </div>
         </div>
@@ -101,7 +101,7 @@ export function Layout({ children }: LayoutProps) {
               alt="RunesSwap.app Logo"
               width={18}
               height={18}
-              style={{ imageRendering: "pixelated" }}
+              style={{ imageRendering: 'pixelated' }}
               priority
             />
             <TitleText />

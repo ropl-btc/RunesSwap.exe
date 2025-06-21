@@ -1,5 +1,5 @@
-import { create } from "zustand";
-import { type RuneInfo as OrdiscanRuneInfo } from "@/types/ordiscan";
+import { create } from 'zustand';
+import { type RuneInfo as OrdiscanRuneInfo } from '@/types/ordiscan';
 
 interface RunesInfoState {
   selectedRuneInfo: OrdiscanRuneInfo | null;
@@ -10,7 +10,7 @@ interface RunesInfoState {
 
 export const useRunesInfoStore = create<RunesInfoState>((set) => ({
   selectedRuneInfo: null,
-  runeSearchQuery: "",
+  runeSearchQuery: '',
   setSelectedRuneInfo: (runeInfo) => set({ selectedRuneInfo: runeInfo }),
   setRuneSearchQuery: (query) => set({ runeSearchQuery: query }),
 }));

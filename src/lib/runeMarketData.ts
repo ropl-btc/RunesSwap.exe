@@ -1,6 +1,6 @@
-import { supabase } from "./supabase";
-import { getOrdiscanClient } from "./serverUtils";
-import { normalizeRuneName } from "@/utils/runeUtils";
+import { normalizeRuneName } from '@/utils/runeUtils';
+import { getOrdiscanClient } from './serverUtils';
+import { supabase } from './supabase';
 
 export interface RuneMarketData {
   price_in_sats: number;
@@ -19,14 +19,14 @@ export async function getRuneMarketData(
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
 
     const { data: existingMarketData, error: dbError } = await supabase
-      .from("rune_market_data")
-      .select("*")
-      .eq("rune_name", normalizedName)
-      .gt("last_updated_at", tenMinutesAgo.toISOString())
+      .from('rune_market_data')
+      .select('*')
+      .eq('rune_name', normalizedName)
+      .gt('last_updated_at', tenMinutesAgo.toISOString())
       .single();
 
     if (dbError) {
-      console.error("[DEBUG] Error fetching from DB:", dbError);
+      console.error('[DEBUG] Error fetching from DB:', dbError);
     }
 
     if (existingMarketData) {
@@ -59,12 +59,12 @@ export async function getRuneMarketData(
     };
 
     const { error: upsertError } = await supabase
-      .from("rune_market_data")
+      .from('rune_market_data')
       .upsert(upsertData);
 
     if (upsertError) {
-      console.error("[DEBUG] Error storing market data:", upsertError);
-      console.error("[DEBUG] Upsert error details:", {
+      console.error('[DEBUG] Error storing market data:', upsertError);
+      console.error('[DEBUG] Upsert error details:', {
         code: upsertError.code,
         message: upsertError.message,
         details: upsertError.details,
@@ -75,19 +75,19 @@ export async function getRuneMarketData(
     return marketData as RuneMarketData;
   } catch (error: unknown) {
     if (error instanceof TypeError) {
-      console.error("[ERROR] Type error in getRuneMarketData:", error);
+      console.error('[ERROR] Type error in getRuneMarketData:', error);
       return null;
     }
-    if (typeof error === "object" && error !== null && "code" in error) {
+    if (typeof error === 'object' && error !== null && 'code' in error) {
       const errObj = error as { code?: string; message?: string };
-      console.error("[ERROR] API error in getRuneMarketData:", {
+      console.error('[ERROR] API error in getRuneMarketData:', {
         code: errObj.code,
         message: errObj.message,
       });
       return null;
     }
     // Default case
-    console.error("[ERROR] Unexpected error in getRuneMarketData:", error);
+    console.error('[ERROR] Unexpected error in getRuneMarketData:', error);
     return null;
   }
 }

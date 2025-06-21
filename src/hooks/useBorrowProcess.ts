@@ -1,17 +1,23 @@
-import { useState } from "react";
+import { useState } from 'react';
 import {
   LiquidiumPrepareBorrowResponse,
   LiquidiumSubmitBorrowResponse,
   prepareLiquidiumBorrow,
   submitLiquidiumBorrow,
-} from "@/lib/api";
-import type { RuneData } from "@/lib/runesData";
+} from '@/lib/api';
+import type { RuneData } from '@/lib/runesData';
 
-interface UseBorrowProcessArgs {
+interface UseBorrowProcessParams {
   signPsbt: (
     tx: string,
+    finalize?: boolean,
+    broadcast?: boolean,
   ) => Promise<
-    { signedPsbtHex?: string; signedPsbtBase64?: string } | undefined
+    | {
+        signedPsbtHex: string | undefined;
+        signedPsbtBase64: string | undefined;
+      }
+    | undefined
   >;
   address: string;
   paymentAddress: string;
@@ -27,7 +33,7 @@ export function useBorrowProcess({
   publicKey,
   paymentPublicKey,
   collateralRuneInfo,
-}: UseBorrowProcessArgs) {
+}: UseBorrowProcessParams) {
   const [isPreparing, setIsPreparing] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,7 +52,7 @@ export function useBorrowProcess({
       Number.isNaN(parsed) ||
       parsed <= 0
     ) {
-      setLoanProcessError("Missing required information (quote or amount).");
+      setLoanProcessError('Missing required information (quote or amount).');
       return;
     }
 
@@ -88,9 +94,9 @@ export function useBorrowProcess({
         !prepareResult.data?.prepare_offer_id
       ) {
         throw new Error(
-          typeof prepareResult.error === "string"
+          typeof prepareResult.error === 'string'
             ? prepareResult.error
-            : "Failed to prepare loan transaction.",
+            : 'Failed to prepare loan transaction.',
         );
       }
 
@@ -99,7 +105,7 @@ export function useBorrowProcess({
       const psbtToSign = prepareResult.data.base64_psbt;
       const signResult = await signPsbt(psbtToSign);
       if (!signResult?.signedPsbtBase64) {
-        throw new Error("User canceled the request");
+        throw new Error('User canceled the request');
       }
       const signedPsbtBase64 = signResult.signedPsbtBase64;
 
@@ -114,16 +120,16 @@ export function useBorrowProcess({
 
       if (!submitResult.success || !submitResult.data?.loan_transaction_id) {
         throw new Error(
-          typeof submitResult.error === "string"
+          typeof submitResult.error === 'string'
             ? submitResult.error
-            : "Failed to submit loan transaction.",
+            : 'Failed to submit loan transaction.',
         );
       }
 
       setLoanTxId(submitResult.data.loan_transaction_id);
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to start loan.";
+        error instanceof Error ? error.message : 'Failed to start loan.';
       setLoanProcessError(errorMessage);
     } finally {
       setIsPreparing(false);

@@ -1,7 +1,7 @@
-import { useMemo } from "react";
-import { QuoteResponse } from "satsterminal-sdk";
-import { Asset } from "@/types/common";
-import { RuneMarketInfo as OrdiscanRuneMarketInfo } from "@/types/ordiscan";
+import { useMemo } from 'react';
+import { QuoteResponse } from 'satsterminal-sdk';
+import { Asset } from '@/types/common';
+import { RuneMarketInfo as OrdiscanRuneMarketInfo } from '@/types/ordiscan';
 
 export interface UseUsdValuesArgs {
   inputAmount: string;
@@ -58,9 +58,9 @@ export default function useUsdValues({
       ) {
         const btcPerRune =
           quote.totalFormattedAmount &&
-          parseFloat(quote.totalFormattedAmount.replace(/,/g, "")) > 0
-            ? parseFloat(quote.totalPrice.replace(/,/g, "")) /
-              parseFloat(quote.totalFormattedAmount.replace(/,/g, ""))
+          parseFloat(quote.totalFormattedAmount.replace(/,/g, '')) > 0
+            ? parseFloat(quote.totalPrice.replace(/,/g, '')) /
+              parseFloat(quote.totalFormattedAmount.replace(/,/g, ''))
             : 0;
         if (btcPerRune > 0) {
           inputUsdVal = amountNum * btcPerRune * btcPriceUsd;
@@ -69,7 +69,7 @@ export default function useUsdValues({
 
       let outputUsdVal: number | null = null;
       if (outputAmount && assetOut) {
-        const sanitizedOutputAmount = outputAmount.replace(/,/g, "");
+        const sanitizedOutputAmount = outputAmount.replace(/,/g, '');
         const outputAmountNum = parseFloat(sanitizedOutputAmount);
         if (!isNaN(outputAmountNum) && outputAmountNum > 0) {
           if (assetOut.isBTC && btcPriceUsd) {
@@ -85,9 +85,9 @@ export default function useUsdValues({
           ) {
             const btcPerRune =
               quote.totalFormattedAmount &&
-              parseFloat(quote.totalFormattedAmount.replace(/,/g, "")) > 0
-                ? parseFloat(quote.totalPrice.replace(/,/g, "")) /
-                  parseFloat(quote.totalFormattedAmount.replace(/,/g, ""))
+              parseFloat(quote.totalFormattedAmount.replace(/,/g, '')) > 0
+                ? parseFloat(quote.totalPrice.replace(/,/g, '')) /
+                  parseFloat(quote.totalFormattedAmount.replace(/,/g, ''))
                 : 0;
             if (btcPerRune > 0) {
               outputUsdVal = outputAmountNum * btcPerRune * btcPriceUsd;
@@ -99,8 +99,8 @@ export default function useUsdValues({
       const format = (v: number | null) =>
         v !== null && v > 0
           ? v.toLocaleString(undefined, {
-              style: "currency",
-              currency: "USD",
+              style: 'currency',
+              currency: 'USD',
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })

@@ -1,6 +1,6 @@
-import React from "react";
-import { Asset } from "@/types/common";
-import InputArea from "./InputArea";
+import React from 'react';
+import { Asset } from '@/types/common';
+import InputArea from './InputArea';
 
 interface CollateralInputProps {
   connected: boolean;
@@ -9,13 +9,13 @@ interface CollateralInputProps {
   collateralAmount: string;
   onCollateralAmountChange: (value: string) => void;
   availableAssets: Asset[];
-  isAssetsLoading?: boolean;
-  assetsError?: string | null;
-  availableBalance?: React.ReactNode;
-  usdValue?: string;
-  minMaxRange?: string;
-  disabled?: boolean;
-  onPercentageClick?: (percentage: number) => void;
+  isAssetsLoading?: boolean | undefined;
+  assetsError?: string | null | undefined;
+  availableBalance?: React.ReactNode | undefined;
+  usdValue: string | undefined;
+  minMaxRange?: string | undefined;
+  disabled?: boolean | undefined;
+  onPercentageClick: ((percentage: number) => void) | undefined;
 }
 
 const CollateralInput: React.FC<CollateralInputProps> = ({
@@ -54,6 +54,7 @@ const CollateralInput: React.FC<CollateralInputProps> = ({
     availableBalance={availableBalance}
     usdValue={usdValue}
     minMaxRange={minMaxRange}
+    errorMessage={undefined}
   />
 );
 

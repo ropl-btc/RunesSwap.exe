@@ -10,7 +10,7 @@ export interface LiquidiumRequestOptions extends RequestInit {
   userJwt?: string;
 }
 
-const apiUrl = process.env.LIQUIDIUM_API_URL || "https://alpha.liquidium.wtf";
+const apiUrl = process.env.LIQUIDIUM_API_URL || 'https://alpha.liquidium.wtf';
 const apiKey = process.env.LIQUIDIUM_API_KEY;
 
 export async function callLiquidiumApi<T>(
@@ -21,20 +21,20 @@ export async function callLiquidiumApi<T>(
   if (!apiKey) {
     return {
       ok: false,
-      message: "Server configuration error",
-      details: "Missing Liquidium API key",
+      message: 'Server configuration error',
+      details: 'Missing Liquidium API key',
       status: 500,
     };
   }
 
   const headers: Record<string, string> = {
-    Accept: "application/json",
-    "Content-Type": "application/json",
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
     Authorization: `Bearer ${apiKey}`,
     ...(options.headers as Record<string, string>),
   };
   if (options.userJwt) {
-    headers["x-user-token"] = options.userJwt;
+    headers['x-user-token'] = options.userJwt;
   }
 
   try {
@@ -71,11 +71,11 @@ export async function callLiquidiumApi<T>(
         (errObj && (errObj.errorMessage as string)) ||
         (errObj && (errObj.error as string)) ||
         response.statusText ||
-        "Error";
+        'Error';
       return {
         ok: false,
         message: `${context}: ${errMsg}`,
-        details: typeof json === "string" ? json : JSON.stringify(json),
+        details: typeof json === 'string' ? json : JSON.stringify(json),
         status: response.status,
       };
     }

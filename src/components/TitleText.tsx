@@ -1,36 +1,37 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useRef } from "react";
-import styles from "./Layout.module.css";
+import { useEffect, useRef, useState } from 'react';
+import { safeArrayAccess } from '@/utils/typeGuards';
+import styles from './Layout.module.css';
 
 // Constants
-const DEFAULT_TITLE = "RunesSwap.app";
+const DEFAULT_TITLE = 'RunesSwap.app';
 const ROTATION_INTERVAL = 20000; // 20 seconds
 const FADE_DURATION = 300; // 300ms
 
 // Funny texts to cycle through randomly
 const FUNNY_TEXTS = [
-  "Runes go brrr...",
-  "Powered by magic internet money (not the rune)",
-  "Click here for free BTC (jk)",
-  "Windows 98 > Windows 11",
-  "Satoshi was here",
-  "Ordinals are just fancy JPEGs",
+  'Runes go brrr...',
+  'Powered by magic internet money (not the rune)',
+  'Click here for free BTC (jk)',
+  'Windows 98 > Windows 11',
+  'Satoshi was here',
+  'Ordinals are just fancy JPEGs',
   "Hodl my runes, I'm going in!",
-  "Probably nothing...",
-  "Wen moon?",
-  "Have you tried turning it off and on again?",
-  "Ordinals > NFTs, change my mind",
-  "Runes: Like memecoins but cooler",
-  "Inscribing my way to the moon",
-  "Bitcoin: The OG meme coin",
-  "Loading funny text...",
-  "Insert coin to continue",
-  "RunesSwap.exe has stopped working (chill)",
-  "Ctrl+Alt+Swap",
-  "Liquidium is the best",
-  "Over 4,000 BTC in loan volume on Liquidium",
-  "Liquidium did over 94k loans",
+  'Probably nothing...',
+  'Wen moon?',
+  'Have you tried turning it off and on again?',
+  'Ordinals > NFTs, change my mind',
+  'Runes: Like memecoins but cooler',
+  'Inscribing my way to the moon',
+  'Bitcoin: The OG meme coin',
+  'Loading funny text...',
+  'Insert coin to continue',
+  'RunesSwap.exe has stopped working (chill)',
+  'Ctrl+Alt+Swap',
+  'Liquidium is the best',
+  'Over 4,000 BTC in loan volume on Liquidium',
+  'Liquidium did over 94k loans',
 ];
 
 export function TitleText() {
@@ -60,7 +61,10 @@ export function TitleText() {
         }
 
         // Set the next text and increment index
-        setCurrentText(textsRef.current[indexRef.current++]);
+        const nextText = safeArrayAccess(textsRef.current, indexRef.current++);
+        if (nextText) {
+          setCurrentText(nextText);
+        }
         setIsTransitioning(false);
       }, FADE_DURATION);
     }

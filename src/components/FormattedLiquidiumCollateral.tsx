@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import Image from "next/image";
-import { FormattedRuneAmount } from "./FormattedRuneAmount";
-import styles from "./PortfolioTab.module.css";
+import { useQuery } from '@tanstack/react-query';
+import Image from 'next/image';
+import React, { useEffect, useState } from 'react';
+import { FormattedRuneAmount } from './FormattedRuneAmount';
+import styles from './PortfolioTab.module.css';
 
 interface FormattedLiquidiumCollateralProps {
   runeId: string;
@@ -32,7 +32,7 @@ export function FormattedLiquidiumCollateral({
 
   // Fetch rune info to get the actual rune name
   const { data: runeInfo } = useQuery({
-    queryKey: ["runeInfoById", runeIdForQuery],
+    queryKey: ['runeInfoById', runeIdForQuery],
     queryFn: async () => {
       // Try to fetch by the full rune_id
       if (runeIdForQuery) {
@@ -48,7 +48,7 @@ export function FormattedLiquidiumCollateral({
             }
           }
         } catch (error) {
-          console.error("Error fetching rune by ID:", error);
+          console.error('Error fetching rune by ID:', error);
         }
       }
       return null;
@@ -102,7 +102,7 @@ export function FormattedLiquidiumCollateral({
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               if (target) {
-                target.style.display = "none";
+                target.style.display = 'none';
               }
             }}
           />

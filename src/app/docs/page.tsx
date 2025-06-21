@@ -1,18 +1,18 @@
-import fs from "fs";
-import path from "path";
-import React from "react";
-import Link from "next/link";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import styles from "../page.module.css";
+import fs from 'fs';
+import path from 'path';
+import Link from 'next/link';
+import React from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import styles from '../page.module.css';
 
 export default function DocsPage() {
-  const readmePath = path.join(process.cwd(), "README.md");
-  let fileContents = "";
+  const readmePath = path.join(process.cwd(), 'README.md');
+  let fileContents = '';
   try {
-    fileContents = fs.readFileSync(readmePath, "utf-8");
+    fileContents = fs.readFileSync(readmePath, 'utf-8');
   } catch (err) {
-    console.error("Error reading README.md:", err);
+    console.error('Error reading README.md:', err);
   }
 
   return (

@@ -1,17 +1,17 @@
-import { useState, useEffect, useRef } from "react";
 import {
-  UNISAT,
-  XVERSE,
   LEATHER,
-  OYL,
   MAGIC_EDEN,
   OKX,
   ORANGE,
+  OYL,
   PHANTOM,
-  WIZZ,
   type ProviderType,
-} from "@omnisat/lasereyes";
-import { useSharedLaserEyes } from "@/context/LaserEyesContext";
+  UNISAT,
+  WIZZ,
+  XVERSE,
+} from '@omnisat/lasereyes';
+import { useEffect, useRef, useState } from 'react';
+import { useSharedLaserEyes } from '@/context/LaserEyesContext';
 
 interface WalletErrorPatterns {
   notInstalledPatterns: string[];
@@ -24,13 +24,13 @@ const WALLET_ERROR_PATTERNS: Partial<
   Record<ProviderType, WalletErrorPatterns>
 > = {
   [UNISAT]: {
-    notInstalledPatterns: ["not detected", "not installed", "not found"],
+    notInstalledPatterns: ['not detected', 'not installed', 'not found'],
   },
   [XVERSE]: {
     notInstalledPatterns: [
-      "no bitcoin wallet installed",
-      "extension not installed",
-      "is not defined",
+      'no bitcoin wallet installed',
+      'extension not installed',
+      'is not defined',
     ],
   },
   [LEATHER]: {
@@ -40,59 +40,59 @@ const WALLET_ERROR_PATTERNS: Partial<
     notInstalledPatterns: ["oyl isn't installed"],
   },
   [MAGIC_EDEN]: {
-    notInstalledPatterns: ["no bitcoin wallet installed"],
+    notInstalledPatterns: ['no bitcoin wallet installed'],
   },
   [OKX]: {
     notInstalledPatterns: [
-      "cannot read properties of undefined",
-      "provider not available",
+      'cannot read properties of undefined',
+      'provider not available',
     ],
   },
   [ORANGE]: {
-    notInstalledPatterns: ["no orange bitcoin wallet installed"],
+    notInstalledPatterns: ['no orange bitcoin wallet installed'],
   },
   [PHANTOM]: {
     notInstalledPatterns: [
       "phantom isn't installed",
-      "provider unavailable",
-      "no provider",
+      'provider unavailable',
+      'no provider',
     ],
   },
   [WIZZ]: {
-    notInstalledPatterns: ["wallet is not installed"],
+    notInstalledPatterns: ['wallet is not installed'],
   },
 };
 
 const COMMON_ERROR_PATTERNS: string[] = [
-  "not installed",
-  "not detected",
-  "not found",
-  "provider not available",
-  "wallet not found",
-  "extension not installed",
-  "missing provider",
-  "undefined provider",
-  "provider unavailable",
-  "no provider",
-  "cannot find",
-  "not connected",
-  "is not defined",
-  "is undefined",
-  "not exist",
+  'not installed',
+  'not detected',
+  'not found',
+  'provider not available',
+  'wallet not found',
+  'extension not installed',
+  'missing provider',
+  'undefined provider',
+  'provider unavailable',
+  'no provider',
+  'cannot find',
+  'not connected',
+  'is not defined',
+  'is undefined',
+  'not exist',
 ];
 
 const WALLET_INSTALL_LINKS: Partial<Record<ProviderType, string>> = {
-  [UNISAT]: "https://unisat.io/download",
-  [XVERSE]: "https://www.xverse.app/download",
-  [LEATHER]: "https://leather.io/install-extension",
+  [UNISAT]: 'https://unisat.io/download',
+  [XVERSE]: 'https://www.xverse.app/download',
+  [LEATHER]: 'https://leather.io/install-extension',
   [OYL]:
-    "https://chromewebstore.google.com/detail/oyl-wallet-bitcoin-ordina/ilolmnhjbbggkmopnemiphomhaojndmb",
-  [MAGIC_EDEN]: "https://wallet.magiceden.io/download",
-  [OKX]: "https://web3.okx.com/en-eu/download",
+    'https://chromewebstore.google.com/detail/oyl-wallet-bitcoin-ordina/ilolmnhjbbggkmopnemiphomhaojndmb',
+  [MAGIC_EDEN]: 'https://wallet.magiceden.io/download',
+  [OKX]: 'https://web3.okx.com/en-eu/download',
   [ORANGE]:
-    "https://chromewebstore.google.com/detail/orange-wallet/glmhbknppefdmpemdmjnjlinpbclokhn?hl=en&authuser=0",
-  [PHANTOM]: "https://phantom.com/download",
-  [WIZZ]: "https://wizzwallet.io/",
+    'https://chromewebstore.google.com/detail/orange-wallet/glmhbknppefdmpemdmjnjlinpbclokhn?hl=en&authuser=0',
+  [PHANTOM]: 'https://phantom.com/download',
+  [WIZZ]: 'https://wizzwallet.io/',
 };
 
 export const AVAILABLE_WALLETS: {
@@ -100,19 +100,19 @@ export const AVAILABLE_WALLETS: {
   provider: ProviderType;
   disclaimer?: string;
 }[] = [
-  { name: "Xverse", provider: XVERSE },
-  { name: "Unisat", provider: UNISAT },
-  { name: "Leather", provider: LEATHER },
-  { name: "OKX", provider: OKX },
-  { name: "Magic Eden", provider: MAGIC_EDEN },
-  { name: "OYL", provider: OYL },
-  { name: "Orange", provider: ORANGE },
+  { name: 'Xverse', provider: XVERSE },
+  { name: 'Unisat', provider: UNISAT },
+  { name: 'Leather', provider: LEATHER },
+  { name: 'OKX', provider: OKX },
+  { name: 'Magic Eden', provider: MAGIC_EDEN },
+  { name: 'OYL', provider: OYL },
+  { name: 'Orange', provider: ORANGE },
   {
-    name: "Phantom",
+    name: 'Phantom',
     provider: PHANTOM,
-    disclaimer: "Runes are not supported in Phantom wallet. Use with caution.",
+    disclaimer: 'Runes are not supported in Phantom wallet. Use with caution.',
   },
-  { name: "Wizz", provider: WIZZ },
+  { name: 'Wizz', provider: WIZZ },
 ];
 
 export function useWalletConnection() {
@@ -165,7 +165,7 @@ export function useWalletConnection() {
       console.error(`Failed to connect wallet:`, error);
 
       let isWalletNotInstalledError = false;
-      let errorMessage = "";
+      let errorMessage = '';
 
       if (error instanceof Error) {
         const errorString = error.message.toLowerCase();
@@ -185,7 +185,7 @@ export function useWalletConnection() {
         errorMessage = error.message;
       } else {
         isWalletNotInstalledError = true;
-        errorMessage = "Wallet provider unavailable";
+        errorMessage = 'Wallet provider unavailable';
       }
 
       if (isWalletNotInstalledError) {
@@ -193,7 +193,7 @@ export function useWalletConnection() {
         setInstallLink(WALLET_INSTALL_LINKS[providerToConnect] || null);
       } else {
         setConnectionError(
-          `Failed to connect to ${walletName}: ${errorMessage || "Unknown error"}`,
+          `Failed to connect to ${walletName}: ${errorMessage || 'Unknown error'}`,
         );
         setInstallLink(null);
       }
@@ -222,9 +222,9 @@ export function useWalletConnection() {
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
 
