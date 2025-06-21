@@ -61,14 +61,14 @@ export async function GET(request: NextRequest) {
 }
 ```
 
-### Error Response Standardization
-Always use helper functions from `@/lib/api/utils`:
+### API Response Standardization
+**CRITICAL**: All API routes must return consistent response formats using helper functions from `@/lib/apiUtils`:
 
 ```typescript
-// ✅ Correct - Standardized error responses
-import { createErrorResponse, createSuccessResponse } from '@/lib/api/utils';
+// ✅ Correct - Standardized responses
+import { createErrorResponse, createSuccessResponse } from '@/lib/apiUtils';
 
-// Success response
+// Success response - ALWAYS use createSuccessResponse
 return createSuccessResponse(data);
 
 // Error response with details
@@ -77,6 +77,33 @@ return createErrorResponse(
   'Technical details for debugging', 
   statusCode
 );
+
+// ❌ NEVER return raw JSON directly from external APIs
+return NextResponse.json(externalApiResponse); // This breaks client expectations!
+
+// ✅ ALWAYS wrap external API responses
+const externalResponse = await externalAPI.call();
+return createSuccessResponse(externalResponse);
+```
+
+### Client-Server API Contract
+All API endpoints must maintain consistent response format for proper client handling:
+
+```typescript
+// Expected response format for ALL endpoints:
+interface StandardResponse<T> {
+  success: boolean;
+  data: T;
+  error?: {
+    message: string;
+    details: string;
+    code?: string;
+  };
+}
+
+// Client code expects this format and uses handleApiResponse<T>()
+const data = await response.json();
+return handleApiResponse<ReturnType>(data, true); // true = expect wrapper
 ```
 
 ## External Service Integration Patterns
@@ -98,16 +125,57 @@ export async function getRuneInfo(runeId: string) {
 
 ### SatsTerminal Integration
 ```typescript
-// ✅ Use satsterminal-sdk
-import { SatsTerminalSDK } from 'satsterminal-sdk';
+// ✅ Use satsterminal-sdk - CORRECT PATTERNS
+import { 
+  SatsTerminal, 
+  type QuoteParams, 
+  type SearchParams,
+  type GetPSBTParams,
+  type ConfirmPSBTParams 
+} from 'satsterminal-sdk';
 
-const sdk = new SatsTerminalSDK({
+const terminal = new SatsTerminal({
   apiKey: process.env.SATS_TERMINAL_API_KEY!,
 });
 
-export async function createSwapQuote(params: QuoteParams) {
-  return await sdk.swap.getQuote(params);
+// Search method - uses 'query' not 'rune_name'
+export async function searchTokens(query: string) {
+  const searchParams: SearchParams = {
+    query: query,
+    sell: false,
+  };
+  return await terminal.search(searchParams);
 }
+
+// Quote method - uses 'fetchQuote' not 'getQuote'
+export async function createSwapQuote(params: QuoteParams) {
+  return await terminal.fetchQuote(params);
+}
+
+// Popular tokens - uses 'popularTokens' not 'popularCollections'
+export async function getPopularTokens() {
+  return await terminal.popularTokens({});
+}
+
+// PSBT methods
+export async function createPSBT(params: GetPSBTParams) {
+  return await terminal.getPSBT(params);
+}
+
+export async function confirmPSBT(params: ConfirmPSBTParams) {
+  return await terminal.confirmPSBT(params);
+}
+
+// ⚠️  WARNING: SDK Documentation Reliability
+// The npm documentation for satsterminal-sdk may be outdated.
+// Always verify against the actual TypeScript definitions in:
+// node_modules/satsterminal-sdk/dist/types.d.ts
+// 
+// Known outdated patterns in npm docs:
+// - Uses 'rune_name' instead of 'query' in SearchParams
+// - References 'popularCollections' instead of 'popularTokens'  
+// - Shows 'RuneOrder' instead of 'Order' interface
+// - Contains incorrect method names and signatures
 ```
 
 ### Liquidium Integration (Server-side)
@@ -226,6 +294,13 @@ const firstResult = results[0]; // Could throw
 
 // Don't skip error handling
 const data = await externalAPI.call(); // Could fail silently
+
+// Don't return raw external API responses  
+return NextResponse.json(satsTerminalResponse); // Breaks client contract!
+
+// Don't trust npm documentation for satsterminal-sdk
+const searchParams = { rune_name: query }; // Wrong! Should be 'query'
+await terminal.popularCollections(); // Wrong! Should be 'popularTokens'
 ```
 
 ### ✅ Do This Instead
@@ -236,11 +311,16 @@ const apiKey = process.env.LIQUIDIUM_API_KEY; // Correct
 // Safe array access
 const firstResult = safeArrayFirst(results); // Type-safe
 
-// Proper error handling
+// Proper error handling with standardized responses
 try {
   const data = await externalAPI.call();
-  return createSuccessResponse(data);
+  return createSuccessResponse(data); // Always wrap responses!
 } catch (error) {
   return createErrorResponse('Failed to fetch', error.message, 500);
 }
+
+// Use actual SDK interface (verify in types.d.ts)
+const searchParams: SearchParams = { query: query }; // Correct parameter name
+await terminal.popularTokens(); // Correct method name
+await terminal.fetchQuote(params); // Correct method name
 ```

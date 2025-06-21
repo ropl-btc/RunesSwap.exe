@@ -248,6 +248,15 @@ export function useSwapQuote({
       hasValidAssets &&
       currentKey !== quoteKeyRef.current
     ) {
+      // If the parameters changed, clear throttle to allow immediate fetching
+      // This fixes the issue where changing input amount while loading doesn't update
+      if (isThrottledRef.current) {
+        isThrottledRef.current = false;
+        if (throttleTimerRef.current) {
+          clearTimeout(throttleTimerRef.current);
+        }
+      }
+
       if (!isThrottledRef.current) {
         handleFetchQuote();
         quoteKeyRef.current = currentKey;

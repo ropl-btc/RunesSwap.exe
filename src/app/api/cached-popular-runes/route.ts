@@ -57,7 +57,7 @@ export async function GET() {
     // If we have no cached data at all (first run), we need to fetch synchronously
     try {
       const terminal = getSatsTerminalClient();
-      const popularResponse = await terminal.popularCollections({});
+      const popularResponse = await terminal.popularTokens({});
 
       // Validate response
       if (!popularResponse || typeof popularResponse !== 'object') {
@@ -103,7 +103,7 @@ export async function GET() {
 async function refreshPopularRunesInBackground(): Promise<void> {
   try {
     const terminal = getSatsTerminalClient();
-    const popularResponse = await terminal.popularCollections({});
+    const popularResponse = await terminal.popularTokens({});
 
     // Validate and cache if valid
     if (

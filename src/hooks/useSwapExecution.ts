@@ -3,8 +3,8 @@ import { useRef } from 'react';
 import {
   type ConfirmPSBTParams,
   type GetPSBTParams,
+  type Order,
   type QuoteResponse,
-  type RuneOrder,
 } from 'satsterminal-sdk';
 import type {
   SwapProcessAction,
@@ -121,8 +121,8 @@ export default function useSwapExecution({
       // 1. Get PSBT via API
       dispatchSwap({ type: 'SWAP_STEP', step: 'getting_psbt' });
       // Patch orders: ensure numeric fields are numbers and side is uppercase if present
-      const orders: RuneOrder[] = (quote.selectedOrders || []).map((order) => {
-        const patchedOrder: Partial<RuneOrder> = {
+      const orders: Order[] = (quote.selectedOrders || []).map((order) => {
+        const patchedOrder: Partial<Order> = {
           ...order,
           price:
             typeof order.price === 'string' ? Number(order.price) : order.price,
@@ -147,7 +147,7 @@ export default function useSwapExecution({
           (patchedOrder as Record<string, unknown>)['side'] = String(
             order.side,
           ).toUpperCase() as 'BUY' | 'SELL';
-        return patchedOrder as RuneOrder;
+        return patchedOrder as Order;
       });
 
       // Get the optimal fee rate from the mempool.space API, falling back to defaults
@@ -287,38 +287,36 @@ export default function useSwapExecution({
             ? Math.ceil(recommendedFeeRates.fastestFee * 1.3) // 30% more than fastest
             : 35; // fallback high value
 
-          const orders: RuneOrder[] = (quote.selectedOrders || []).map(
-            (order) => {
-              const patchedOrder: Partial<RuneOrder> = {
-                ...order,
-                price:
-                  typeof order.price === 'string'
-                    ? Number(order.price)
-                    : order.price,
-                formattedAmount:
-                  typeof order.formattedAmount === 'string'
-                    ? Number(order.formattedAmount)
-                    : order.formattedAmount,
-              };
+          const orders: Order[] = (quote.selectedOrders || []).map((order) => {
+            const patchedOrder: Partial<Order> = {
+              ...order,
+              price:
+                typeof order.price === 'string'
+                  ? Number(order.price)
+                  : order.price,
+              formattedAmount:
+                typeof order.formattedAmount === 'string'
+                  ? Number(order.formattedAmount)
+                  : order.formattedAmount,
+            };
 
-              // Only add slippage if it's defined and valid
-              if (order.slippage !== undefined) {
-                const slippageValue =
-                  typeof order.slippage === 'string'
-                    ? Number(order.slippage)
-                    : order.slippage;
-                if (!isNaN(slippageValue)) {
-                  patchedOrder.slippage = slippageValue;
-                }
+            // Only add slippage if it's defined and valid
+            if (order.slippage !== undefined) {
+              const slippageValue =
+                typeof order.slippage === 'string'
+                  ? Number(order.slippage)
+                  : order.slippage;
+              if (!isNaN(slippageValue)) {
+                patchedOrder.slippage = slippageValue;
               }
+            }
 
-              if ('side' in order && order.side)
-                (patchedOrder as Record<string, unknown>)['side'] = String(
-                  order.side,
-                ).toUpperCase() as 'BUY' | 'SELL';
-              return patchedOrder as RuneOrder;
-            },
-          );
+            if ('side' in order && order.side)
+              (patchedOrder as Record<string, unknown>)['side'] = String(
+                order.side,
+              ).toUpperCase() as 'BUY' | 'SELL';
+            return patchedOrder as Order;
+          });
 
           const retryParams: GetPSBTParams = {
             orders,

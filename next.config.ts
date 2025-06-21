@@ -3,17 +3,30 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: false, // Temporarily disable Strict Mode for testing
   images: {
-    domains: [
-      'icon.unisat.io',
-      'sats-terminal-node.azurewebsites.net',
-      'ordinals.com',
-      'ordiscan.com'
-    ],
     remotePatterns: [
       {
         protocol: 'https',
-        // allow images from any https domain
-        hostname: '*.*',
+        hostname: 'icon.unisat.io',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'sats-terminal-node.azurewebsites.net',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'ordinals.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'ordiscan.com',
+        port: '',
+        pathname: '/**',
       },
     ],
   },

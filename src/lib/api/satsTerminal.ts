@@ -51,7 +51,7 @@ export const fetchQuoteFromApi = async (
         `Failed to fetch quote: ${response.statusText}`,
     );
   }
-  return handleApiResponse<QuoteResponse>(data, false);
+  return data as QuoteResponse;
 };
 
 export const getPsbtFromApi = async (
@@ -75,7 +75,7 @@ export const getPsbtFromApi = async (
         `Failed to create PSBT: ${response.statusText}`,
     );
   }
-  return handleApiResponse<Record<string, unknown>>(data, false);
+  return data as Record<string, unknown>;
 };
 
 export const confirmPsbtViaApi = async (
@@ -99,5 +99,5 @@ export const confirmPsbtViaApi = async (
         `Failed to confirm PSBT: ${response.statusText}`,
     );
   }
-  return handleApiResponse<Record<string, unknown>>(data, false);
+  return data as Record<string, unknown>;
 };

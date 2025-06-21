@@ -54,8 +54,13 @@ export function useSwapAssets({
     setAssetIn(assetOut);
     setAssetOut(tempAsset);
 
+    // Clean the output amount before setting it as input amount
+    // Remove commas and other locale formatting that could break parseFloat
+    // This fixes the issue where formatted quote amounts (e.g., "1,234.56")
+    // would break subsequent quote fetching when used as input
+    const cleanedOutputAmount = outputAmount.replace(/,/g, '');
     const tempAmount = inputAmount;
-    setInputAmount(outputAmount);
+    setInputAmount(cleanedOutputAmount);
     setOutputAmount(tempAmount);
 
     clearQuoteState();

@@ -7,7 +7,7 @@ import {
   validateRequest,
 } from '@/lib/apiUtils';
 import { supabase } from '@/lib/supabase';
-import { safeArrayFirst } from '@/utils/typeGuards';
+import { safeArrayAccess, safeArrayFirst } from '@/utils/typeGuards';
 
 // Schema for query parameters
 const rangeParamsSchema = z.object({
@@ -230,7 +230,7 @@ export async function GET(request: NextRequest) {
         let globalMax = BigInt(firstRange.max);
 
         for (let i = 1; i < ranges.length; i++) {
-          const currentRange = safeArrayFirst(ranges.slice(i));
+          const currentRange = safeArrayAccess(ranges, i);
           if (!currentRange?.min || !currentRange?.max) {
             console.warn(`[API Warning] Skipping invalid range at index ${i}`);
             continue;
@@ -277,7 +277,7 @@ export async function GET(request: NextRequest) {
         let globalMax = BigInt(firstRange.max);
 
         for (let i = 1; i < ranges.length; i++) {
-          const currentRange = safeArrayFirst(ranges.slice(i));
+          const currentRange = safeArrayAccess(ranges, i);
           if (!currentRange?.min || !currentRange?.max) {
             console.warn(`[API Warning] Skipping invalid range at index ${i}`);
             continue;

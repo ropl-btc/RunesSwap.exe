@@ -156,6 +156,86 @@ Break larger components into smaller ones where possible. Stateful logic should 
 - Use the safe utility functions for array operations
 - Prefer explicit error boundaries over uncaught exceptions
 
+## JSDoc Documentation Standards
+
+Document all exported functions, components, and hooks:
+```typescript
+/**
+ * Fetches rune data with caching and error handling
+ * @param runeId - The unique identifier for the rune
+ * @param options - Optional configuration for the request
+ * @returns Promise resolving to rune data or null if not found
+ */
+export async function fetchRuneData(
+  runeId: string, 
+  options?: { useCache?: boolean }
+): Promise<RuneData | null> {
+  // Implementation
+}
+
+/**
+ * Custom hook for managing swap quote state
+ * @param assetIn - Input asset for the swap
+ * @param assetOut - Output asset for the swap
+ * @returns Object containing quote data, loading state, and error
+ */
+export function useSwapQuote(assetIn: Asset, assetOut: Asset) {
+  // Implementation
+}
+```
+
+## CSS Guidelines
+
+### Windows 98 Theme Integration
+Combine CSS Modules with 98.css classes:
+```typescript
+// Component.module.css
+.container {
+  padding: 8px;
+  background: var(--surface);
+}
+
+.button {
+  margin: 4px;
+  min-width: 75px;
+}
+
+// Component.tsx
+import styles from './Component.module.css';
+
+export function Component() {
+  return (
+    <div className={`${styles.container} window`}>
+      <div className="title-bar">
+        <div className="title-bar-text">RunesSwap</div>
+      </div>
+      <button className={`${styles.button} btn`}>
+        Click me
+      </button>
+    </div>
+  );
+}
+```
+
+### CSS Module Naming
+- Use **camelCase** for class names
+- Be **descriptive** but **concise**
+- Group related styles together
+- Prefix state-based classes clearly
+
+```css
+/* ✅ Good naming */
+.swapContainer { /* Main container */ }
+.swapButton { /* Action button */ }
+.swapButtonDisabled { /* Disabled state */ }
+.swapInputError { /* Error state */ }
+
+/* ❌ Avoid */
+.container { /* Too generic */ }
+.btn1 { /* Non-descriptive */ }
+.swap-button { /* Use camelCase, not kebab-case */ }
+```
+
 ## API Route Patterns
 When working with API routes, follow these patterns for maximum AI comprehensibility:
 
@@ -187,6 +267,8 @@ When adding features:
 - [ ] All imports are auto-organized (run `pnpm lint:fix`)
 - [ ] Line length stays under 80 characters
 - [ ] Type safety utilities are used consistently
+- [ ] JSDoc comments added for exported functions/components
+- [ ] CSS follows Windows 98 theme integration patterns
 - [ ] `pnpm ai-check` passes without errors
 
 Refer to `README.md` for additional details.
