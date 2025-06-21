@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { NextRequest } from 'next/server';
 import type { SearchParams } from 'satsterminal-sdk';
 import { z } from 'zod';
@@ -24,6 +25,32 @@ interface SearchResponseItem {
   imageURI?: string;
 }
 
+/**
+ * Generate a stable ID based on item properties and index.
+ * This ensures consistent IDs across API calls for the same search results.
+ * @param item - The search response item
+ * @param index - The item's position in the results array
+ * @returns A stable, deterministic ID
+ */
+function generateStableId(item: SearchResponseItem, index: number): string {
+  // Use existing ID if available
+  if (item.token_id) return item.token_id;
+  if (item.id) return item.id;
+
+  // Create stable ID from item properties
+  const identifier = [
+    item.token || item.name || '',
+    item.icon || item.imageURI || '',
+    index.toString(),
+  ]
+    .filter(Boolean)
+    .join('|');
+
+  // Generate a short hash for readability
+  const hash = createHash('md5').update(identifier).digest('hex').slice(0, 8);
+  return `search_${hash}`;
+}
+
 export async function GET(request: NextRequest) {
   const validation = await validateRequest(
     request,
@@ -47,8 +74,8 @@ export async function GET(request: NextRequest) {
 
     // Transform the raw SDK response to match our Rune interface
     const transformedResults: Rune[] = Array.isArray(searchResponse)
-      ? searchResponse.map((item: SearchResponseItem) => ({
-          id: item.token_id || item.id || `unknown_${Math.random()}`,
+      ? searchResponse.map((item: SearchResponseItem, index: number) => ({
+          id: generateStableId(item, index),
           name: item.token || item.name || 'Unknown',
           imageURI: item.icon || item.imageURI || '',
         }))
