@@ -9,9 +9,9 @@ module.exports = {
     // Allow any case for subjects (AI often uses different casing)
     'subject-case': [0], // Disable case restrictions
 
-    // Make type and subject optional for more flexibility
-    'type-empty': [1, 'never'], // Warning instead of error
-    'subject-empty': [1, 'never'], // Warning instead of error
+    // Make type and subject required for basic structure
+    'type-empty': [2, 'never'], // Error - type is required
+    'subject-empty': [2, 'never'], // Error - subject is required
 
     // Allow empty scope and body
     'scope-empty': [0],
