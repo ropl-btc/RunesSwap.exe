@@ -3,10 +3,10 @@ import {
   type RuneInfo as OrdiscanRuneInfo,
   type RuneMarketInfo as OrdiscanRuneMarketInfo,
   type RuneActivityEvent,
-} from "@/types/ordiscan";
-import { type RuneData } from "../runesData";
-import { normalizeRuneName } from "@/utils/runeUtils";
-import { handleApiResponse } from "./utils";
+} from '@/types/ordiscan';
+import { normalizeRuneName } from '@/utils/runeUtils';
+import { type RuneData } from '../runesData';
+import { handleApiResponse } from './utils';
 
 export const fetchBtcBalanceFromApi = async (
   address: string,
@@ -83,9 +83,9 @@ export const updateRuneDataViaApi = async (
   name: string,
 ): Promise<RuneData | null> => {
   const normalizedName = normalizeRuneName(name);
-  const response = await fetch("/api/ordiscan/rune-update", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+  const response = await fetch('/api/ordiscan/rune-update', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: normalizedName }),
   });
   let data;
@@ -134,12 +134,12 @@ export const fetchRuneMarketFromApi = async (
 };
 
 export const fetchListRunesFromApi = async (): Promise<OrdiscanRuneInfo[]> => {
-  const response = await fetch("/api/ordiscan/list-runes");
+  const response = await fetch('/api/ordiscan/list-runes');
   let data;
   try {
     data = await response.json();
   } catch {
-    throw new Error("Failed to parse runes list");
+    throw new Error('Failed to parse runes list');
   }
   if (!response.ok) {
     throw new Error(
@@ -166,7 +166,7 @@ export const fetchRuneActivityFromApi = async (
         `Failed to fetch rune activity: Server responded with status ${response.status}`,
       );
     }
-    throw new Error("Failed to parse successful API response.");
+    throw new Error('Failed to parse successful API response.');
   }
 
   if (!response.ok) {
@@ -194,17 +194,17 @@ export interface PriceHistoryResponse {
 export const fetchRunePriceHistoryFromApi = async (
   runeName: string,
 ): Promise<PriceHistoryResponse> => {
-  if (!runeName || runeName.trim() === "") {
+  if (!runeName || runeName.trim() === '') {
     return {
-      slug: "",
+      slug: '',
       prices: [],
       available: false,
     };
   }
 
   let querySlug = runeName;
-  if (runeName.includes("LIQUIDIUM")) {
-    querySlug = "LIQUIDIUMTOKEN";
+  if (runeName.includes('LIQUIDIUM')) {
+    querySlug = 'LIQUIDIUMTOKEN';
   }
 
   const response = await fetch(

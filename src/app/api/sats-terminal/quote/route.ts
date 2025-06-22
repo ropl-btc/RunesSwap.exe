@@ -1,13 +1,13 @@
-import { NextRequest } from "next/server";
-import type { QuoteParams } from "satsterminal-sdk";
-import { getSatsTerminalClient } from "@/lib/serverUtils";
-import { z } from "zod";
+import { NextRequest } from 'next/server';
+import type { QuoteParams } from 'satsterminal-sdk';
+import { z } from 'zod';
 import {
-  createSuccessResponse,
   createErrorResponse,
+  createSuccessResponse,
   handleApiError,
   validateRequest,
-} from "@/lib/apiUtils";
+} from '@/lib/apiUtils';
+import { getSatsTerminalClient } from '@/lib/serverUtils';
 
 const quoteParamsSchema = z.object({
   btcAmount: z
@@ -22,64 +22,48 @@ const quoteParamsSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const validation = await validateRequest(request, quoteParamsSchema, "body");
+  const validation = await validateRequest(request, quoteParamsSchema, 'body');
   if (!validation.success) return validation.errorResponse;
-  const validatedParams = validation.data;
-  // Ensure btcAmount is a string for the SDK
-  validatedParams.btcAmount = String(validatedParams.btcAmount);
+
+  const { btcAmount, address, runeName, sell } = validation.data;
 
   try {
     const terminal = getSatsTerminalClient();
-    let quoteResponse;
-    const maybeTerminal = terminal as unknown as {
-      newFetchQuote?: (btcAmount: number, runeName: string) => Promise<unknown>;
-    };
-    if (typeof maybeTerminal.newFetchQuote === "function") {
-      quoteResponse = await maybeTerminal.newFetchQuote(
-        Number(validatedParams.btcAmount),
-        validatedParams.runeName,
-      );
-    } else {
-      const quoteParams: QuoteParams = {
-        ...validatedParams,
-        btcAmount: validatedParams.btcAmount,
-      };
-      quoteResponse = await terminal.fetchQuote(quoteParams);
-    }
 
-    // Validate the response
-    if (!quoteResponse || typeof quoteResponse !== "object") {
-      return createErrorResponse(
-        "Invalid quote response",
-        "Quote data is malformed",
-        500,
-      );
-    }
+    // Convert to SDK-compatible format by ensuring all optional fields have defaults
+    const quoteParams: QuoteParams = {
+      btcAmount: String(btcAmount),
+      address,
+      runeName,
+      sell: sell ?? false,
+    };
+
+    const quoteResponse = await terminal.fetchQuote(quoteParams);
 
     return createSuccessResponse(quoteResponse);
   } catch (error) {
-    const errorInfo = handleApiError(error, "Failed to fetch quote");
+    const errorInfo = handleApiError(error, 'Failed to fetch quote');
 
     // Special handling for liquidity errors (maintain 404 status)
     const errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.toLowerCase().includes("liquidity")) {
-      return createErrorResponse("No liquidity available", errorMessage, 404);
+    if (errorMessage.toLowerCase().includes('liquidity')) {
+      return createErrorResponse('No liquidity available', errorMessage, 404);
     }
 
     // Special handling for rate limiting
-    if (errorMessage.includes("Rate limit") || errorInfo.status === 429) {
+    if (errorMessage.includes('Rate limit') || errorInfo.status === 429) {
       return createErrorResponse(
-        "Rate limit exceeded",
-        "Please try again later",
+        'Rate limit exceeded',
+        'Please try again later',
         429,
       );
     }
 
     // Handle unexpected token errors (HTML responses instead of JSON)
-    if (errorMessage.includes("Unexpected token")) {
+    if (errorMessage.includes('Unexpected token')) {
       return createErrorResponse(
-        "API service unavailable",
-        "The SatsTerminal API is currently unavailable. Please try again later.",
+        'API service unavailable',
+        'The SatsTerminal API is currently unavailable. Please try again later.',
         503,
       );
     }

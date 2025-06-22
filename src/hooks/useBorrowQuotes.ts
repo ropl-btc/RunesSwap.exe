@@ -1,14 +1,15 @@
-import { useEffect, useState } from "react";
-import { Asset } from "@/types/common";
+import { useEffect, useState } from 'react';
 import {
-  fetchPopularFromApi,
-  fetchBorrowQuotesFromApi,
-  fetchBorrowRangesFromApi,
   LiquidiumBorrowQuoteOffer,
   LiquidiumBorrowQuoteResponse,
-} from "@/lib/apiClient";
-import { normalizeRuneName } from "@/utils/runeUtils";
-import type { RuneData } from "@/lib/runesData";
+  fetchBorrowQuotesFromApi,
+  fetchBorrowRangesFromApi,
+  fetchPopularFromApi,
+} from '@/lib/apiClient';
+import type { RuneData } from '@/lib/runesData';
+import { Asset } from '@/types/common';
+import { normalizeRuneName } from '@/utils/runeUtils';
+import { safeArrayAccess, safeArrayFirst } from '@/utils/typeGuards';
 
 interface UseBorrowQuotesArgs {
   collateralAsset: Asset | null;
@@ -42,9 +43,9 @@ export function useBorrowQuotes({
       setPopularRunes([]);
       try {
         const liquidiumToken: Asset = {
-          id: "liquidiumtoken",
-          name: "LIQUIDIUM•TOKEN",
-          imageURI: "https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN",
+          id: 'liquidiumtoken',
+          name: 'LIQUIDIUM•TOKEN',
+          imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
           isBTC: false,
         };
         const response = await fetchPopularFromApi();
@@ -58,8 +59,8 @@ export function useBorrowQuotes({
               name: (
                 (collection?.slug as string) ||
                 (collection?.rune as string) ||
-                "Unknown"
-              ).replace(/-/g, "•"),
+                'Unknown'
+              ).replace(/-/g, '•'),
               imageURI:
                 (collection?.icon_content_url_data as string) ||
                 (collection?.imageURI as string),
@@ -78,12 +79,12 @@ export function useBorrowQuotes({
         setPopularError(
           error instanceof Error
             ? error.message
-            : "Failed to fetch popular runes",
+            : 'Failed to fetch popular runes',
         );
         const fallback: Asset = {
-          id: "liquidiumtoken",
-          name: "LIQUIDIUM•TOKEN",
-          imageURI: "https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN",
+          id: 'liquidiumtoken',
+          name: 'LIQUIDIUM•TOKEN',
+          imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
           isBTC: false,
         };
         setPopularRunes([fallback]);
@@ -109,7 +110,7 @@ export function useBorrowQuotes({
       }
       try {
         let runeIdForApi = collateralAsset.id;
-        if (collateralRuneInfo?.id?.includes(":")) {
+        if (collateralRuneInfo?.id?.includes(':')) {
           runeIdForApi = collateralRuneInfo.id;
         }
         const result = await fetchBorrowRangesFromApi(runeIdForApi, address);
@@ -129,13 +130,13 @@ export function useBorrowQuotes({
           error instanceof Error ? error.message : String(error);
         setMinMaxRange(null);
         if (
-          errorMessage.includes("No valid ranges found") ||
+          errorMessage.includes('No valid ranges found') ||
           errorMessage.includes(
-            "Could not find valid borrow ranges for this rune",
+            'Could not find valid borrow ranges for this rune',
           )
         ) {
           setBorrowRangeError(
-            "This rune is not currently available for borrowing on Liquidium.",
+            'This rune is not currently available for borrowing on Liquidium.',
           );
         } else {
           setBorrowRangeError(null);
@@ -185,7 +186,7 @@ export function useBorrowQuotes({
       }
 
       let runeIdForApi = collateralAsset.id;
-      if (collateralRuneInfo?.id?.includes(":")) {
+      if (collateralRuneInfo?.id?.includes(':')) {
         runeIdForApi = collateralRuneInfo.id;
       }
 
@@ -195,17 +196,29 @@ export function useBorrowQuotes({
       if (result?.runeDetails) {
         if (result.runeDetails.valid_ranges?.rune_amount?.ranges?.length > 0) {
           const ranges = result.runeDetails.valid_ranges.rune_amount.ranges;
-          let globalMin = BigInt(ranges[0].min);
-          let globalMax = BigInt(ranges[0].max);
-          for (let i = 1; i < ranges.length; i++) {
-            const currentMin = BigInt(ranges[i].min);
-            const currentMax = BigInt(ranges[i].max);
-            if (currentMin < globalMin) globalMin = currentMin;
-            if (currentMax > globalMax) globalMax = currentMax;
+          const firstRange = safeArrayFirst(ranges);
+          if (firstRange) {
+            let globalMin = BigInt(firstRange.min);
+            let globalMax = BigInt(firstRange.max);
+            for (let i = 1; i < ranges.length; i++) {
+              const currentRange = safeArrayAccess(ranges, i);
+              if (currentRange) {
+                const currentMin = BigInt(currentRange.min);
+                const currentMax = BigInt(currentRange.max);
+                if (currentMin < globalMin) globalMin = currentMin;
+                if (currentMax > globalMax) globalMax = currentMax;
+              }
+            }
+            const minFormatted = formatRuneAmount(
+              globalMin.toString(),
+              decimals,
+            );
+            const maxFormatted = formatRuneAmount(
+              globalMax.toString(),
+              decimals,
+            );
+            setMinMaxRange(`Min: ${minFormatted} - Max: ${maxFormatted}`);
           }
-          const minFormatted = formatRuneAmount(globalMin.toString(), decimals);
-          const maxFormatted = formatRuneAmount(globalMax.toString(), decimals);
-          setMinMaxRange(`Min: ${minFormatted} - Max: ${maxFormatted}`);
         } else {
           setMinMaxRange(null);
         }
@@ -213,20 +226,20 @@ export function useBorrowQuotes({
         if (result.runeDetails.offers) {
           setQuotes(result.runeDetails.offers);
           if (result.runeDetails.offers.length === 0) {
-            setQuotesError("No loan offers available for this amount.");
+            setQuotesError('No loan offers available for this amount.');
           }
         } else {
           setQuotes([]);
-          setQuotesError("No loan offers found or invalid response.");
+          setQuotesError('No loan offers found or invalid response.');
         }
       } else {
         setQuotes([]);
-        setQuotesError("No loan offers found or invalid response.");
+        setQuotesError('No loan offers found or invalid response.');
         setMinMaxRange(null);
       }
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to fetch quotes.";
+        error instanceof Error ? error.message : 'Failed to fetch quotes.';
       setQuotesError(errorMessage);
       setQuotes([]);
       setMinMaxRange(null);

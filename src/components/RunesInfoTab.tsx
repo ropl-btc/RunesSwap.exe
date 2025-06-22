@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import styles from "./RunesInfoTab.module.css";
+import { useQuery } from '@tanstack/react-query';
+import React, { useEffect, useState } from 'react';
+import { fetchRuneInfoFromApi, fetchRuneMarketFromApi } from '@/lib/api';
+import type { RuneData } from '@/lib/runesData';
+import { useRunesInfoStore } from '@/store/runesInfoStore';
 import {
   type RuneInfo as OrdiscanRuneInfo,
   type RuneMarketInfo as OrdiscanRuneMarketInfo,
-} from "@/types/ordiscan";
-import { fetchRuneInfoFromApi, fetchRuneMarketFromApi } from "@/lib/api";
-import { useRunesInfoStore } from "@/store/runesInfoStore";
-import type { RuneData } from "@/lib/runesData";
-import type { Rune } from "@/types/satsTerminal";
-import RuneSearchBar from "./RuneSearchBar";
-import RuneDetails from "./RuneDetails";
+} from '@/types/ordiscan';
+import type { Rune } from '@/types/satsTerminal';
+import RuneDetails from './RuneDetails';
+import RuneSearchBar from './RuneSearchBar';
+import styles from './RunesInfoTab.module.css';
 
 interface RunesInfoTabProps {
   cachedPopularRunes?: Record<string, unknown>[];
@@ -41,7 +41,7 @@ export function RunesInfoTab({
     isLoading: isDetailedRuneInfoLoading,
     error: detailedRuneInfoError,
   } = useQuery<RuneData | null, Error>({
-    queryKey: ["runeInfoApi", selectedRuneForInfo?.name],
+    queryKey: ['runeInfoApi', selectedRuneForInfo?.name],
     queryFn: () =>
       selectedRuneForInfo
         ? fetchRuneInfoFromApi(selectedRuneForInfo.name)
@@ -55,7 +55,7 @@ export function RunesInfoTab({
     isLoading: isRuneMarketInfoLoading,
     error: runeMarketInfoError,
   } = useQuery<OrdiscanRuneMarketInfo | null, Error>({
-    queryKey: ["runeMarketApi", selectedRuneForInfo?.name],
+    queryKey: ['runeMarketApi', selectedRuneForInfo?.name],
     queryFn: () =>
       selectedRuneForInfo
         ? fetchRuneMarketFromApi(selectedRuneForInfo.name)
@@ -92,12 +92,12 @@ export function RunesInfoTab({
       id: rune.id,
       name: rune.name,
       formatted_name: rune.name,
-      symbol: rune.name.split("•")[0] || rune.name,
+      symbol: rune.name.split('•')[0] || rune.name,
       decimals: 0,
       number: 0,
-      etching_txid: "",
-      premined_supply: "0",
-      current_supply: "0",
+      etching_txid: '',
+      premined_supply: '0',
+      current_supply: '0',
     } as OrdiscanRuneInfo;
 
     setTimeout(() => {

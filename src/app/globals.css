@@ -93,7 +93,7 @@ input {
 }
 
 /* Remove number input spinners */
-input[type="number"] {
+input[type='number'] {
   appearance: textfield;
 }
 

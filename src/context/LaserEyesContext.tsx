@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { createContext, useContext } from "react";
-import type { ProviderType } from "@omnisat/lasereyes"; // Import ProviderType
+import type { ProviderType } from '@omnisat/lasereyes'; // Import ProviderType
+import { createContext, useContext } from 'react';
 // REMOVED: import type { LaserEyesData } from '@omnisat/lasereyes'; // Assuming LaserEyes exports a type for its hook return value
 
 // Define the shape of the context data based on current usage
@@ -21,8 +21,8 @@ interface ILaserEyesContext {
     broadcast?: boolean,
   ) => Promise<
     | {
-        signedPsbtHex?: string;
-        signedPsbtBase64?: string;
+        signedPsbtHex: string | undefined;
+        signedPsbtBase64: string | undefined;
         txId?: string;
       }
     | undefined
@@ -42,7 +42,7 @@ export const useSharedLaserEyes = () => {
   const context = useContext(LaserEyesContext);
   if (!context) {
     throw new Error(
-      "useSharedLaserEyes must be used within a LaserEyesProvider via SharedLaserEyesProvider",
+      'useSharedLaserEyes must be used within a LaserEyesProvider via SharedLaserEyesProvider',
     );
   }
   return context;

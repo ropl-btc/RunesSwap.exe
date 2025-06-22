@@ -1,9 +1,9 @@
-import React, { Fragment } from "react";
-import Image from "next/image";
-import { Listbox, Transition } from "@headlessui/react";
-import { ChevronUpDownIcon, CheckIcon } from "@heroicons/react/24/solid";
-import styles from "./InputArea.module.css";
-import { Asset, BTC_ASSET } from "@/types/common";
+import { Listbox, Transition } from '@headlessui/react';
+import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/24/solid';
+import Image from 'next/image';
+import React, { Fragment } from 'react';
+import { Asset, BTC_ASSET } from '@/types/common';
+import styles from './InputArea.module.css';
 
 interface AssetSelectorDropdownProps {
   selectedAsset: Asset | null;
@@ -33,9 +33,9 @@ const AssetSelectorDropdown: React.FC<AssetSelectorDropdownProps> = ({
   loadingDots,
 }) => {
   const isValidImageSrc = (src?: string | null): src is string => {
-    if (!src || typeof src !== "string") return false;
+    if (!src || typeof src !== 'string') return false;
     return (
-      src.startsWith("http") || src.startsWith("/") || src.startsWith("data:")
+      src.startsWith('http') || src.startsWith('/') || src.startsWith('data:')
     );
   };
 
@@ -65,7 +65,7 @@ const AssetSelectorDropdown: React.FC<AssetSelectorDropdownProps> = ({
                       aria-hidden="true"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        if (target) target.style.display = "none";
+                        if (target) target.style.display = 'none';
                       }}
                     />
                   ) : null}
@@ -73,7 +73,7 @@ const AssetSelectorDropdown: React.FC<AssetSelectorDropdownProps> = ({
                     ? `Loading${loadingDots}`
                     : selectedAsset
                       ? selectedAsset.name
-                      : "Select Asset"}
+                      : 'Select Asset'}
                 </>
               )}
             </span>
@@ -134,13 +134,13 @@ const AssetSelectorDropdown: React.FC<AssetSelectorDropdownProps> = ({
                 availableAssets.length === 0 && (
                   <div className={styles.listboxLoadingOrEmpty}>
                     {searchQuery
-                      ? "No matching runes found"
-                      : "No runes available"}
+                      ? 'No matching runes found'
+                      : 'No runes available'}
                   </div>
                 )}
 
               {showBtcInSelector &&
-                (searchQuery.trim() === "" ||
+                (searchQuery.trim() === '' ||
                   BTC_ASSET.name
                     .toLowerCase()
                     .includes(searchQuery.trim().toLowerCase())) && (
@@ -207,7 +207,7 @@ const AssetSelectorDropdown: React.FC<AssetSelectorDropdownProps> = ({
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
                                 if (target) {
-                                  target.style.display = "none";
+                                  target.style.display = 'none';
                                 }
                               }}
                             />

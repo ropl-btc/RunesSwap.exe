@@ -1,14 +1,14 @@
-import { useCallback, useEffect, useRef } from "react";
-import { useDebounce } from "use-debounce";
-import { type QuoteResponse } from "satsterminal-sdk";
-import { fetchQuoteFromApi } from "@/lib/api";
-import { Asset } from "@/types/common";
+import { useCallback, useEffect, useRef } from 'react';
+import { type QuoteResponse } from 'satsterminal-sdk';
+import { useDebounce } from 'use-debounce';
 import type {
-  SwapProcessState,
   SwapProcessAction,
-} from "@/components/swap/SwapProcessManager";
+  SwapProcessState,
+} from '@/components/swap/SwapProcessManager';
+import { fetchQuoteFromApi } from '@/lib/api';
+import { Asset } from '@/types/common';
 
-const MOCK_ADDRESS = "34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo";
+const MOCK_ADDRESS = '34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo';
 
 interface UseSwapQuoteArgs {
   inputAmount: string;
@@ -51,7 +51,7 @@ export function useSwapQuote({
   const throttleTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isThrottledRef = useRef(false);
   const lastResetTimestampRef = useRef<number | null>(null);
-  const quoteKeyRef = useRef<string>("");
+  const quoteKeyRef = useRef<string>('');
   const latestQuoteRequestId = useRef(0);
 
   const handleFetchQuote = useCallback(async () => {
@@ -74,23 +74,23 @@ export function useSwapQuote({
     }, 3000);
 
     const requestId = ++latestQuoteRequestId.current;
-    dispatchSwap({ type: "FETCH_QUOTE_START" });
-    setOutputAmount("");
+    dispatchSwap({ type: 'FETCH_QUOTE_START' });
+    setOutputAmount('');
     setQuote(null);
     setExchangeRate(null);
 
     const effectiveAddress = address || MOCK_ADDRESS;
     if (!effectiveAddress) {
       dispatchSwap({
-        type: "FETCH_QUOTE_ERROR",
-        error: "Internal error: Missing address for quote.",
+        type: 'FETCH_QUOTE_ERROR',
+        error: 'Internal error: Missing address for quote.',
       });
       return;
     }
 
     if (amount <= 0) {
-      setOutputAmount("0.0");
-      dispatchSwap({ type: "FETCH_QUOTE_SUCCESS" });
+      setOutputAmount('0.0');
+      dispatchSwap({ type: 'FETCH_QUOTE_SUCCESS' });
       return;
     }
 
@@ -100,8 +100,8 @@ export function useSwapQuote({
         (!assetIn?.isBTC && !assetOut?.isBTC)
       ) {
         dispatchSwap({
-          type: "FETCH_QUOTE_ERROR",
-          error: "Invalid asset pair selected.",
+          type: 'FETCH_QUOTE_ERROR',
+          error: 'Invalid asset pair selected.',
         });
         return;
       }
@@ -134,7 +134,7 @@ export function useSwapQuote({
       if (requestId === latestQuoteRequestId.current) {
         setQuote(quoteResponse ?? null);
         setQuoteTimestamp(Date.now());
-        let calculatedOutputAmount = "";
+        let calculatedOutputAmount = '';
         let calculatedRate: string | null = null;
         if (quoteResponse) {
           const inputVal = parseFloat(inputAmount);
@@ -144,14 +144,14 @@ export function useSwapQuote({
           try {
             if (assetIn?.isBTC) {
               outputVal = parseFloat(
-                (quoteResponse.totalFormattedAmount || "0").replace(/,/g, ""),
+                (quoteResponse.totalFormattedAmount || '0').replace(/,/g, ''),
               );
               btcValue = inputVal;
               runeValue = outputVal;
               calculatedOutputAmount = outputVal.toLocaleString(undefined, {});
             } else {
               outputVal = parseFloat(
-                (quoteResponse.totalPrice || "0").replace(/,/g, ""),
+                (quoteResponse.totalPrice || '0').replace(/,/g, ''),
               );
               runeValue = inputVal;
               btcValue = outputVal;
@@ -163,8 +163,8 @@ export function useSwapQuote({
               const btcUsdAmount = btcValue * btcPriceUsd;
               const pricePerRune = btcUsdAmount / runeValue;
               calculatedRate = `${pricePerRune.toLocaleString(undefined, {
-                style: "currency",
-                currency: "USD",
+                style: 'currency',
+                currency: 'USD',
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 6,
               })} per ${
@@ -173,39 +173,39 @@ export function useSwapQuote({
             }
             setExchangeRate(calculatedRate);
           } catch {
-            calculatedOutputAmount = "Error";
-            setExchangeRate("Error calculating rate");
+            calculatedOutputAmount = 'Error';
+            setExchangeRate('Error calculating rate');
           }
         }
         setOutputAmount(calculatedOutputAmount);
-        dispatchSwap({ type: "FETCH_QUOTE_SUCCESS" });
+        dispatchSwap({ type: 'FETCH_QUOTE_SUCCESS' });
       }
     } catch (err) {
       if (requestId === latestQuoteRequestId.current) {
         let errorMessage =
-          err instanceof Error ? err.message : "Failed to fetch quote";
+          err instanceof Error ? err.message : 'Failed to fetch quote';
 
         if (
-          errorMessage.includes("500") ||
-          errorMessage.includes("Internal Server Error")
+          errorMessage.includes('500') ||
+          errorMessage.includes('Internal Server Error')
         ) {
           errorMessage =
-            "Server error: The quote service is temporarily unavailable. Please try again later.";
-        } else if (errorMessage.includes("No valid orders")) {
+            'Server error: The quote service is temporarily unavailable. Please try again later.';
+        } else if (errorMessage.includes('No valid orders')) {
           errorMessage =
-            "No orders available for this trade. Try a different amount or rune.";
+            'No orders available for this trade. Try a different amount or rune.';
         } else if (
-          errorMessage.includes("timeout") ||
-          errorMessage.includes("network")
+          errorMessage.includes('timeout') ||
+          errorMessage.includes('network')
         ) {
           errorMessage =
-            "Network error: Please check your connection and try again.";
+            'Network error: Please check your connection and try again.';
         }
 
         console.error(`Quote fetch error: ${errorMessage}`, err);
 
         dispatchSwap({
-          type: "FETCH_QUOTE_ERROR",
+          type: 'FETCH_QUOTE_ERROR',
           error: errorMessage,
         });
       }
@@ -223,31 +223,40 @@ export function useSwapQuote({
   ]);
 
   useEffect(() => {
-    if (swapState.txId || swapState.swapStep === "success") {
+    if (swapState.txId || swapState.swapStep === 'success') {
       return;
     }
 
     const runeAsset = assetIn?.isBTC ? assetOut : assetIn;
     const hasValidInputAmount =
-      typeof debouncedInputAmount === "number" && debouncedInputAmount > 0;
+      typeof debouncedInputAmount === 'number' && debouncedInputAmount > 0;
     const hasValidAssets =
       !!assetIn &&
       !!assetOut &&
       !!runeAsset &&
-      typeof assetIn.id === "string" &&
-      typeof assetOut.id === "string" &&
+      typeof assetIn.id === 'string' &&
+      typeof assetOut.id === 'string' &&
       !runeAsset.isBTC;
 
     const currentKey =
       hasValidInputAmount && hasValidAssets
         ? `${debouncedInputAmount}-${assetIn.id}-${assetOut.id}`
-        : "";
+        : '';
 
     if (
       hasValidInputAmount &&
       hasValidAssets &&
       currentKey !== quoteKeyRef.current
     ) {
+      // If the parameters changed, clear throttle to allow immediate fetching
+      // This fixes the issue where changing input amount while loading doesn't update
+      if (isThrottledRef.current) {
+        isThrottledRef.current = false;
+        if (throttleTimerRef.current) {
+          clearTimeout(throttleTimerRef.current);
+        }
+      }
+
       if (!isThrottledRef.current) {
         handleFetchQuote();
         quoteKeyRef.current = currentKey;
@@ -261,21 +270,21 @@ export function useSwapQuote({
 
       if (quote || outputAmount || exchangeRate) {
         setQuote(null);
-        setOutputAmount("");
+        setOutputAmount('');
         setExchangeRate(null);
       }
 
       if (
         (!debouncedInputAmount || debouncedInputAmount === 0) &&
         ![
-          "success",
-          "confirming",
-          "signing",
-          "getting_psbt",
-          "fetching_quote",
+          'success',
+          'confirming',
+          'signing',
+          'getting_psbt',
+          'fetching_quote',
         ].includes(swapState.swapStep) &&
         !swapState.isSwapping &&
-        quoteKeyRef.current !== ""
+        quoteKeyRef.current !== ''
       ) {
         const currentTime = Date.now();
         const RESET_COOLDOWN = 5000;
@@ -284,9 +293,9 @@ export function useSwapQuote({
           !lastResetTimestampRef.current ||
           currentTime - lastResetTimestampRef.current > RESET_COOLDOWN
         ) {
-          dispatchSwap({ type: "RESET_SWAP" });
+          dispatchSwap({ type: 'RESET_SWAP' });
           lastResetTimestampRef.current = currentTime;
-          quoteKeyRef.current = "";
+          quoteKeyRef.current = '';
         }
       }
     }

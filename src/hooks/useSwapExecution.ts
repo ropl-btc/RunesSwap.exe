@@ -1,22 +1,23 @@
-import { useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from '@tanstack/react-query';
+import { useRef } from 'react';
 import {
-  type QuoteResponse,
-  type RuneOrder,
-  type GetPSBTParams,
   type ConfirmPSBTParams,
-} from "satsterminal-sdk";
-import { Asset } from "@/types/common";
+  type GetPSBTParams,
+  type Order,
+  type QuoteResponse,
+} from 'satsterminal-sdk';
+import type {
+  SwapProcessAction,
+  SwapProcessState,
+} from '@/components/swap/SwapProcessManager';
 import {
-  getPsbtFromApi,
+  QUERY_KEYS,
   confirmPsbtViaApi,
   fetchRecommendedFeeRates,
-  QUERY_KEYS,
-} from "@/lib/api";
-import type {
-  SwapProcessState,
-  SwapProcessAction,
-} from "@/components/swap/SwapProcessManager";
+  getPsbtFromApi,
+} from '@/lib/api';
+import { Asset } from '@/types/common';
+import { patchOrder } from '@/utils/orderUtils';
 
 interface UseSwapExecutionArgs {
   connected: boolean;
@@ -29,7 +30,11 @@ interface UseSwapExecutionArgs {
     finalize?: boolean,
     broadcast?: boolean,
   ) => Promise<
-    { signedPsbtHex?: string; signedPsbtBase64?: string } | undefined
+    | {
+        signedPsbtHex: string | undefined;
+        signedPsbtBase64: string | undefined;
+      }
+    | undefined
   >;
   assetIn: Asset | null;
   assetOut: Asset | null;
@@ -88,55 +93,36 @@ export default function useSwapExecution({
       runeAsset.isBTC
     ) {
       dispatchSwap({
-        type: "SET_GENERIC_ERROR",
+        type: 'SET_GENERIC_ERROR',
         error:
-          "Missing connection details, assets, or quote. Please connect wallet and ensure quote is fetched.",
+          'Missing connection details, assets, or quote. Please connect wallet and ensure quote is fetched.',
       });
       dispatchSwap({
-        type: "SWAP_ERROR",
+        type: 'SWAP_ERROR',
         error:
-          "Missing connection details, assets, or quote. Please connect wallet and ensure quote is fetched.",
+          'Missing connection details, assets, or quote. Please connect wallet and ensure quote is fetched.',
       });
       return;
     }
 
     if (!quoteTimestamp || Date.now() - quoteTimestamp > 60000) {
-      dispatchSwap({ type: "QUOTE_EXPIRED" });
+      dispatchSwap({ type: 'QUOTE_EXPIRED' });
       dispatchSwap({
-        type: "SET_GENERIC_ERROR",
-        error: "Quote expired. Please fetch a new one.",
+        type: 'SET_GENERIC_ERROR',
+        error: 'Quote expired. Please fetch a new one.',
       });
       return;
     }
 
     // Proceed with the swap process - only dispatch SWAP_START, not FETCH_QUOTE_START
     // This prevents duplicate loading states that can cause button to remain disabled on cancellation
-    dispatchSwap({ type: "SWAP_START" });
+    dispatchSwap({ type: 'SWAP_START' });
 
     try {
       // 1. Get PSBT via API
-      dispatchSwap({ type: "SWAP_STEP", step: "getting_psbt" });
+      dispatchSwap({ type: 'SWAP_STEP', step: 'getting_psbt' });
       // Patch orders: ensure numeric fields are numbers and side is uppercase if present
-      const orders: RuneOrder[] = (quote.selectedOrders || []).map((order) => {
-        const patchedOrder: Partial<RuneOrder> = {
-          ...order,
-          price:
-            typeof order.price === "string" ? Number(order.price) : order.price,
-          formattedAmount:
-            typeof order.formattedAmount === "string"
-              ? Number(order.formattedAmount)
-              : order.formattedAmount,
-          slippage:
-            order.slippage !== undefined && typeof order.slippage === "string"
-              ? Number(order.slippage)
-              : order.slippage,
-        };
-        if ("side" in order && order.side)
-          (patchedOrder as Record<string, unknown>)["side"] = String(
-            order.side,
-          ).toUpperCase() as "BUY" | "SELL";
-        return patchedOrder as RuneOrder;
-      });
+      const orders: Order[] = (quote.selectedOrders || []).map(patchOrder);
 
       // Get the optimal fee rate from the mempool.space API, falling back to defaults
       // Use appropriate fee rate based on transaction type (higher for selling runes)
@@ -181,11 +167,11 @@ export default function useSwapExecution({
         }
 
         // 2. Sign PSBT(s) - Remains client-side via LaserEyes
-        dispatchSwap({ type: "SWAP_STEP", step: "signing" });
+        dispatchSwap({ type: 'SWAP_STEP', step: 'signing' });
         const mainSigningResult = await signPsbt(mainPsbtBase64);
         const signedMainPsbt = mainSigningResult?.signedPsbtBase64;
         if (!signedMainPsbt) {
-          throw new Error("Main PSBT signing cancelled or failed.");
+          throw new Error('Main PSBT signing cancelled or failed.');
         }
 
         let signedRbfPsbt: string | null = null;
@@ -197,7 +183,7 @@ export default function useSwapExecution({
         }
 
         // 3. Confirm PSBT via API
-        dispatchSwap({ type: "SWAP_STEP", step: "confirming" });
+        dispatchSwap({ type: 'SWAP_STEP', step: 'confirming' });
         const confirmParams: ConfirmPSBTParams = {
           orders: orders,
           address: address,
@@ -208,8 +194,8 @@ export default function useSwapExecution({
           swapId: swapId,
           runeName: runeAsset.name,
           sell: !isBtcToRune,
-          signedRbfPsbtBase64: signedRbfPsbt ?? undefined,
           rbfProtection: !!signedRbfPsbt,
+          ...(signedRbfPsbt && { signedRbfPsbtBase64: signedRbfPsbt }),
         };
         // *** Use API client function ***
         const confirmResult = await confirmPsbtViaApi(confirmParams);
@@ -232,7 +218,7 @@ export default function useSwapExecution({
             `Confirmation failed or transaction ID missing. Response: ${JSON.stringify(confirmResult)}`,
           );
         }
-        dispatchSwap({ type: "SWAP_SUCCESS", txId: finalTxId });
+        dispatchSwap({ type: 'SWAP_SUCCESS', txId: finalTxId });
 
         // Prevent further operations
         isThrottledRef.current = true;
@@ -240,7 +226,7 @@ export default function useSwapExecution({
         // This is important to prevent further fetches
         setTimeout(() => {
           // Do this in next tick to ensure state is updated
-          quoteKeyRef.current = "completed-swap";
+          quoteKeyRef.current = 'completed-swap';
         }, 0);
       } catch (psbtError) {
         // Re-throw to be caught by the outer catch block
@@ -251,21 +237,21 @@ export default function useSwapExecution({
       const errorMessage =
         error instanceof Error
           ? error.message
-          : "An unknown error occurred during the swap.";
+          : 'An unknown error occurred during the swap.';
 
       // Store the error message for use in the finally block
       errorMessageRef.current = errorMessage;
 
       // Handle fee rate errors specifically
       if (
-        errorMessage.includes("Network fee rate not high enough") ||
-        errorMessage.includes("fee rate")
+        errorMessage.includes('Network fee rate not high enough') ||
+        errorMessage.includes('fee rate')
       ) {
         // First, notify the user that we're retrying
         dispatchSwap({
-          type: "SET_GENERIC_ERROR",
+          type: 'SET_GENERIC_ERROR',
           error:
-            "Fee rate too low, automatically retrying with a higher fee rate...",
+            'Fee rate too low, automatically retrying with a higher fee rate...',
         });
 
         try {
@@ -275,31 +261,7 @@ export default function useSwapExecution({
             ? Math.ceil(recommendedFeeRates.fastestFee * 1.3) // 30% more than fastest
             : 35; // fallback high value
 
-          const orders: RuneOrder[] = (quote.selectedOrders || []).map(
-            (order) => {
-              const patchedOrder: Partial<RuneOrder> = {
-                ...order,
-                price:
-                  typeof order.price === "string"
-                    ? Number(order.price)
-                    : order.price,
-                formattedAmount:
-                  typeof order.formattedAmount === "string"
-                    ? Number(order.formattedAmount)
-                    : order.formattedAmount,
-                slippage:
-                  order.slippage !== undefined &&
-                  typeof order.slippage === "string"
-                    ? Number(order.slippage)
-                    : order.slippage,
-              };
-              if ("side" in order && order.side)
-                (patchedOrder as Record<string, unknown>)["side"] = String(
-                  order.side,
-                ).toUpperCase() as "BUY" | "SELL";
-              return patchedOrder as RuneOrder;
-            },
-          );
+          const orders: Order[] = (quote.selectedOrders || []).map(patchOrder);
 
           const retryParams: GetPSBTParams = {
             orders,
@@ -333,11 +295,11 @@ export default function useSwapExecution({
 
           // Continue with the original flow using the new PSBT
           // 👍 Successfully created PSBT with higher fee rate, continue with standard flow
-          dispatchSwap({ type: "SWAP_STEP", step: "signing" });
+          dispatchSwap({ type: 'SWAP_STEP', step: 'signing' });
           const mainSigningResult = await signPsbt(mainPsbtBase64);
           const signedMainPsbt = mainSigningResult?.signedPsbtBase64;
           if (!signedMainPsbt) {
-            throw new Error("Main PSBT signing cancelled or failed.");
+            throw new Error('Main PSBT signing cancelled or failed.');
           }
 
           let signedRbfPsbt: string | null = null;
@@ -348,7 +310,7 @@ export default function useSwapExecution({
 
           // 3. Confirm PSBT via API with higher fee rate PSBT
           // Confirming the PSBT with higher fee
-          dispatchSwap({ type: "SWAP_STEP", step: "confirming" });
+          dispatchSwap({ type: 'SWAP_STEP', step: 'confirming' });
           const confirmParams: ConfirmPSBTParams = {
             orders: orders,
             address: address,
@@ -359,8 +321,8 @@ export default function useSwapExecution({
             swapId: swapId,
             runeName: runeAsset.name,
             sell: !isBtcToRune,
-            signedRbfPsbtBase64: signedRbfPsbt ?? undefined,
             rbfProtection: !!signedRbfPsbt,
+            ...(signedRbfPsbt && { signedRbfPsbtBase64: signedRbfPsbt }),
           };
 
           // Confirm with the new PSBT
@@ -385,7 +347,7 @@ export default function useSwapExecution({
             );
           }
 
-          dispatchSwap({ type: "SWAP_SUCCESS", txId: finalTxId });
+          dispatchSwap({ type: 'SWAP_SUCCESS', txId: finalTxId });
 
           // Prevent further operations
           isThrottledRef.current = true;
@@ -393,76 +355,76 @@ export default function useSwapExecution({
           // This is important to prevent further fetches
           setTimeout(() => {
             // Do this in next tick to ensure state is updated
-            quoteKeyRef.current = "completed-swap";
+            quoteKeyRef.current = 'completed-swap';
           }, 0);
 
           // Exit the catch block - we've successfully recovered from the error
           return;
         } catch (retryError) {
           // If the retry also fails, show a more specific error
-          console.error("Transaction failed even with higher fee rate");
+          console.error('Transaction failed even with higher fee rate');
           const retryErrorMessage =
             retryError instanceof Error
               ? retryError.message
-              : "Failed to retry with higher fee rate";
+              : 'Failed to retry with higher fee rate';
 
           dispatchSwap({
-            type: "SET_GENERIC_ERROR",
+            type: 'SET_GENERIC_ERROR',
             error: `Transaction failed even with a higher fee rate. The network may be congested. Please try again later. (${retryErrorMessage})`,
           });
           dispatchSwap({
-            type: "SWAP_ERROR",
+            type: 'SWAP_ERROR',
             error: `Transaction failed even with a higher fee rate. The network may be congested. Please try again later. (${retryErrorMessage})`,
           });
         }
       }
       // Handle other specific errors
       else if (
-        errorMessage.includes("Quote expired. Please, fetch again.") ||
+        errorMessage.includes('Quote expired. Please, fetch again.') ||
         (error &&
-          typeof error === "object" &&
-          "code" in error &&
-          (error as { code?: string }).code === "QUOTE_EXPIRED")
+          typeof error === 'object' &&
+          'code' in error &&
+          (error as { code?: string }).code === 'QUOTE_EXPIRED')
       ) {
         // Quote expired error
-        dispatchSwap({ type: "QUOTE_EXPIRED" });
+        dispatchSwap({ type: 'QUOTE_EXPIRED' });
         dispatchSwap({
-          type: "SET_GENERIC_ERROR",
-          error: "Quote expired. Please fetch a new one.",
+          type: 'SET_GENERIC_ERROR',
+          error: 'Quote expired. Please fetch a new one.',
         });
         dispatchSwap({
-          type: "SWAP_ERROR",
-          error: "Quote expired. Please fetch a new one.",
+          type: 'SWAP_ERROR',
+          error: 'Quote expired. Please fetch a new one.',
         });
       } else if (
-        errorMessage.includes("User canceled the request") ||
-        errorMessage.includes("User canceled")
+        errorMessage.includes('User canceled the request') ||
+        errorMessage.includes('User canceled')
       ) {
         // User cancelled signing - reset state completely
 
         // IMPORTANT: We use a full reset instead of individual state updates
         // This ensures we clear ALL state flags at once, including isQuoteLoading
-        dispatchSwap({ type: "RESET_SWAP" });
+        dispatchSwap({ type: 'RESET_SWAP' });
 
         // Explicitly set the swap step to idle as well to ensure the UI is reset correctly
         // This handles edge cases where RESET_SWAP might not fully propagate immediately
-        dispatchSwap({ type: "SWAP_STEP", step: "idle" });
+        dispatchSwap({ type: 'SWAP_STEP', step: 'idle' });
 
         // Then set the error message for the user (after reset)
         dispatchSwap({
-          type: "SET_GENERIC_ERROR",
-          error: "User canceled the request",
+          type: 'SET_GENERIC_ERROR',
+          error: 'User canceled the request',
         });
       } else {
         // Other swap errors
-        dispatchSwap({ type: "SET_GENERIC_ERROR", error: errorMessage });
-        dispatchSwap({ type: "SWAP_ERROR", error: errorMessage });
+        dispatchSwap({ type: 'SET_GENERIC_ERROR', error: errorMessage });
+        dispatchSwap({ type: 'SWAP_ERROR', error: errorMessage });
       }
     } finally {
       // If we have a transaction ID, ensure success state persists
       if (swapState.txId) {
-        if (swapState.swapStep !== "success") {
-          dispatchSwap({ type: "SWAP_SUCCESS", txId: swapState.txId });
+        if (swapState.swapStep !== 'success') {
+          dispatchSwap({ type: 'SWAP_SUCCESS', txId: swapState.txId });
         }
         return;
       }
@@ -474,8 +436,8 @@ export default function useSwapExecution({
       // ======================================================================
       if (errorMessageRef.current) {
         // Special case for user cancelation - reset back to idle
-        if (errorMessageRef.current.includes("User canceled")) {
-          dispatchSwap({ type: "SWAP_STEP", step: "idle" });
+        if (errorMessageRef.current.includes('User canceled')) {
+          dispatchSwap({ type: 'SWAP_STEP', step: 'idle' });
         } else {
           // IMPORTANT: Do nothing for non-cancelation errors to preserve the error UI
           // Future improvement: We could add error categorization here for better UX
@@ -485,8 +447,8 @@ export default function useSwapExecution({
       }
 
       // Handle non-success states with no errors
-      if (swapState.swapStep !== "success") {
-        dispatchSwap({ type: "SWAP_STEP", step: "idle" });
+      if (swapState.swapStep !== 'success') {
+        dispatchSwap({ type: 'SWAP_STEP', step: 'idle' });
       }
     }
   };

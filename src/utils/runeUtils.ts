@@ -8,5 +8,5 @@
  * interacting with APIs.
  */
 export function normalizeRuneName(name: string): string {
-  return name.replace(/[•.]/g, "");
+  return name.replace(/[•.]/g, '');
 }

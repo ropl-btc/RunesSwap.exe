@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import React, { useState, Suspense } from "react";
-import { AppInterface } from "@/components/AppInterface";
-import TabNavigation, { ActiveTab } from "@/components/TabNavigation";
-import styles from "./page.module.css";
+import React, { Suspense, useState } from 'react';
+import { AppInterface } from '@/components/AppInterface';
+import TabNavigation, { ActiveTab } from '@/components/TabNavigation';
+import styles from './page.module.css';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>("swap");
+  const [activeTab, setActiveTab] = useState<ActiveTab>('swap');
 
   return (
     <div className={styles.mainContainer}>

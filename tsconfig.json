@@ -13,6 +13,10 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
     "plugins": [
       {
         "name": "next"

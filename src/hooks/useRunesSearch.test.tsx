@@ -1,23 +1,23 @@
-import React from "react";
-import { JSDOM } from "jsdom";
-import { act } from "react-dom/test-utils";
-import { createRoot } from "react-dom/client";
-import useRunesSearch from "./useRunesSearch";
+import { JSDOM } from 'jsdom';
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { act } from 'react-dom/test-utils';
+import useRunesSearch from './useRunesSearch';
 
-jest.mock("@/lib/apiClient", () => ({
+jest.mock('@/lib/apiClient', () => ({
   fetchRunesFromApi: jest.fn(),
   fetchPopularFromApi: jest.fn(),
 }));
 
-jest.mock("@/store/runesInfoStore", () => ({
+jest.mock('@/store/runesInfoStore', () => ({
   useRunesInfoStore: jest.fn(() => ({
-    runeSearchQuery: "",
+    runeSearchQuery: '',
     setRuneSearchQuery: jest.fn(),
   })),
 }));
 
 beforeAll(() => {
-  const dom = new JSDOM("<!doctype html><html><body></body></html>");
+  const dom = new JSDOM('<!doctype html><html><body></body></html>');
   (global as unknown as { window: Window }).window =
     dom.window as unknown as Window;
   (global as unknown as { document: Document }).document = dom.window.document;
@@ -37,7 +37,7 @@ function renderHook(props?: HookProps) {
     result = useRunesSearch(p);
     return null;
   }
-  const container = document.createElement("div");
+  const container = document.createElement('div');
   const root = createRoot(container);
   act(() => {
     root.render(<TestComponent {...(props || {})} />);
@@ -59,20 +59,20 @@ function renderHook(props?: HookProps) {
   };
 }
 
-describe("useRunesSearch", () => {
-  it("updates when props change", async () => {
+describe('useRunesSearch', () => {
+  it('updates when props change', async () => {
     const cachedA = [
       {
-        rune: "AAA",
-        etching: { runeName: "AAA" },
-        icon_content_url_data: "a.png",
+        rune: 'AAA',
+        etching: { runeName: 'AAA' },
+        icon_content_url_data: 'a.png',
       },
     ];
     const cachedB = [
       {
-        rune: "BBB",
-        etching: { runeName: "BBB" },
-        icon_content_url_data: "b.png",
+        rune: 'BBB',
+        etching: { runeName: 'BBB' },
+        icon_content_url_data: 'b.png',
       },
     ];
 
@@ -82,8 +82,8 @@ describe("useRunesSearch", () => {
       await Promise.resolve();
     });
     expect(hook.result.availableRunes.map((r) => r.id)).toEqual([
-      "liquidiumtoken",
-      "AAA",
+      'liquidiumtoken',
+      'AAA',
     ]);
 
     hook.rerender({ cachedPopularRunes: cachedB });
@@ -91,8 +91,8 @@ describe("useRunesSearch", () => {
       await Promise.resolve();
     });
     expect(hook.result.availableRunes.map((r) => r.id)).toEqual([
-      "liquidiumtoken",
-      "BBB",
+      'liquidiumtoken',
+      'BBB',
     ]);
 
     hook.unmount();

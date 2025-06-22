@@ -1,6 +1,6 @@
-import React from "react";
-import styles from "./BorrowTab.module.css";
-import { LiquidiumBorrowQuoteOffer } from "@/lib/api";
+import React from 'react';
+import { LiquidiumBorrowQuoteOffer } from '@/lib/api';
+import styles from './BorrowTab.module.css';
 
 interface BorrowQuotesListProps {
   quotes: LiquidiumBorrowQuoteOffer[];
@@ -29,13 +29,13 @@ const BorrowQuotesList: React.FC<BorrowQuotesListProps> = ({
                 quote.loan_breakdown.principal_sats) *
               100
             ).toFixed(2)
-          : "0.00";
+          : '0.00';
       return (
         <div
           key={quote.offer_id}
           onClick={() => onSelectQuote(quote.offer_id)}
           className={`${styles.quoteCard} ${
-            selectedQuoteId === quote.offer_id ? styles.selected : ""
+            selectedQuoteId === quote.offer_id ? styles.selected : ''
           }`}
         >
           <div className={styles.quoteGrid}>
@@ -56,7 +56,7 @@ const BorrowQuotesList: React.FC<BorrowQuotesListProps> = ({
             <div className={styles.quoteField}>
               <span className={styles.quoteLabel}>Term</span>
               <span className={styles.quoteValue}>
-                {quote.loan_term_days ?? "N/A"} days
+                {quote.loan_term_days ?? 'N/A'} days
               </span>
             </div>
             <div className={styles.quoteField}>

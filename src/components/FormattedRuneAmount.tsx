@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchRuneInfoFromApi } from "@/lib/api";
-import type { RuneData } from "@/lib/runesData";
+import { useQuery } from '@tanstack/react-query';
+import React from 'react';
+import { fetchRuneInfoFromApi } from '@/lib/api';
+import type { RuneData } from '@/lib/runesData';
 
 interface FormattedRuneAmountProps {
   runeName: string | null | undefined;
@@ -20,13 +20,13 @@ export function FormattedRuneAmount({
     error,
   } = useQuery<RuneData | null, Error>({
     // Update queryKey to reflect API usage
-    queryKey: ["runeInfoApi", (runeName || "").toUpperCase()],
+    queryKey: ['runeInfoApi', (runeName || '').toUpperCase()],
     // Use the new API client function
     queryFn: () =>
       runeName ? fetchRuneInfoFromApi(runeName) : Promise.resolve(null),
     enabled:
       !!runeName &&
-      rawAmount !== "N/A" &&
+      rawAmount !== 'N/A' &&
       rawAmount !== null &&
       rawAmount !== undefined, // Only run if we have a rune name and a valid raw amount
     staleTime: Infinity, // Decimals rarely change, cache indefinitely
@@ -34,7 +34,7 @@ export function FormattedRuneAmount({
     retry: 2, // Retry other network/server errors twice
   });
 
-  if (rawAmount === "N/A" || rawAmount === null || rawAmount === undefined) {
+  if (rawAmount === 'N/A' || rawAmount === null || rawAmount === undefined) {
     return <span>N/A</span>;
   }
 
@@ -51,7 +51,7 @@ export function FormattedRuneAmount({
     return <span>{rawAmount} (&apos;Error fetching decimals&apos;)</span>;
   }
 
-  if (!runeInfo || typeof runeInfo.decimals !== "number") {
+  if (!runeInfo || typeof runeInfo.decimals !== 'number') {
     // Rune info loaded but no decimals found (or invalid format), show raw amount
     return <span>{rawAmount} (Decimals N/A)</span>;
   }
@@ -80,7 +80,7 @@ export function FormattedRuneAmount({
     const formattedAmount = Number(rawAmountBigInt) / Number(divisor);
 
     if (isNaN(formattedAmount)) {
-      throw new Error("Calculated amount is NaN");
+      throw new Error('Calculated amount is NaN');
     }
 
     // Format the number with appropriate decimal places

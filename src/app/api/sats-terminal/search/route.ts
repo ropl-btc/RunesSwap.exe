@@ -1,105 +1,105 @@
-import { NextRequest } from "next/server";
-import { getSatsTerminalClient } from "@/lib/serverUtils";
-import type { Rune } from "@/types/satsTerminal";
+import { createHash } from 'crypto';
+import { NextRequest } from 'next/server';
+import type { SearchParams } from 'satsterminal-sdk';
+import { z } from 'zod';
 import {
-  createSuccessResponse,
   createErrorResponse,
+  createSuccessResponse,
   handleApiError,
   validateRequest,
-} from "@/lib/apiUtils";
-import { z } from "zod";
+} from '@/lib/apiUtils';
+import { getSatsTerminalClient } from '@/lib/serverUtils';
+import type { Rune } from '@/types/satsTerminal';
 
-// Define types for rune responses locally or import if shared
-// interface Rune {
-//   id: string;
-//   name: string;
-//   imageURI?: string;
-//   formattedAmount?: string;
-//   formattedUnitPrice?: string;
-//   price?: number;
-// }
+const searchParamsSchema = z.object({
+  query: z.string().min(1, 'Query parameter is required'),
+  sell: z.string().optional(),
+});
 
-// Simple internal type for expected order structure from search
-interface SearchOrder {
+interface SearchResponseItem {
+  token_id?: string;
   id?: string;
-  rune?: string;
-  etching?: { runeName?: string };
-  icon_content_url_data?: string;
+  token?: string;
+  name?: string;
+  icon?: string;
   imageURI?: string;
-  formattedAmount?: string;
-  formattedUnitPrice?: string;
-  price?: number;
+}
+
+/**
+ * Generate a stable ID based on item properties and index.
+ * This ensures consistent IDs across API calls for the same search results.
+ * @param item - The search response item
+ * @param index - The item's position in the results array
+ * @returns A stable, deterministic ID
+ */
+function generateStableId(item: SearchResponseItem, index: number): string {
+  // Use existing ID if available
+  if (item.token_id) return item.token_id;
+  if (item.id) return item.id;
+
+  // Create stable ID from item properties
+  const identifier = [
+    item.token || item.name || '',
+    item.icon || item.imageURI || '',
+    index.toString(),
+  ]
+    .filter(Boolean)
+    .join('|');
+
+  // Generate a short hash for readability
+  const hash = createHash('md5').update(identifier).digest('hex').slice(0, 8);
+  return `search_${hash}`;
 }
 
 export async function GET(request: NextRequest) {
-  // const { searchParams } = new URL(request.url);
-  // const query = searchParams.get('query');
-
-  // Zod validation for 'query'
-  const schema = z.object({
-    query: z.string().min(1),
-    sell: z.coerce.boolean().optional().default(false),
-  });
-  const validation = await validateRequest(request, schema, "query");
+  const validation = await validateRequest(
+    request,
+    searchParamsSchema,
+    'query',
+  );
   if (!validation.success) return validation.errorResponse;
-  const { query: validQuery, sell } = validation.data;
+
+  const { query, sell } = validation.data;
 
   try {
     const terminal = getSatsTerminalClient();
-    const searchResults = await terminal.search({
-      rune_name: validQuery,
-      sell,
-    });
 
-    // Map the response with improved type checking
-    const orders: SearchOrder[] = Array.isArray(searchResults)
-      ? searchResults
-      : searchResults &&
-          typeof searchResults === "object" &&
-          "orders" in searchResults &&
-          Array.isArray(searchResults.orders)
-        ? (searchResults.orders as SearchOrder[])
-        : [];
-
-    // Generate a stable ID using a hash of properties instead of random
-    const generateStableId = (order: SearchOrder, index: number): string => {
-      const base = order.id || order.rune || order.etching?.runeName;
-      if (base) return base;
-      // Fallback to a stable ID based on properties and index
-      return `unknown_rune_${index}_${order.formattedAmount || ""}_${order.price || 0}`;
+    // Convert to SDK-compatible format
+    const searchParams: SearchParams = {
+      query: query,
+      sell: sell === 'true',
     };
 
-    const runes: Rune[] = orders.map((order: SearchOrder, index: number) => ({
-      id: generateStableId(order, index),
-      name: order.etching?.runeName || order.rune || "Unknown Rune",
-      imageURI: order.icon_content_url_data || order.imageURI,
-      formattedAmount: order.formattedAmount,
-      formattedUnitPrice: order.formattedUnitPrice,
-      price: order.price,
-    }));
+    const searchResponse = await terminal.search(searchParams);
 
-    return createSuccessResponse(runes);
+    // Transform the raw SDK response to match our Rune interface
+    const transformedResults: Rune[] = Array.isArray(searchResponse)
+      ? searchResponse.map((item: SearchResponseItem, index: number) => ({
+          id: generateStableId(item, index),
+          name: item.token || item.name || 'Unknown',
+          imageURI: item.icon || item.imageURI || '',
+        }))
+      : [];
+
+    return createSuccessResponse(transformedResults);
   } catch (error) {
-    const errorInfo = handleApiError(
-      error,
-      `Failed to search for runes with query "${validQuery}"`,
-    );
+    const errorInfo = handleApiError(error, 'Failed to search');
+    const errorMessage = error instanceof Error ? error.message : String(error);
 
     // Special handling for rate limiting
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.includes("Rate limit") || errorInfo.status === 429) {
+    if (errorMessage.includes('Rate limit') || errorInfo.status === 429) {
       return createErrorResponse(
-        "Rate limit exceeded",
-        "Please try again later",
+        'Rate limit exceeded',
+        'Please try again later',
         429,
       );
     }
 
     // Handle unexpected token errors (HTML responses instead of JSON)
-    if (errorMessage.includes("Unexpected token")) {
+    if (errorMessage.includes('Unexpected token')) {
       return createErrorResponse(
-        "API service unavailable",
-        "The SatsTerminal API is currently unavailable. Please try again later.",
+        'API service unavailable',
+        'The SatsTerminal API is currently unavailable. Please try again later.',
         503,
       );
     }

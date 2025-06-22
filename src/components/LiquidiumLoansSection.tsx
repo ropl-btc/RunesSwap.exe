@@ -1,8 +1,8 @@
-import React from "react";
-import Button from "./Button";
-import { FormattedLiquidiumCollateral } from "./FormattedLiquidiumCollateral";
-import { LiquidiumLoanOffer } from "@/types/liquidium";
-import styles from "./PortfolioTab.module.css";
+import React from 'react';
+import { LiquidiumLoanOffer } from '@/types/liquidium';
+import Button from './Button';
+import { FormattedLiquidiumCollateral } from './FormattedLiquidiumCollateral';
+import styles from './PortfolioTab.module.css';
 
 interface LiquidiumLoansSectionProps {
   loans: LiquidiumLoanOffer[];
@@ -31,12 +31,12 @@ const LiquidiumLoansSection: React.FC<LiquidiumLoansSectionProps> = ({
 }) => (
   <div className={styles.liquidiumContainer}>
     <div className={`${styles.liquidiumHeader} ${styles.grid6col}`}>
-      <div style={{ fontWeight: "bold" }}>Collateral</div>
-      <div style={{ fontWeight: "bold" }}>Principal</div>
-      <div style={{ fontWeight: "bold" }}>Status</div>
-      <div style={{ fontWeight: "bold" }}>Due Date</div>
-      <div style={{ fontWeight: "bold" }}>Repayment</div>
-      <div style={{ fontWeight: "bold" }}>Action</div>
+      <div style={{ fontWeight: 'bold' }}>Collateral</div>
+      <div style={{ fontWeight: 'bold' }}>Principal</div>
+      <div style={{ fontWeight: 'bold' }}>Status</div>
+      <div style={{ fontWeight: 'bold' }}>Due Date</div>
+      <div style={{ fontWeight: 'bold' }}>Repayment</div>
+      <div style={{ fontWeight: 'bold' }}>Action</div>
     </div>
     <div className={styles.listContent}>
       {isCheckingAuth ? (
@@ -44,7 +44,7 @@ const LiquidiumLoansSection: React.FC<LiquidiumLoansSectionProps> = ({
       ) : !liquidiumAuthenticated ? (
         <div className={styles.liquidiumAuth}>
           <Button onClick={onAuth} disabled={isAuthenticating}>
-            {isAuthenticating ? "Authenticating..." : "Connect to Liquidium"}
+            {isAuthenticating ? 'Authenticating...' : 'Connect to Liquidium'}
           </Button>
           {authError && <div className="errorText">{authError}</div>}
         </div>
@@ -75,7 +75,7 @@ const LiquidiumLoansSection: React.FC<LiquidiumLoansSectionProps> = ({
             </div>
             <div className={styles.statusContainer}>
               <span
-                className={`${styles.loanStatus} ${loan.loan_details.state === "ACTIVE" ? styles.statusActive : ""}`}
+                className={`${styles.loanStatus} ${loan.loan_details.state === 'ACTIVE' ? styles.statusActive : ''}`}
               >
                 {loan.loan_details.state}
               </span>
@@ -96,20 +96,20 @@ const LiquidiumLoansSection: React.FC<LiquidiumLoansSectionProps> = ({
               <div className={styles.btcLabel}>BTC</div>
             </div>
             <div>
-              {loan.loan_details.state === "ACTIVE" && (
+              {loan.loan_details.state === 'ACTIVE' && (
                 <Button
                   onClick={() => onRepay(loan)}
                   disabled={true}
                   className={styles.repayButtonDisabled}
                   title="Coming soon..."
                 >
-                  {isRepayingLoanId === loan.id ? "Repaying..." : "Repay"}
+                  {isRepayingLoanId === loan.id ? 'Repaying...' : 'Repay'}
                 </Button>
               )}
-              {loan.loan_details.state === "ACTIVATING" && (
+              {loan.loan_details.state === 'ACTIVATING' && (
                 <Button disabled>Activating...</Button>
               )}
-              {loan.loan_details.state === "REPAYING" && (
+              {loan.loan_details.state === 'REPAYING' && (
                 <Button disabled>Processing...</Button>
               )}
             </div>

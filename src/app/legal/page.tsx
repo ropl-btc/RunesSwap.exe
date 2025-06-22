@@ -1,9 +1,9 @@
-import React from "react";
-import Link from "next/link";
-import styles from "../page.module.css";
+import Link from 'next/link';
+import React from 'react';
+import styles from '../page.module.css';
 
 export const metadata = {
-  title: "Legal | RunesSwap.app",
+  title: 'Legal | RunesSwap.app',
 };
 
 export default function LegalPage() {
@@ -12,7 +12,7 @@ export default function LegalPage() {
       <h1 className="heading">Legal Disclaimer</h1>
       <div className={styles.docsContent}>
         <p>
-          RunesSwap.app is an open-source project provided{" "}
+          RunesSwap.app is an open-source project provided{' '}
           <strong>as is</strong> without any warranty.
         </p>
         <p>

@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchPortfolioDataFromApi, QUERY_KEYS } from "@/lib/api";
+import { useQuery } from '@tanstack/react-query';
+import { useEffect, useMemo, useState } from 'react';
+import { QUERY_KEYS, fetchPortfolioDataFromApi } from '@/lib/api';
+import { safeArrayAccess } from '@/utils/typeGuards';
 
-export type SortField = "name" | "balance" | "value";
-export type SortDirection = "asc" | "desc";
+export type SortField = 'name' | 'balance' | 'value';
+export type SortDirection = 'asc' | 'desc';
 
 interface RuneBalanceItem {
   name: string;
@@ -16,10 +17,10 @@ interface RuneBalanceItem {
 }
 
 export function usePortfolioData(address: string | null) {
-  const [sortField, setSortField] = useState<SortField>("value");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [sortField, setSortField] = useState<SortField>('value');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [progress, setProgress] = useState(0); // 0 to 1
-  const [stepText, setStepText] = useState("");
+  const [stepText, setStepText] = useState('');
 
   const {
     data: portfolioData,
@@ -27,7 +28,7 @@ export function usePortfolioData(address: string | null) {
     error,
   } = useQuery({
     queryKey: [QUERY_KEYS.PORTFOLIO_DATA, address],
-    queryFn: () => fetchPortfolioDataFromApi(address || ""),
+    queryFn: () => fetchPortfolioDataFromApi(address || ''),
     enabled: !!address,
     staleTime: 30000,
   });
@@ -38,23 +39,29 @@ export function usePortfolioData(address: string | null) {
     let step = 0;
     const totalSteps = 4;
     const stepLabels = [
-      "Fetching balances...",
-      "Fetching rune info...",
-      "Fetching market data...",
-      "Finalizing...",
+      'Fetching balances...',
+      'Fetching rune info...',
+      'Fetching market data...',
+      'Finalizing...',
     ];
     setProgress(0);
-    setStepText(stepLabels[0]);
+    const firstLabel = safeArrayAccess(stepLabels, 0);
+    if (firstLabel) {
+      setStepText(firstLabel);
+    }
     function nextStep() {
       if (!isMounted) return;
       step++;
       if (step < totalSteps) {
         setProgress(step / totalSteps);
-        setStepText(stepLabels[step]);
+        const nextLabel = safeArrayAccess(stepLabels, step);
+        if (nextLabel) {
+          setStepText(nextLabel);
+        }
         setTimeout(nextStep, 400 + Math.random() * 400);
       } else {
         setProgress(1);
-        setStepText("Finalizing...");
+        setStepText('Finalizing...');
       }
     }
     setTimeout(nextStep, 400 + Math.random() * 400);
@@ -65,10 +72,10 @@ export function usePortfolioData(address: string | null) {
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
-      setSortDirection("desc");
+      setSortDirection('desc');
     }
   };
 
@@ -101,17 +108,17 @@ export function usePortfolioData(address: string | null) {
       .sort((a, b) => {
         let comparison = 0;
         switch (sortField) {
-          case "name":
+          case 'name':
             comparison = a.name.localeCompare(b.name);
             break;
-          case "balance":
+          case 'balance':
             comparison = a.actualBalance - b.actualBalance;
             break;
-          case "value":
+          case 'value':
             comparison = a.usdValue - b.usdValue;
             break;
         }
-        return sortDirection === "asc" ? comparison : -comparison;
+        return sortDirection === 'asc' ? comparison : -comparison;
       });
   }, [portfolioData, sortField, sortDirection]);
 

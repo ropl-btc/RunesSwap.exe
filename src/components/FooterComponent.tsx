@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import React from "react";
-import Image from "next/image";
-import Link from "next/link";
-import styles from "./AppInterface.module.css";
-import buttonStyles from "./Button.module.css";
+import Image from 'next/image';
+import Link from 'next/link';
+import React from 'react';
+import styles from './AppInterface.module.css';
+import buttonStyles from './Button.module.css';
 
 interface FooterComponentProps {
   btcPriceUsd: number | undefined;
@@ -25,10 +25,10 @@ export function FooterComponent({
         <span className={styles.errorText}>Error loading price</span>
       ) : btcPriceUsd ? (
         <span>
-          BTC Price:{" "}
+          BTC Price:{' '}
           {btcPriceUsd.toLocaleString(undefined, {
-            style: "currency",
-            currency: "USD",
+            style: 'currency',
+            currency: 'USD',
           })}
         </span>
       ) : (

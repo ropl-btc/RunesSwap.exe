@@ -1,32 +1,32 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import styles from "./BorrowTab.module.css";
-import Button from "./Button";
-import CollateralInput from "./CollateralInput";
-import BorrowQuotesList from "./BorrowQuotesList";
-import BorrowSuccessMessage from "./BorrowSuccessMessage";
-import FeeSelector from "./FeeSelector";
-import { Asset } from "@/types/common";
-import { FormattedRuneAmount } from "./FormattedRuneAmount";
-import { useBorrowProcess } from "@/hooks/useBorrowProcess";
-import useBorrowQuotes from "@/hooks/useBorrowQuotes";
-import { useLiquidiumAuth } from "@/hooks/useLiquidiumAuth";
+import { useQuery } from '@tanstack/react-query';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import React, { useState } from 'react';
+import { useBorrowProcess } from '@/hooks/useBorrowProcess';
+import useBorrowQuotes from '@/hooks/useBorrowQuotes';
+import { useLiquidiumAuth } from '@/hooks/useLiquidiumAuth';
 import {
+  QUERY_KEYS,
   fetchRuneBalancesFromApi,
   fetchRuneInfoFromApi,
   fetchRuneMarketFromApi,
-  QUERY_KEYS,
-} from "@/lib/api";
-import { normalizeRuneName } from "@/utils/runeUtils";
+} from '@/lib/api';
+import { type RuneData } from '@/lib/runesData';
+import { Asset } from '@/types/common';
 import {
   type RuneBalance as OrdiscanRuneBalance,
   type RuneMarketInfo as OrdiscanRuneMarketInfo,
-} from "@/types/ordiscan";
-import { type RuneData } from "@/lib/runesData";
+} from '@/types/ordiscan';
+import { normalizeRuneName } from '@/utils/runeUtils';
+import BorrowQuotesList from './BorrowQuotesList';
+import BorrowSuccessMessage from './BorrowSuccessMessage';
+import styles from './BorrowTab.module.css';
+import Button from './Button';
+import CollateralInput from './CollateralInput';
+import FeeSelector from './FeeSelector';
+import { FormattedRuneAmount } from './FormattedRuneAmount';
 
 interface BorrowTabProps {
   connected: boolean;
@@ -39,16 +39,22 @@ interface BorrowTabProps {
     finalize?: boolean,
     broadcast?: boolean,
   ) => Promise<
-    | { signedPsbtHex?: string; signedPsbtBase64?: string; txId?: string }
+    | {
+        signedPsbtHex: string | undefined;
+        signedPsbtBase64: string | undefined;
+        txId?: string;
+      }
     | undefined
   >;
-  signMessage?: (message: string, address: string) => Promise<string>;
+  signMessage:
+    | ((message: string, address: string) => Promise<string>)
+    | undefined;
   btcPriceUsd: number | undefined;
   isBtcPriceLoading: boolean;
   btcPriceError: Error | null;
-  cachedPopularRunes?: Record<string, unknown>[];
-  isPopularRunesLoading?: boolean;
-  popularRunesError?: Error | null;
+  cachedPopularRunes?: Record<string, unknown>[] | undefined;
+  isPopularRunesLoading?: boolean | undefined;
+  popularRunesError?: Error | null | undefined;
 }
 
 export function BorrowTab({
@@ -62,7 +68,7 @@ export function BorrowTab({
 }: BorrowTabProps) {
   const router = useRouter();
   const [collateralAsset, setCollateralAsset] = useState<Asset | null>(null);
-  const [collateralAmount, setCollateralAmount] = useState("");
+  const [collateralAmount, setCollateralAmount] = useState('');
   const [feeRate, setFeeRate] = useState(0);
 
   const { data: runeBalances, isLoading: isRuneBalancesLoading } = useQuery<
@@ -137,10 +143,10 @@ export function BorrowTab({
     loanTxId,
   } = useBorrowProcess({
     signPsbt,
-    address: address ?? "",
-    paymentAddress: paymentAddress ?? "",
-    publicKey: publicKey ?? "",
-    paymentPublicKey: paymentPublicKey ?? "",
+    address: address ?? '',
+    paymentAddress: paymentAddress ?? '',
+    publicKey: publicKey ?? '',
+    paymentPublicKey: paymentPublicKey ?? '',
     collateralRuneInfo: collateralRuneInfo ?? null,
   });
 
@@ -150,12 +156,12 @@ export function BorrowTab({
     if (!runeName || !runeBalances) return null;
     const formattedRuneName = normalizeRuneName(runeName);
     const found = runeBalances.find((rb) => rb.name === formattedRuneName);
-    return found ? found.balance : "0";
+    return found ? found.balance : '0';
   };
 
   const handleSelectCollateral = (asset: Asset) => {
     setCollateralAsset(asset);
-    setCollateralAmount("");
+    setCollateralAmount('');
     resetQuotes();
     setSelectedQuoteId(null);
     resetLoanProcess();
@@ -173,7 +179,7 @@ export function BorrowTab({
   const availableBalanceDisplay =
     connected && collateralAsset && !collateralAsset.isBTC ? (
       isRuneBalancesLoading || isCollateralRuneInfoLoading ? (
-        "Loading..."
+        'Loading...'
       ) : (
         <FormattedRuneAmount
           runeName={collateralAsset.name}
@@ -189,8 +195,8 @@ export function BorrowTab({
       ? (
           parseFloat(collateralAmount) * collateralRuneMarketInfo.price_in_usd
         ).toLocaleString(undefined, {
-          style: "currency",
-          currency: "USD",
+          style: 'currency',
+          currency: 'USD',
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
         })
@@ -246,13 +252,13 @@ export function BorrowTab({
       ) : !liquidiumAuthenticated ? (
         <>
           <Button onClick={handleLiquidiumAuth} disabled={isAuthenticating}>
-            {isAuthenticating ? "Authenticating..." : "Connect to Liquidium"}
+            {isAuthenticating ? 'Authenticating...' : 'Connect to Liquidium'}
           </Button>
           {authError && <div className="errorText">{authError}</div>}
         </>
       ) : (
         <Button onClick={handleGetQuotes} disabled={!canGetQuotes || isLoading}>
-          {isQuotesLoading ? "Fetching Quotes..." : "Get Loan Quotes"}
+          {isQuotesLoading ? 'Fetching Quotes...' : 'Get Loan Quotes'}
         </Button>
       )}
 
@@ -275,12 +281,12 @@ export function BorrowTab({
             disabled={!canStartLoan}
           >
             {isPreparing
-              ? "Preparing..."
+              ? 'Preparing...'
               : isSigning
-                ? "Waiting for Signature..."
+                ? 'Waiting for Signature...'
                 : isSubmitting
-                  ? "Submitting..."
-                  : "Start Loan"}
+                  ? 'Submitting...'
+                  : 'Start Loan'}
           </Button>
         </>
       )}
@@ -301,7 +307,7 @@ export function BorrowTab({
       <BorrowSuccessMessage
         loanTxId={loanTxId}
         onViewPortfolio={() =>
-          router.push("/?tab=portfolio", { scroll: false })
+          router.push('/?tab=portfolio', { scroll: false })
         }
         onStartAnother={() => {
           resetLoanProcess();
