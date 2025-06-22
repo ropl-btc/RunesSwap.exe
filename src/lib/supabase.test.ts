@@ -8,7 +8,9 @@ describe('supabase client', () => {
     }
 
     expect(() => {
-      (supabase as unknown as { from: () => void }).from();
+      (supabase as unknown as { from: (tableName: string) => void }).from(
+        'test',
+      );
     }).toThrow();
   });
 });
