@@ -142,6 +142,6 @@ import type { RuneData } from '@/types/ordiscan';
 
 Check `package.json` for exact versions. Key notes:
 - **Next.js 15.2.4** - App Router with latest features
-- **React 19** - Latest React with concurrent features  
+- **React 19** - Latest React with concurrent features
 - **TypeScript 5** - Latest TypeScript with strict mode
-- **Node.js 20+** - Required for development
+- **Node.js 18+** - Required for development

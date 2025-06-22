@@ -99,7 +99,8 @@ The pre‑commit hook runs `lint-staged`, the test suite, and a production build
 ### Typical Data Flow
 
 1. A UI component fetches data using React Query.
-2. The query calls a client function from modules in `src/lib/api/`.
+2. The query calls a helper method exported from `src/lib/apiClient.ts` (which
+   re-exports functions from modules under `src/lib/api/`).
 3. The client sends a request to a Next.js API route under `src/app/api`.
 4. The API route fetches data from Ordiscan, SatsTerminal, or Liquidium, optionally caching results in Supabase, and returns a standardized JSON response.
 5. The UI updates based on the React Query result.
