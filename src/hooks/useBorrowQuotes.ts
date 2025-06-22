@@ -9,7 +9,7 @@ import {
 import type { RuneData } from '@/lib/runesData';
 import { Asset } from '@/types/common';
 import { normalizeRuneName } from '@/utils/runeUtils';
-import { safeArrayFirst } from '@/utils/typeGuards';
+import { safeArrayAccess, safeArrayFirst } from '@/utils/typeGuards';
 
 interface UseBorrowQuotesArgs {
   collateralAsset: Asset | null;
@@ -201,7 +201,7 @@ export function useBorrowQuotes({
             let globalMin = BigInt(firstRange.min);
             let globalMax = BigInt(firstRange.max);
             for (let i = 1; i < ranges.length; i++) {
-              const currentRange = ranges[i];
+              const currentRange = safeArrayAccess(ranges, i);
               if (currentRange) {
                 const currentMin = BigInt(currentRange.min);
                 const currentMax = BigInt(currentRange.max);
