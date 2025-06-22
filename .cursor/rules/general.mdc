@@ -216,36 +216,12 @@ export function useSwapQuote(assetIn: Asset, assetOut: Asset) {
 
 ## CSS Guidelines
 
-### Windows 98 Theme Integration
-Combine CSS Modules with 98.css classes:
-```typescript
-// Component.module.css
-.container {
-  padding: 8px;
-  background: var(--surface);
-}
+### Windows 98 Theme Implementation
+The project uses a custom Windows 98 theme implemented with CSS variables and CSS Modules. **No external CSS frameworks like 98.css are used.**
 
-.button {
-  margin: 4px;
-  min-width: 75px;
-}
-
-// Component.tsx
-import styles from './Component.module.css';
-
-export function Component() {
-  return (
-    <div className={`${styles.container} window`}>
-      <div className="title-bar">
-        <div className="title-bar-text">RunesSwap</div>
-      </div>
-      <button className={`${styles.button} btn`}>
-        Click me
-      </button>
-    </div>
-  );
-}
-```
+- **CSS Variables**: All Win98 styling uses predefined variables in `src/app/globals.css` (colors, typography, spacing, borders)
+- **Component Patterns**: Use CSS Modules with Win98 variables - see `src/components/Button.module.css` for reference
+- **Global Utilities**: Available utility classes in `globals.css` (`.win98-button`, `.win98-input`, `.errorText`, `.heading`)
 
 ### CSS Module Naming
 - Use **camelCase** for class names
@@ -298,7 +274,7 @@ When adding features:
 - [ ] Line length stays under 80 characters
 - [ ] Type safety utilities are used consistently
 - [ ] JSDoc comments added for exported functions/components
-- [ ] CSS follows Windows 98 theme integration patterns
+- [ ] CSS uses predefined CSS variables and follows module patterns
 - [ ] `pnpm ai-check` passes without errors
 
 Refer to `README.md` for additional details.

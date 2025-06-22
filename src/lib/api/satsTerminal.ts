@@ -51,7 +51,7 @@ export const fetchQuoteFromApi = async (
         `Failed to fetch quote: ${response.statusText}`,
     );
   }
-  return data as QuoteResponse;
+  return handleApiResponse<QuoteResponse>(data, false);
 };
 
 export const getPsbtFromApi = async (

@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import type { QuoteParams } from 'satsterminal-sdk';
 import { z } from 'zod';
 import {
   createErrorResponse,
+  createSuccessResponse,
   handleApiError,
   validateRequest,
 } from '@/lib/apiUtils';
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     const quoteResponse = await terminal.fetchQuote(quoteParams);
 
-    return NextResponse.json(quoteResponse);
+    return createSuccessResponse(quoteResponse);
   } catch (error) {
     const errorInfo = handleApiError(error, 'Failed to fetch quote');
 
