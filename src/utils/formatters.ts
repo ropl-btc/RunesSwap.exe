@@ -1,4 +1,4 @@
-import { safeArrayFirst } from './typeGuards';
+import { safeArrayAccess, safeArrayFirst } from './typeGuards';
 
 // Function to truncate TXIDs for display
 export const truncateTxid = (txid: string, length: number = 8): string => {
@@ -27,7 +27,7 @@ export function formatNumberString(
     const intPart = safeArrayFirst(parts);
     if (!intPart) return defaultDisplay;
     const withCommas = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    const decPart = parts[1];
+    const decPart = safeArrayAccess(parts, 1);
     const result = decPart ? `${withCommas}.${decPart}` : withCommas;
     return isNegative ? `-${result}` : result;
   } catch {
@@ -43,6 +43,6 @@ export function formatNumber(value: number): string {
   if (!intPart) return '0';
 
   const withCommas = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  const decPart = parts[1]; // Safe to access since we know parts has at least 1 element
+  const decPart = safeArrayAccess(parts, 1);
   return decPart ? `${withCommas}.${decPart}` : withCommas;
 }
