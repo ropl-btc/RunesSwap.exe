@@ -8,25 +8,9 @@ alwaysApply: false
 ## Core Dependencies Usage Patterns
 
 ### UI Framework & Styling
-- **98.css** - Windows 98 theme styling (crucial for app aesthetics)
 - **@headlessui/react** - Accessible UI components (modals, dropdowns)
 - **@heroicons/react** - SVG icon library
 - **CSS Modules** - Component-scoped styling
-
-```typescript
-// ✅ Correct usage of 98.css with CSS Modules
-import styles from './Component.module.css';
-
-export function MyComponent() {
-  return (
-    <div className={`${styles.container} window`}>
-      <div className="title-bar">
-        <div className="title-bar-text">Window Title</div>
-      </div>
-    </div>
-  );
-}
-```
 
 ### Bitcoin & Runes Integration
 - **@omnisat/lasereyes** - Bitcoin wallet connection

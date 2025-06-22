@@ -21,7 +21,6 @@
     "pnpm": ">=10.8.0"
   },
   "dependencies": {
-    "98.css": "^0.1.21",
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
     "@omnisat/lasereyes": "^0.0.134",

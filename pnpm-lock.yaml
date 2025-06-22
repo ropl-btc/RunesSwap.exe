@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      98.css:
-        specifier: ^0.1.21
-        version: 0.1.21
       '@headlessui/react':
         specifier: ^2.2.0
         version: 2.2.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -146,9 +143,6 @@ importers:
         version: 5.8.3
 
 packages:
-
-  98.css@0.1.21:
-    resolution: {integrity: sha512-ddk5qtUWyapM0Bzd5jwGExoE5fdSEGrP+F5VbYjyZLf2c9UVmn6w2NPTvCsoD4BWdGsjdLjlkQGhWwWTJcYQJQ==}
 
   '@ampproject/remapping@2.3.0':
     resolution: {integrity: sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==}
@@ -4999,8 +4993,6 @@ packages:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
 snapshots:
-
-  98.css@0.1.21: {}
 
   '@ampproject/remapping@2.3.0':
     dependencies:
