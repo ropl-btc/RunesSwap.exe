@@ -61,8 +61,11 @@ export async function POST(request: NextRequest) {
       swapId: validatedParams.swapId,
       runeName: validatedParams.runeName,
       sell: validatedParams.sell ?? false,
-      signedRbfPsbtBase64: validatedParams.signedRbfPsbtBase64 ?? '',
       rbfProtection: validatedParams.rbfProtection ?? false,
+      // Only include signedRbfPsbtBase64 if it has a valid value
+      ...(validatedParams.signedRbfPsbtBase64 && {
+        signedRbfPsbtBase64: validatedParams.signedRbfPsbtBase64,
+      }),
     };
 
     const confirmResponse = await terminal.confirmPSBT(confirmParams);
