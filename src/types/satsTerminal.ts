@@ -26,21 +26,19 @@ export const runeOrderSchema = z
     formattedAmount: z.number(),
     fromTokenAmount: z.string().optional(),
     slippage: z.number().optional(),
-    quantity: z.number().optional(),
-    maker: z.string().optional(),
-    side: z.enum(['BUY', 'SELL']).optional(),
-    txid: z.string().optional(),
-    vout: z.number().optional(),
-    runeName: z.string().optional(),
-    runeAmount: z.number().optional(),
-    btcAmount: z.number().optional(),
-    satPrice: z.number().optional(),
-    status: z.string().optional(),
-    timestamp: z.number().optional(),
+    listingAmount: z.number().optional(),
+    sellerAddress: z.string().optional(),
+    tokenAmount: z.string().optional(),
+    listingPrice: z.string().optional(),
+    updatedAt: z.string().optional(),
+    formattedUnitPrice: z.string().optional(),
+    alkanesId: z.string().optional(),
+    name: z.string().optional(),
+    amount: z.string().optional(),
   })
   .passthrough();
 
-// Define the RuneOrder type directly with proper optional handling
+// Define the RuneOrder type to match the actual SatsTerminal SDK Order interface
 export interface RuneOrder {
   id: string;
   market: string;
@@ -48,15 +46,13 @@ export interface RuneOrder {
   formattedAmount: number;
   fromTokenAmount?: string | undefined;
   slippage?: number | undefined;
-  quantity?: number | undefined;
-  maker?: string | undefined;
-  side?: 'BUY' | 'SELL' | undefined;
-  txid?: string | undefined;
-  vout?: number | undefined;
-  runeName?: string | undefined;
-  runeAmount?: number | undefined;
-  btcAmount?: number | undefined;
-  satPrice?: number | undefined;
-  status?: string | undefined;
-  timestamp?: number | undefined;
+  listingAmount?: number | undefined;
+  sellerAddress?: string | undefined;
+  tokenAmount?: string | undefined;
+  listingPrice?: string | undefined;
+  updatedAt?: string | undefined;
+  formattedUnitPrice?: string | undefined;
+  alkanesId?: string | undefined;
+  name?: string | undefined;
+  amount?: string | undefined;
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { GetPSBTParams } from 'satsterminal-sdk';
+import type { GetPSBTParams, Order } from 'satsterminal-sdk';
 import { z } from 'zod';
 import {
   createErrorResponse,
@@ -34,24 +34,9 @@ export async function POST(request: NextRequest) {
   try {
     const terminal = getSatsTerminalClient();
 
-    // Convert to SDK-compatible format by ensuring all optional fields have defaults
+    // Convert to SDK-compatible format
     const psbtParams: GetPSBTParams = {
-      orders: validatedParams.orders.map((order) => ({
-        ...order,
-        fromTokenAmount: order.fromTokenAmount ?? '',
-        slippage: order.slippage ?? 0,
-        quantity: order.quantity ?? 0,
-        maker: order.maker ?? '',
-        side: order.side ?? ('BUY' as const),
-        txid: order.txid ?? '',
-        vout: order.vout ?? 0,
-        runeName: order.runeName ?? '',
-        runeAmount: order.runeAmount ?? 0,
-        btcAmount: order.btcAmount ?? 0,
-        satPrice: order.satPrice ?? 0,
-        status: order.status ?? '',
-        timestamp: order.timestamp ?? Date.now(),
-      })),
+      orders: validatedParams.orders as Order[],
       address: validatedParams.address,
       publicKey: validatedParams.publicKey,
       paymentAddress: validatedParams.paymentAddress,

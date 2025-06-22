@@ -35,6 +35,36 @@ safeArrayAccess<T>(array: T[], index: number): T | undefined
 safeParseJWT(jwt: string): Record<string, unknown> | null
 ```
 
+### Safe Number Conversion Patterns
+When converting strings to numbers, **ALWAYS validate the result** to prevent `NaN` values:
+
+```typescript
+// ✅ CORRECT - Safe number conversion with validation
+if (typeof value === 'string') {
+  const numericValue = Number(value);
+  if (!isNaN(numericValue)) {
+    // Safe to use numericValue
+    object.property = numericValue;
+  }
+  // If NaN, keep original value or handle appropriately
+}
+
+// ❌ AVOID - Unsafe conversion that can produce NaN
+object.property = Number(stringValue); // Could be NaN!
+
+// ✅ CORRECT - Alternative with explicit fallback
+const safeNumber = (value: string, fallback = 0): number => {
+  const num = Number(value);
+  return isNaN(num) ? fallback : num;
+};
+```
+
+**Key Rules:**
+- Never assign `Number(string)` directly without validation
+- Always check `!isNaN(result)` after conversion
+- Consider fallback values or error handling for invalid conversions
+- Be especially careful with user input and external API data
+
 ### Component Interface Standards
 When defining component props, use explicit undefined unions for optional functions:
 ```typescript

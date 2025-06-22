@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { ConfirmPSBTParams } from 'satsterminal-sdk';
+import type { ConfirmPSBTParams, Order } from 'satsterminal-sdk';
 import { z } from 'zod';
 import {
   createErrorResponse,
@@ -9,33 +9,19 @@ import {
 import { getSatsTerminalClient } from '@/lib/serverUtils';
 import { runeOrderSchema } from '@/types/satsTerminal';
 
-const confirmPsbtParamsSchema = z
-  .object({
-    orders: z.array(runeOrderSchema),
-    address: z.string().min(1, 'Bitcoin address is required'),
-    publicKey: z.string().min(1, 'Public key is required'),
-    paymentAddress: z.string().min(1, 'Payment address is required'),
-    paymentPublicKey: z.string().min(1, 'Payment public key is required'),
-    signedPsbtBase64: z.string().min(1, 'Signed PSBT is required'),
-    swapId: z.string().min(1, 'Swap ID is required'),
-    runeName: z.string().min(1, 'Rune name is required'),
-    sell: z.boolean().optional(),
-    signedRbfPsbtBase64: z.string().optional(),
-    rbfProtection: z.boolean().optional(),
-  })
-  .refine(
-    (data) => {
-      // If rbfProtection is enabled, signedRbfPsbtBase64 must be provided.
-      if (data.rbfProtection) {
-        return !!data.signedRbfPsbtBase64;
-      }
-      return true;
-    },
-    {
-      message: 'signedRbfPsbtBase64 is required when rbfProtection is enabled.',
-      path: ['signedRbfPsbtBase64'],
-    },
-  );
+const confirmPsbtParamsSchema = z.object({
+  orders: z.array(runeOrderSchema),
+  address: z.string().min(1, 'Bitcoin address is required'),
+  publicKey: z.string().min(1, 'Public key is required'),
+  paymentAddress: z.string().min(1, 'Payment address is required'),
+  paymentPublicKey: z.string().min(1, 'Payment public key is required'),
+  signedPsbtBase64: z.string().min(1, 'Signed PSBT is required'),
+  swapId: z.string().min(1, 'Swap ID is required'),
+  runeName: z.string().min(1, 'Rune name is required'),
+  sell: z.boolean().optional(),
+  signedRbfPsbtBase64: z.string().optional(),
+  rbfProtection: z.boolean().optional(),
+});
 
 export async function POST(request: NextRequest) {
   const validation = await validateRequest(
@@ -49,24 +35,9 @@ export async function POST(request: NextRequest) {
   try {
     const terminal = getSatsTerminalClient();
 
-    // Convert to SDK-compatible format by ensuring all optional fields have defaults
+    // Convert to SDK-compatible format
     const confirmParams: ConfirmPSBTParams = {
-      orders: validatedParams.orders.map((order) => ({
-        ...order,
-        fromTokenAmount: order.fromTokenAmount ?? '',
-        slippage: order.slippage ?? 0,
-        quantity: order.quantity ?? 0,
-        maker: order.maker ?? '',
-        side: order.side ?? ('BUY' as const),
-        txid: order.txid ?? '',
-        vout: order.vout ?? 0,
-        runeName: order.runeName ?? '',
-        runeAmount: order.runeAmount ?? 0,
-        btcAmount: order.btcAmount ?? 0,
-        satPrice: order.satPrice ?? 0,
-        status: order.status ?? '',
-        timestamp: order.timestamp ?? Date.now(),
-      })),
+      orders: validatedParams.orders as Order[],
       address: validatedParams.address,
       publicKey: validatedParams.publicKey,
       paymentAddress: validatedParams.paymentAddress,

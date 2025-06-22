@@ -37,6 +37,13 @@ export async function POST(request: NextRequest) {
     }
     const userJwt = firstToken.jwt;
     const apiKey = process.env.LIQUIDIUM_API_KEY;
+    if (!apiKey) {
+      return createErrorResponse(
+        'Server configuration error',
+        'LIQUIDIUM_API_KEY is not set',
+        500,
+      );
+    }
     const apiUrl =
       process.env.LIQUIDIUM_API_URL || 'https://alpha.liquidium.fi';
     if (signedPsbt) {

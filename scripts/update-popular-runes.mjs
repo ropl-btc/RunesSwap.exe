@@ -51,9 +51,10 @@ async function updatePopularRunes() {
     // Log first few runes for verification
     console.log('📋 Sample runes:');
     popularResponse.slice(0, 3).forEach((rune, index) => {
-      console.log(
-        `  ${index + 1}. ${rune.etching?.runeName || rune.rune || 'Unknown'}`,
-      );
+      // Defensively check if rune exists before accessing properties
+      const runeName =
+        rune?.etching?.runeName || rune?.rune || 'Unknown Rune Name';
+      console.log(`  ${index + 1}. ${runeName}`);
     });
 
     // Insert into Supabase popular_runes_cache table
@@ -76,12 +77,17 @@ async function updatePopularRunes() {
 
     // Clean up old cache entries (keep only the latest 5)
     console.log('🧹 Cleaning up old cache entries...');
-    const { data: allEntries } = await supabase
+    const { data: allEntries, error: selectError } = await supabase
       .from('popular_runes_cache')
       .select('id, created_at')
       .order('created_at', { ascending: false });
 
-    if (allEntries && allEntries.length > 5) {
+    if (selectError) {
+      console.warn(
+        '⚠️  Warning: Could not fetch old cache entries for cleanup:',
+        selectError,
+      );
+    } else if (allEntries && allEntries.length > 5) {
       const entriesToDelete = allEntries.slice(5);
       const idsToDelete = entriesToDelete.map((entry) => entry.id);
 

@@ -63,24 +63,28 @@ export function usePriceHistory(
     let windowStart: number;
     let hours = 0;
     switch (timeframe) {
-      case '24h':
+      case '24h': {
         hours = 24;
         windowStart = now - 24 * 60 * 60 * 1000;
         break;
-      case '7d':
+      }
+      case '7d': {
         hours = 7 * 24;
         windowStart = now - 7 * 24 * 60 * 60 * 1000;
         break;
-      case '30d':
+      }
+      case '30d': {
         hours = 30 * 24;
         windowStart = now - 30 * 24 * 60 * 60 * 1000;
         break;
-      case '90d':
+      }
+      case '90d': {
         const firstPoint = safeArrayFirst(sortedData);
         const lastPoint = safeArrayAccess(sortedData, sortedData.length - 1);
         windowStart = firstPoint?.timestamp || now;
         now = lastPoint?.timestamp || now;
         break;
+      }
     }
 
     let filtered;
