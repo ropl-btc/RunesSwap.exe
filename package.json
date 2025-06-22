@@ -16,6 +16,10 @@
     "pre-commit-check": "pnpm type-check && pnpm test",
     "prepare": "husky"
   },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=10.8.0"
+  },
   "dependencies": {
     "98.css": "^0.1.21",
     "@headlessui/react": "^2.2.0",
