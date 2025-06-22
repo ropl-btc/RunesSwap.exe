@@ -207,108 +207,90 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Helper function to process ranges and extract min/max values
+    interface RangeData {
+      min: string;
+      max: string;
+    }
+
+    function processRanges(ranges: RangeData[]): { min: string; max: string } {
+      if (!Array.isArray(ranges) || ranges.length === 0) {
+        throw new Error('No valid ranges found');
+      }
+
+      const firstRange = safeArrayFirst(ranges);
+      if (!firstRange?.min || !firstRange?.max) {
+        throw new Error('Range data is missing required fields');
+      }
+
+      let globalMin = BigInt(firstRange.min);
+      let globalMax = BigInt(firstRange.max);
+
+      for (let i = 1; i < ranges.length; i++) {
+        const currentRange = safeArrayAccess(ranges, i);
+        if (!currentRange?.min || !currentRange?.max) {
+          console.warn(`[API Warning] Skipping invalid range at index ${i}`);
+          continue;
+        }
+
+        const currentMin = BigInt(currentRange.min);
+        const currentMax = BigInt(currentRange.max);
+        if (currentMin < globalMin) globalMin = currentMin;
+        if (currentMax > globalMax) globalMax = currentMax;
+      }
+
+      return {
+        min: globalMin.toString(),
+        max: globalMax.toString(),
+      };
+    }
+
     // 5. Extract the min-max range from the response
     let minAmount = '0';
     let maxAmount = '0';
     let loanTermDays: number[] = [];
 
-    if (liquidiumData?.valid_ranges?.rune_amount?.ranges?.length > 0) {
-      const ranges = liquidiumData.valid_ranges.rune_amount.ranges;
+    try {
+      let ranges: RangeData[] | undefined;
+      let loanTermDaysSource: number[] | undefined;
 
-      // Process ranges safely
-      if (Array.isArray(ranges) && ranges.length > 0) {
-        const firstRange = safeArrayFirst(ranges);
-        if (!firstRange?.min || !firstRange?.max) {
-          return createErrorResponse(
-            'Invalid range data',
-            'Range data is missing required fields',
-            500,
-          );
-        }
+      // Check primary response path
+      if (liquidiumData?.valid_ranges?.rune_amount?.ranges?.length > 0) {
+        ranges = liquidiumData.valid_ranges.rune_amount.ranges;
+        loanTermDaysSource = liquidiumData.valid_ranges.loan_term_days;
+      }
+      // Check alternative response path
+      else if (
+        liquidiumData?.runeDetails?.valid_ranges?.rune_amount?.ranges?.length >
+        0
+      ) {
+        ranges = liquidiumData.runeDetails.valid_ranges.rune_amount.ranges;
+        loanTermDaysSource =
+          liquidiumData.runeDetails.valid_ranges.loan_term_days;
+      }
 
-        let globalMin = BigInt(firstRange.min);
-        let globalMax = BigInt(firstRange.max);
-
-        for (let i = 1; i < ranges.length; i++) {
-          const currentRange = safeArrayAccess(ranges, i);
-          if (!currentRange?.min || !currentRange?.max) {
-            console.warn(`[API Warning] Skipping invalid range at index ${i}`);
-            continue;
-          }
-
-          const currentMin = BigInt(currentRange.min);
-          const currentMax = BigInt(currentRange.max);
-          if (currentMin < globalMin) globalMin = currentMin;
-          if (currentMax > globalMax) globalMax = currentMax;
-        }
-
-        minAmount = globalMin.toString();
-        maxAmount = globalMax.toString();
-
-        // Store loan term days if available
-        if (liquidiumData.valid_ranges.loan_term_days) {
-          loanTermDays = liquidiumData.valid_ranges.loan_term_days;
-        }
-      } else {
+      if (!ranges) {
         return createErrorResponse(
           'No valid ranges found',
           'Could not find valid borrow ranges for this rune',
           404,
         );
       }
-    } else if (
-      liquidiumData?.runeDetails?.valid_ranges?.rune_amount?.ranges?.length > 0
-    ) {
-      // Alternative path in the response
-      const ranges = liquidiumData.runeDetails.valid_ranges.rune_amount.ranges;
 
-      // Process ranges safely
-      if (Array.isArray(ranges) && ranges.length > 0) {
-        const firstRange = safeArrayFirst(ranges);
-        if (!firstRange?.min || !firstRange?.max) {
-          return createErrorResponse(
-            'Invalid range data',
-            'Range data is missing required fields',
-            500,
-          );
-        }
+      const processedRanges = processRanges(ranges);
+      minAmount = processedRanges.min;
+      maxAmount = processedRanges.max;
 
-        let globalMin = BigInt(firstRange.min);
-        let globalMax = BigInt(firstRange.max);
-
-        for (let i = 1; i < ranges.length; i++) {
-          const currentRange = safeArrayAccess(ranges, i);
-          if (!currentRange?.min || !currentRange?.max) {
-            console.warn(`[API Warning] Skipping invalid range at index ${i}`);
-            continue;
-          }
-
-          const currentMin = BigInt(currentRange.min);
-          const currentMax = BigInt(currentRange.max);
-          if (currentMin < globalMin) globalMin = currentMin;
-          if (currentMax > globalMax) globalMax = currentMax;
-        }
-
-        minAmount = globalMin.toString();
-        maxAmount = globalMax.toString();
-
-        // Store loan term days if available
-        if (liquidiumData.runeDetails.valid_ranges.loan_term_days) {
-          loanTermDays = liquidiumData.runeDetails.valid_ranges.loan_term_days;
-        }
-      } else {
-        return createErrorResponse(
-          'No valid ranges found',
-          'Could not find valid borrow ranges for this rune',
-          404,
-        );
+      // Store loan term days if available
+      if (loanTermDaysSource) {
+        loanTermDays = loanTermDaysSource;
       }
-    } else {
-      return createErrorResponse(
-        'No valid ranges found',
-        'Could not find valid borrow ranges for this rune',
-        404,
-      );
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Unknown error processing ranges';
+      return createErrorResponse('Invalid range data', errorMessage, 500);
     }
 
     // Store the range in the database
