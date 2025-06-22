@@ -289,7 +289,7 @@ describe('callLiquidiumApi', () => {
       });
     });
 
-    it('handles invalid JSON in successful response', async () => {
+    it('handles invalid JSON in failed response', async () => {
       const invalidJson = 'Invalid JSON but response is ok';
       mockFetch.mockResolvedValueOnce({
         ok: false,
