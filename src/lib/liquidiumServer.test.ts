@@ -270,7 +270,7 @@ describe('callLiquidiumApi', () => {
       });
     });
 
-    it('handles invalid JSON in error response', async () => {
+    it('handles invalid JSON in 500 error response', async () => {
       const invalidJson = 'Invalid JSON response';
       mockFetch.mockResolvedValueOnce({
         ok: false,
@@ -289,8 +289,8 @@ describe('callLiquidiumApi', () => {
       });
     });
 
-    it('handles invalid JSON in failed response', async () => {
-      const invalidJson = 'Invalid JSON but response is ok';
+    it('handles invalid JSON in 400 error response', async () => {
+      const invalidJson = 'Invalid JSON in bad request';
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 400,
@@ -302,7 +302,7 @@ describe('callLiquidiumApi', () => {
       expect(result).toEqual({
         ok: false,
         message: 'Test context returned invalid JSON',
-        details: 'Invalid JSON but response is ok',
+        details: 'Invalid JSON in bad request',
         status: 500,
       });
     });
