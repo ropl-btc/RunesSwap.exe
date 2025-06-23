@@ -595,12 +595,12 @@ describe('useBorrowQuotes', () => {
       // Should use BigInt calculation for high decimals
       expect(mockFetchBorrowQuotesFromApi).toHaveBeenCalledWith(
         'test-rune-id:123',
-        '1234567880000000000',
+        '1234567890000000000',
         'test-address',
       );
     });
 
-    it('should fallback to simple conversion on BigInt error', async () => {
+    it('should handle invalid collateral amount with validation error', async () => {
       const hook = renderHook({
         collateralAsset: mockAsset,
         collateralAmount: 'invalid-number',
@@ -612,12 +612,32 @@ describe('useBorrowQuotes', () => {
         await hook.result.handleGetQuotes();
       });
 
-      // Should fallback to NaN conversion which becomes NaN
-      expect(mockFetchBorrowQuotesFromApi).toHaveBeenCalledWith(
-        'test-rune-id:123',
-        'NaN',
-        'test-address',
+      // Should not call API and set validation error instead
+      expect(mockFetchBorrowQuotesFromApi).not.toHaveBeenCalled();
+      expect(hook.result.quotesError).toBe(
+        'Please enter a valid collateral amount.',
       );
+      expect(hook.result.isQuotesLoading).toBe(false);
+    });
+
+    it('should handle zero or negative collateral amount with validation error', async () => {
+      const hook = renderHook({
+        collateralAsset: mockAsset,
+        collateralAmount: '0',
+        address: 'test-address',
+        collateralRuneInfo: mockRuneInfo,
+      });
+
+      await act(async () => {
+        await hook.result.handleGetQuotes();
+      });
+
+      // Should not call API and set validation error instead
+      expect(mockFetchBorrowQuotesFromApi).not.toHaveBeenCalled();
+      expect(hook.result.quotesError).toBe(
+        'Please enter a valid collateral amount.',
+      );
+      expect(hook.result.isQuotesLoading).toBe(false);
     });
 
     it('should handle zero decimals correctly', async () => {
