@@ -31,8 +31,13 @@ async function updatePopularRunes() {
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
-  // Initialize SatsTerminal client with API key only
-  const terminal = new SatsTerminal({ apiKey: satsTerminalApiKey });
+  // Initialize SatsTerminal client with optional baseUrl override
+  const terminal = process.env.TBA_API_URL
+    ? new SatsTerminal({
+        apiKey: satsTerminalApiKey,
+        baseUrl: process.env.TBA_API_URL,
+      })
+    : new SatsTerminal({ apiKey: satsTerminalApiKey });
 
   try {
     // Fetch popular tokens from SatsTerminal
