@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrdiscanClient } from '@/lib/serverUtils';
 import { supabase } from '@/lib/supabase';
+import { safeArrayFirst } from '@/utils/typeGuards';
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,7 +35,10 @@ export async function GET(request: NextRequest) {
       }
 
       if (prefixRune && prefixRune.length > 0) {
-        return NextResponse.json(prefixRune[0]);
+        const firstPrefixRune = safeArrayFirst(prefixRune);
+        if (firstPrefixRune) {
+          return NextResponse.json(firstPrefixRune);
+        }
       }
     }
 
@@ -43,7 +47,10 @@ export async function GET(request: NextRequest) {
     }
 
     if (existingRune && existingRune.length > 0) {
-      return NextResponse.json(existingRune[0]);
+      const firstExistingRune = safeArrayFirst(existingRune);
+      if (firstExistingRune) {
+        return NextResponse.json(firstExistingRune);
+      }
     }
 
     // If not found in DB, try to fetch from Ordiscan

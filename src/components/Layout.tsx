@@ -7,6 +7,7 @@ import useBtcPrice from '@/hooks/useBtcPrice';
 import FooterComponent from './FooterComponent';
 import styles from './Layout.module.css';
 import TitleText from './TitleText';
+import { safeArrayFirst } from '@/utils/typeGuards';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -22,7 +23,9 @@ export function Layout({ children }: LayoutProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const fileList = e.target.files;
+    const filesArray = fileList ? (Array.from(fileList) as File[]) : [];
+    const file = safeArrayFirst<File>(filesArray);
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
