@@ -55,6 +55,10 @@ describe('formatNumberString', () => {
     expect(formatNumberString(undefined, 'none')).toBe('none');
   });
 
+  it('handles zero correctly', () => {
+    expect(formatNumberString('0')).toBe('0');
+  });
+
   it('formats decimal and negative numbers', () => {
     expect(formatNumberString('-1234.56')).toBe('-1,234.56');
   });

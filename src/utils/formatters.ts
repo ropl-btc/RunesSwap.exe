@@ -12,7 +12,9 @@ export function formatNumberString(
   numStr: string | undefined | null,
   defaultDisplay = 'N/A',
 ): string {
-  if (!numStr) return defaultDisplay;
+  if (numStr === undefined || numStr === null || numStr === '') {
+    return defaultDisplay;
+  }
 
   try {
     // Remove any existing commas and validate the string contains only digits
