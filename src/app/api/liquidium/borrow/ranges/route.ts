@@ -151,7 +151,8 @@ export async function GET(request: NextRequest) {
 
     // Prepare request to Liquidium
     // Get API credentials
-    const apiUrl = process.env.LIQUIDIUM_API_URL;
+    const apiUrl =
+      process.env.LIQUIDIUM_API_URL || process.env.NEXT_PUBLIC_LIQUIDIUM_API_URL;
     if (!apiUrl) {
       return createErrorResponse(
         'Server configuration error',

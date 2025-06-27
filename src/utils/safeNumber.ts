@@ -12,6 +12,9 @@ export const safeNumber = (value: string | number, fallback = 0): number => {
   }
 
   // For strings (or other types cast to string), attempt conversion
+  if (typeof value === 'string' && value.trim() === '') {
+    return fallback;
+  }
   const num = Number(value);
   return Number.isNaN(num) ? fallback : num;
 };
