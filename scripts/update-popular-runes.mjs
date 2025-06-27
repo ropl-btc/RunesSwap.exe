@@ -31,12 +31,14 @@ async function updatePopularRunes() {
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
-  const terminal = new SatsTerminal({
-    apiKey: satsTerminalApiKey,
-    baseUrl:
-      process.env.TBA_API_URL ||
-      'https://sats-terminal-node.azurewebsites.net',
-  });
+  // Initialize SatsTerminal client
+  // If TBA_API_URL is provided, use it; otherwise rely on SDK default
+  const terminal = process.env.TBA_API_URL
+    ? new SatsTerminal({
+        apiKey: satsTerminalApiKey,
+        baseUrl: process.env.TBA_API_URL,
+      })
+    : new SatsTerminal({ apiKey: satsTerminalApiKey });
 
   try {
     // Fetch popular tokens from SatsTerminal
