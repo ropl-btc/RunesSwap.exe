@@ -1,9 +1,5 @@
 import Image from 'next/image';
 import React, { useEffect, useState } from 'react';
-import usePriceChart from '@/hooks/usePriceChart';
-import styles from './AppInterface.module.css';
-import PriceTooltip from './PriceTooltip';
-import TimeframeSelector from './TimeframeSelector';
 import {
   CartesianGrid,
   Line,
@@ -13,7 +9,12 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import hourglassIcon from '/public/icons/windows_hourglass.png';
+import usePriceChart from '@/hooks/usePriceChart';
+import styles from './AppInterface.module.css';
+import PriceTooltip from './PriceTooltip';
+import TimeframeSelector from './TimeframeSelector';
+// Path to hourglass icon used while BTC price is loading
+const HOURGLASS_SRC = '/icons/windows_hourglass.png';
 
 interface PriceChartProps {
   assetName: string;
@@ -67,7 +68,7 @@ const PriceChart: React.FC<PriceChartProps> = ({
         }}
       >
         <Image
-          src={hourglassIcon.src || '/icons/windows_hourglass.png'}
+          src={HOURGLASS_SRC}
           alt="Loading..."
           width={48}
           height={48}
