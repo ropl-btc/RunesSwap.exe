@@ -8,6 +8,7 @@ import {
 } from '@/lib/apiUtils';
 import { createLiquidiumClient } from '@/lib/liquidiumSdk';
 import { supabase } from '@/lib/supabase';
+import type { BorrowerService } from '@/sdk/liquidium/services/BorrowerService';
 import { safeArrayAccess, safeArrayFirst } from '@/utils/typeGuards';
 
 // Schema for query parameters
@@ -150,7 +151,25 @@ export async function GET(request: NextRequest) {
     // We'll use a dummy amount of 1 to get the valid ranges
     const dummyAmount = '1';
 
-    let liquidiumData;
+    // Response type helpers from the Liquidium SDK (needs to be declared
+    // before we receive the response so we can type the variable correctly)
+    type OffersResp = Awaited<
+      ReturnType<BorrowerService['getApiV1BorrowerCollateralRunesOffers']>
+    >;
+
+    /*
+     * Older versions of the API returned `valid_ranges` at the top level.
+     * Keep a lightweight definition so we can safely support both shapes
+     * without falling back to `any`.
+     */
+    type LegacyRanges = {
+      valid_ranges: OffersResp['runeDetails']['valid_ranges'];
+    };
+
+    type LiquidiumRangeResp = OffersResp | LegacyRanges;
+
+    let liquidiumData: LiquidiumRangeResp;
+
     try {
       const client = createLiquidiumClient(userJwt);
       liquidiumData =
@@ -162,6 +181,18 @@ export async function GET(request: NextRequest) {
       const message =
         sdkError instanceof Error ? sdkError.message : 'Unknown error';
       return createErrorResponse('Liquidium API error', message, 500);
+    }
+
+    // We now have a typed Liquidium response, extract the valid ranges
+    let validRanges: OffersResp['runeDetails']['valid_ranges'];
+
+    if ('valid_ranges' in liquidiumData) {
+      // Legacy response shape
+      validRanges = (liquidiumData as LegacyRanges).valid_ranges;
+    } else if ('runeDetails' in liquidiumData) {
+      validRanges = (liquidiumData as OffersResp).runeDetails.valid_ranges;
+    } else {
+      throw new Error('valid_ranges field not found in Liquidium response');
     }
 
     // Helper function to process ranges and extract min/max values
@@ -208,31 +239,13 @@ export async function GET(request: NextRequest) {
     let loanTermDays: number[] = [];
 
     try {
-      /* eslint-disable @typescript-eslint/no-explicit-any */
-      const responseObj = liquidiumData as unknown as Record<string, unknown>;
-      const validRanges =
-        (responseObj as any).valid_ranges ??
-        (responseObj as any).runeDetails?.valid_ranges;
-      /* eslint-enable @typescript-eslint/no-explicit-any */
-
-      if (!validRanges?.rune_amount?.ranges?.length) {
-        return createErrorResponse(
-          'Liquidium API error',
-          'Could not determine valid borrow ranges',
-          500,
-        );
-      }
-
-      const ranges = validRanges.rune_amount.ranges;
-      const loanTermDaysSource = validRanges.loan_term_days;
-
-      const processedRanges = processRanges(ranges);
+      const processedRanges = processRanges(validRanges.rune_amount.ranges);
       minAmount = processedRanges.min;
       maxAmount = processedRanges.max;
 
       // Store loan term days if available
-      if (loanTermDaysSource) {
-        loanTermDays = loanTermDaysSource;
+      if (validRanges.loan_term_days) {
+        loanTermDays = validRanges.loan_term_days;
       }
     } catch (error) {
       const errorMessage =
