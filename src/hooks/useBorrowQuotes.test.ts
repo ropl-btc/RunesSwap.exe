@@ -2,12 +2,15 @@ import { JSDOM } from 'jsdom';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react-dom/test-utils';
-import type { RuneData } from '@/lib/runesData';
-import type {
-  BorrowRangeResponse,
-  LiquidiumBorrowQuoteOffer,
-  LiquidiumBorrowQuoteResponse,
+import {
+  type BorrowRangeResponse,
+  type LiquidiumBorrowQuoteOffer,
+  type LiquidiumBorrowQuoteResponse,
+  fetchBorrowQuotesFromApi,
+  fetchBorrowRangesFromApi,
+  fetchPopularFromApi,
 } from '@/lib/apiClient';
+import type { RuneData } from '@/lib/runesData';
 
 // Mock the API client functions
 jest.mock('@/lib/apiClient', () => ({
@@ -29,11 +32,6 @@ jest.mock('@/utils/typeGuards', () => ({
 }));
 
 // Import the mocked functions for type safety
-import {
-  fetchBorrowQuotesFromApi,
-  fetchBorrowRangesFromApi,
-  fetchPopularFromApi,
-} from '@/lib/apiClient';
 import type { Asset } from '@/types/common';
 import useBorrowQuotes from './useBorrowQuotes';
 
