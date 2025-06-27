@@ -101,7 +101,6 @@ const ignores = [
   "**/public/**",
   // Generated SDK
   "src/sdk/liquidium/**",
-  "src/sdk/temp/**",
 ];
 
 const eslintConfig = [
