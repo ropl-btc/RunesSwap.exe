@@ -9,8 +9,8 @@ import {
 import type { RuneData } from '@/lib/runesData';
 import { Asset } from '@/types/common';
 import { normalizeRuneName } from '@/utils/runeUtils';
-import { safeArrayAccess, safeArrayFirst } from '@/utils/typeGuards';
 import { safeNumber } from '@/utils/safeNumber';
+import { safeArrayAccess, safeArrayFirst } from '@/utils/typeGuards';
 
 interface UseBorrowQuotesArgs {
   collateralAsset: Asset | null;

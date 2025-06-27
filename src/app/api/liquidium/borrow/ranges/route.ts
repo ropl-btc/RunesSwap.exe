@@ -7,8 +7,7 @@ import {
   validateRequest,
 } from '@/lib/apiUtils';
 import { supabase } from '@/lib/supabase';
-import { safeArrayAccess, safeArrayFirst } from '@/utils/typeGuards';
-import { isRecord } from '@/utils/typeGuards';
+import { isRecord, safeArrayAccess, safeArrayFirst } from '@/utils/typeGuards';
 
 // Schema for query parameters
 const rangeParamsSchema = z.object({
@@ -280,20 +279,41 @@ export async function GET(request: NextRequest) {
 
       // Check primary response path
       if (
-        (liquidiumDataRecord.valid_ranges as any)?.rune_amount?.ranges?.length >
+        (
+          (liquidiumDataRecord.valid_ranges as {
+            rune_amount?: { ranges?: RangeData[] };
+            loan_term_days?: number[];
+          })?.rune_amount?.ranges ?? []
+        ).length >
         0
       ) {
-        ranges = (liquidiumDataRecord.valid_ranges as any).rune_amount.ranges;
-        loanTermDaysSource = (liquidiumDataRecord.valid_ranges as any).loan_term_days;
+        const vr = liquidiumDataRecord.valid_ranges as {
+          rune_amount?: { ranges?: RangeData[] };
+          loan_term_days?: number[];
+        };
+        ranges = vr.rune_amount?.ranges;
+        loanTermDaysSource = vr.loan_term_days;
       }
       // Check alternative response path
       else if (
-        (liquidiumDataRecord.runeDetails as any)?.valid_ranges?.rune_amount?.ranges?.length >
+        (
+          ((liquidiumDataRecord.runeDetails as Record<string, unknown>)
+            ?.valid_ranges as {
+            rune_amount?: { ranges?: RangeData[] };
+            loan_term_days?: number[];
+          })?.rune_amount?.ranges ?? []
+        ).length >
         0
       ) {
-        ranges = (liquidiumDataRecord.runeDetails as any).valid_ranges.rune_amount.ranges;
-        loanTermDaysSource =
-          (liquidiumDataRecord.runeDetails as any).valid_ranges.loan_term_days;
+        const rdValid = (
+          (liquidiumDataRecord.runeDetails as Record<string, unknown>)
+            .valid_ranges as {
+            rune_amount?: { ranges?: RangeData[] };
+            loan_term_days?: number[];
+          }
+        );
+        ranges = rdValid?.rune_amount?.ranges;
+        loanTermDaysSource = rdValid?.loan_term_days;
       }
 
       if (!ranges) {

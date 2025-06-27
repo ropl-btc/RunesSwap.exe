@@ -4,10 +4,10 @@ import Image from 'next/image';
 import React, { useRef, useState } from 'react';
 import { useBackground } from '@/context/BackgroundContext';
 import useBtcPrice from '@/hooks/useBtcPrice';
+import { safeArrayFirst } from '@/utils/typeGuards';
 import FooterComponent from './FooterComponent';
 import styles from './Layout.module.css';
 import TitleText from './TitleText';
-import { safeArrayFirst } from '@/utils/typeGuards';
 
 interface LayoutProps {
   children: React.ReactNode;

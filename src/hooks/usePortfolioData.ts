@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { QUERY_KEYS, fetchPortfolioDataFromApi } from '@/lib/api';
-import { safeArrayAccess } from '@/utils/typeGuards';
 import { safeNumber } from '@/utils/safeNumber';
+import { safeArrayAccess } from '@/utils/typeGuards';
 
 export type SortField = 'name' | 'balance' | 'value';
 export type SortDirection = 'asc' | 'desc';
