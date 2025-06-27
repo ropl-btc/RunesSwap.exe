@@ -36,15 +36,3 @@ export function formatNumberString(
     return defaultDisplay;
   }
 }
-
-export function formatNumber(value: number): string {
-  if (value === 0) return '0';
-  const str = value.toString();
-  const parts = str.split('.');
-  const intPart = safeArrayFirst(parts);
-  if (!intPart) return '0';
-
-  const withCommas = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  const decPart = safeArrayAccess(parts, 1);
-  return decPart ? `${withCommas}.${decPart}` : withCommas;
-}

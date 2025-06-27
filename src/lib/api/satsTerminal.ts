@@ -3,7 +3,11 @@ import {
   type GetPSBTParams,
   type QuoteResponse,
 } from 'satsterminal-sdk';
-import type { Rune } from '@/types/satsTerminal';
+import type {
+  PsbtConfirmationResult,
+  PsbtCreationResult,
+  Rune,
+} from '@/types/satsTerminal';
 import { handleApiResponse } from './utils';
 
 export const fetchRunesFromApi = async (query: string): Promise<Rune[]> => {
@@ -56,7 +60,7 @@ export const fetchQuoteFromApi = async (
 
 export const getPsbtFromApi = async (
   params: GetPSBTParams,
-): Promise<Record<string, unknown>> => {
+): Promise<PsbtCreationResult> => {
   const response = await fetch('/api/sats-terminal/psbt/create', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -75,12 +79,12 @@ export const getPsbtFromApi = async (
         `Failed to create PSBT: ${response.statusText}`,
     );
   }
-  return data as Record<string, unknown>;
+  return data as PsbtCreationResult;
 };
 
 export const confirmPsbtViaApi = async (
   params: ConfirmPSBTParams,
-): Promise<Record<string, unknown>> => {
+): Promise<PsbtConfirmationResult> => {
   const response = await fetch('/api/sats-terminal/psbt/confirm', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -99,5 +103,5 @@ export const confirmPsbtViaApi = async (
         `Failed to confirm PSBT: ${response.statusText}`,
     );
   }
-  return data as Record<string, unknown>;
+  return data as PsbtConfirmationResult;
 };

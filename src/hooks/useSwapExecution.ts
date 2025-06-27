@@ -17,6 +17,10 @@ import {
   getPsbtFromApi,
 } from '@/lib/api';
 import { Asset } from '@/types/common';
+import type {
+  PsbtConfirmationResult,
+  PsbtCreationResult,
+} from '@/types/satsTerminal';
 import { patchOrder } from '@/utils/orderUtils';
 
 interface UseSwapExecutionArgs {
@@ -148,17 +152,11 @@ export default function useSwapExecution({
 
       // *** Use API client function ***
       try {
-        const psbtResult = await getPsbtFromApi(psbtParams);
+        const psbtResult: PsbtCreationResult = await getPsbtFromApi(psbtParams);
 
-        const mainPsbtBase64 =
-          (psbtResult as unknown as { psbtBase64?: string; psbt?: string })
-            ?.psbtBase64 ||
-          (psbtResult as unknown as { psbtBase64?: string; psbt?: string })
-            ?.psbt;
-        const swapId = (psbtResult as unknown as { swapId?: string })?.swapId;
-        const rbfPsbtBase64 = (
-          psbtResult as unknown as { rbfProtected?: { base64?: string } }
-        )?.rbfProtected?.base64;
+        const mainPsbtBase64 = psbtResult.psbtBase64 ?? psbtResult.psbt;
+        const swapId = psbtResult.swapId;
+        const rbfPsbtBase64 = psbtResult.rbfProtected?.base64;
 
         if (!mainPsbtBase64 || !swapId) {
           throw new Error(
@@ -198,21 +196,12 @@ export default function useSwapExecution({
           ...(signedRbfPsbt && { signedRbfPsbtBase64: signedRbfPsbt }),
         };
         // *** Use API client function ***
-        const confirmResult = await confirmPsbtViaApi(confirmParams);
+        const confirmResult: PsbtConfirmationResult =
+          await confirmPsbtViaApi(confirmParams);
 
-        // Define a basic interface for expected response structure
-        interface SwapConfirmationResult {
-          txid?: string;
-          rbfProtection?: {
-            fundsPreparationTxId?: string;
-          };
-        }
-
-        // Use proper typing instead of 'any'
         const finalTxId =
-          (confirmResult as SwapConfirmationResult)?.txid ||
-          (confirmResult as SwapConfirmationResult)?.rbfProtection
-            ?.fundsPreparationTxId;
+          confirmResult.txid ||
+          confirmResult.rbfProtection?.fundsPreparationTxId;
         if (!finalTxId) {
           throw new Error(
             `Confirmation failed or transaction ID missing. Response: ${JSON.stringify(confirmResult)}`,
@@ -275,17 +264,12 @@ export default function useSwapExecution({
           };
 
           // Removed redundant log as we already logged the fee rate
-          const psbtResult = await getPsbtFromApi(retryParams);
+          const psbtResult: PsbtCreationResult =
+            await getPsbtFromApi(retryParams);
 
-          const mainPsbtBase64 =
-            (psbtResult as unknown as { psbtBase64?: string; psbt?: string })
-              ?.psbtBase64 ||
-            (psbtResult as unknown as { psbtBase64?: string; psbt?: string })
-              ?.psbt;
-          const swapId = (psbtResult as unknown as { swapId?: string })?.swapId;
-          const rbfPsbtBase64 = (
-            psbtResult as unknown as { rbfProtected?: { base64?: string } }
-          )?.rbfProtected?.base64;
+          const mainPsbtBase64 = psbtResult.psbtBase64 ?? psbtResult.psbt;
+          const swapId = psbtResult.swapId;
+          const rbfPsbtBase64 = psbtResult.rbfProtected?.base64;
 
           if (!mainPsbtBase64 || !swapId) {
             throw new Error(
@@ -326,21 +310,12 @@ export default function useSwapExecution({
           };
 
           // Confirm with the new PSBT
-          const confirmResult = await confirmPsbtViaApi(confirmParams);
+          const confirmResult: PsbtConfirmationResult =
+            await confirmPsbtViaApi(confirmParams);
 
-          // Define a basic interface for expected response structure
-          interface SwapConfirmationResult {
-            txid?: string;
-            rbfProtection?: {
-              fundsPreparationTxId?: string;
-            };
-          }
-
-          // Use proper typing instead of 'any'
           const finalTxId =
-            (confirmResult as SwapConfirmationResult)?.txid ||
-            (confirmResult as SwapConfirmationResult)?.rbfProtection
-              ?.fundsPreparationTxId;
+            confirmResult.txid ||
+            confirmResult.rbfProtection?.fundsPreparationTxId;
           if (!finalTxId) {
             throw new Error(
               `Confirmation failed or transaction ID missing. Response: ${JSON.stringify(confirmResult)}`,

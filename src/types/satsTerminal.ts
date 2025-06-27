@@ -56,3 +56,23 @@ export interface RuneOrder {
   name?: string | undefined;
   amount?: string | undefined;
 }
+
+// API response when creating a PSBT
+export interface PsbtCreationResult {
+  psbtBase64?: string;
+  psbt?: string;
+  swapId?: string;
+  rbfProtected?: {
+    base64?: string;
+  };
+  [key: string]: unknown;
+}
+
+// API response when confirming a PSBT
+export interface PsbtConfirmationResult {
+  txid?: string;
+  rbfProtection?: {
+    fundsPreparationTxId?: string;
+  };
+  [key: string]: unknown;
+}
