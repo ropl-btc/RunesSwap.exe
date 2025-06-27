@@ -16,7 +16,7 @@ const BorrowQuotesList: React.FC<BorrowQuotesListProps> = ({
 }) => (
   <div className={styles.quotesContainer}>
     <h2 className={styles.quotesTitle}>Available Loan Offers:</h2>
-    {quotes.map((quote) => {
+    {quotes.map((quote: LiquidiumBorrowQuoteOffer) => {
       const principalBtc = (quote.loan_breakdown.principal_sats / 1e8).toFixed(
         8,
       );

@@ -78,3 +78,12 @@ export function isDefined<T>(value: T | null | undefined): value is T {
 export function filterDefined<T>(array: (T | null | undefined)[]): T[] {
   return array.filter(isDefined);
 }
+
+/**
+ * Narrow unknown to a plain object record.
+ * @param value - The value to check
+ * @returns True if value is a non-null object
+ */
+export function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}

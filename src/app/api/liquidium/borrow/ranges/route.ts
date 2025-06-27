@@ -8,6 +8,7 @@ import {
 } from '@/lib/apiUtils';
 import { supabase } from '@/lib/supabase';
 import { safeArrayAccess, safeArrayFirst } from '@/utils/typeGuards';
+import { isRecord } from '@/utils/typeGuards';
 
 // Schema for query parameters
 const rangeParamsSchema = z.object({
@@ -189,13 +190,32 @@ export async function GET(request: NextRequest) {
       headers: headers,
     });
 
-    const liquidiumData = await liquidiumResponse.json();
+    const liquidiumData: unknown = await liquidiumResponse.json();
+
+    if (!isRecord(liquidiumData)) {
+      return createErrorResponse(
+        'Invalid response',
+        'Unexpected response format from Liquidium API',
+        500,
+      );
+    }
+
+    // From here onwards we can safely treat the parsed JSON as a generic record.
+    const liquidiumDataRecord = liquidiumData as Record<string, unknown>;
 
     if (!liquidiumResponse.ok) {
       // Try to provide a more helpful error message
-      let errorMessage =
-        liquidiumData?.errorMessage || JSON.stringify(liquidiumData);
-      const errorCode = liquidiumData?.error || liquidiumResponse.statusText;
+      let errorMessage: string = String(
+        'errorMessage' in liquidiumDataRecord && liquidiumDataRecord.errorMessage
+          ? liquidiumDataRecord.errorMessage
+          : JSON.stringify(liquidiumDataRecord),
+      );
+
+      const errorCode: string = String(
+        'error' in liquidiumDataRecord && liquidiumDataRecord.error
+          ? liquidiumDataRecord.error
+          : liquidiumResponse.statusText,
+      );
 
       if (
         errorCode === 'NOT_FOUND' &&
@@ -259,18 +279,21 @@ export async function GET(request: NextRequest) {
       let loanTermDaysSource: number[] | undefined;
 
       // Check primary response path
-      if (liquidiumData?.valid_ranges?.rune_amount?.ranges?.length > 0) {
-        ranges = liquidiumData.valid_ranges.rune_amount.ranges;
-        loanTermDaysSource = liquidiumData.valid_ranges.loan_term_days;
+      if (
+        (liquidiumDataRecord.valid_ranges as any)?.rune_amount?.ranges?.length >
+        0
+      ) {
+        ranges = (liquidiumDataRecord.valid_ranges as any).rune_amount.ranges;
+        loanTermDaysSource = (liquidiumDataRecord.valid_ranges as any).loan_term_days;
       }
       // Check alternative response path
       else if (
-        liquidiumData?.runeDetails?.valid_ranges?.rune_amount?.ranges?.length >
+        (liquidiumDataRecord.runeDetails as any)?.valid_ranges?.rune_amount?.ranges?.length >
         0
       ) {
-        ranges = liquidiumData.runeDetails.valid_ranges.rune_amount.ranges;
+        ranges = (liquidiumDataRecord.runeDetails as any).valid_ranges.rune_amount.ranges;
         loanTermDaysSource =
-          liquidiumData.runeDetails.valid_ranges.loan_term_days;
+          (liquidiumDataRecord.runeDetails as any).valid_ranges.loan_term_days;
       }
 
       if (!ranges) {
