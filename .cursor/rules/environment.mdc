@@ -41,11 +41,6 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 ```
 
-### Optional/Legacy Variables
-```bash
-TBA_API_URL=your_tba_url  # Legacy - may not be actively used
-```
-
 ## Security Guidelines
 
 ### ❌ Never Do This
