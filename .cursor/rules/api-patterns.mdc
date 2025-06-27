@@ -180,15 +180,24 @@ export async function confirmPSBT(params: ConfirmPSBTParams) {
 
 ### Liquidium Integration (Server-side)
 ```typescript
-// ✅ Server-side only - never expose API key to client
-const response = await fetch(`${LIQUIDIUM_API_URL}/endpoint`, {
-  headers: {
-    'Authorization': `Bearer ${process.env.LIQUIDIUM_API_KEY}`,
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(payload),
-});
+// ✅ Use the generated SDK (src/sdk/liquidium) via the helper
+import { createLiquidiumClient } from '@/lib/liquidiumSdk';
+
+export async function getBorrowerLoans(userJwt: string | undefined) {
+  // Never expose LIQUIDIUM_API_KEY to the browser – the SDK is imported
+  // only in backend code (e.g. Next.js Route Handlers).
+  const client = createLiquidiumClient(userJwt);
+  // New consolidated endpoint – no longer "/borrower/portfolio"
+  const portfolio = await client.portfolio.getApiV1Portfolio();
+  return portfolio.borrower?.runes?.loans ?? [];
+}
 ```
+
+Key points
+• `createLiquidiumClient` injects `Authorization: Bearer ${LIQUIDIUM_API_KEY}` and optional `x-user-token` header.  
+• The OpenAPI spec is stored in `liquidium-openapi/` and compiled to TypeScript via `pnpm gen:liquidium-sdk`.  
+• Generated SDK files live in `src/sdk/liquidium` and are excluded from linting, formatting, and test transforms.  
+• Do **NOT** import the SDK in client-side code; keep Liquidium calls in server routes or server-only helpers.
 
 ## Caching Strategies
 
