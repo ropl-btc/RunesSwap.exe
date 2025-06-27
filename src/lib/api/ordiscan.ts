@@ -94,15 +94,15 @@ export const updateRuneDataViaApi = async (
   } catch {
     throw new Error(`Failed to parse update response for ${name}`);
   }
+  if (response.status === 404) {
+    return null;
+  }
   if (!response.ok) {
     throw new Error(
       data?.error?.message ||
         data?.error ||
         `Failed to update rune data: ${response.statusText}`,
     );
-  }
-  if (response.status === 404) {
-    return null;
   }
   return handleApiResponse<RuneData | null>(data, false);
 };
@@ -120,15 +120,15 @@ export const fetchRuneMarketFromApi = async (
   } catch {
     throw new Error(`Failed to parse market info for ${name}`);
   }
+  if (response.status === 404) {
+    return null;
+  }
   if (!response.ok) {
     throw new Error(
       data?.error?.message ||
         data?.error ||
         `Failed to fetch market info: ${response.statusText}`,
     );
-  }
-  if (response.status === 404) {
-    return null;
   }
   return handleApiResponse<OrdiscanRuneMarketInfo | null>(data, false);
 };
