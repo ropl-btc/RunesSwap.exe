@@ -166,23 +166,50 @@ export function useBorrowQuotes({
 
   const handleGetQuotes = async () => {
     if (!collateralAsset || !collateralAmount || !address) return;
+
+    // Validate collateral amount before proceeding
+    const amountFloat = parseFloat(collateralAmount);
+    if (isNaN(amountFloat) || amountFloat <= 0) {
+      setQuotesError('Please enter a valid collateral amount.');
+      return;
+    }
+
     setIsQuotesLoading(true);
     resetQuotes();
     try {
       const decimals = collateralRuneInfo?.decimals ?? 0;
       let rawAmount: string;
       try {
-        const amountFloat = parseFloat(collateralAmount);
-        const amountInteger = Math.floor(
-          amountFloat * 10 ** Math.min(8, decimals),
-        );
-        const multiplier = BigInt(10 ** Math.max(0, decimals - 8));
-        const amountBigInt = BigInt(amountInteger) * multiplier;
-        rawAmount = amountBigInt.toString();
+        // Fix floating point precision issues by using string manipulation
+        // for high precision decimal conversions
+        if (decimals > 8) {
+          // For high decimals, use string-based conversion to avoid precision loss
+          // Trim whitespace to ensure consistency with parseFloat validation
+          const amountStr = collateralAmount.trim();
+          const [integerPart = '0', decimalPart = ''] = amountStr.split('.');
+
+          // Truncate decimal part to supported precision, then pad to required length
+          const truncatedDecimal = decimalPart.slice(0, decimals);
+          const paddedDecimal = truncatedDecimal.padEnd(decimals, '0');
+
+          // Combine integer and decimal parts
+          const fullAmountStr = integerPart + paddedDecimal;
+
+          // Remove leading zeros and convert to BigInt
+          rawAmount = BigInt(
+            fullAmountStr.replace(/^0+/, '') || '0',
+          ).toString();
+        } else {
+          // For lower decimals, use the original method but with better precision handling
+          const amountInteger = Math.floor(
+            amountFloat * 10 ** Math.min(8, decimals),
+          );
+          const multiplier = BigInt(10 ** Math.max(0, decimals - 8));
+          const amountBigInt = BigInt(amountInteger) * multiplier;
+          rawAmount = amountBigInt.toString();
+        }
       } catch {
-        rawAmount = String(
-          Math.floor(parseFloat(collateralAmount) * 10 ** decimals),
-        );
+        rawAmount = String(Math.floor(amountFloat * 10 ** decimals));
       }
 
       let runeIdForApi = collateralAsset.id;

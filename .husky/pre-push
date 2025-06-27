@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+
+# Fix Git hook output display issues (for Git 2.36.0+)
+if sh -c ": >/dev/tty" >/dev/null 2>/dev/null; then exec >/dev/tty 2>&1; fi
+
+# Run TypeScript type checking
+pnpm type-check
+
+# Run tests
+pnpm test
+
+# Run production build to ensure build integrity
+pnpm build 
