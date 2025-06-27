@@ -14,7 +14,8 @@
     "type-check": "tsc --noEmit",
     "ai-check": "pnpm format:check && pnpm lint && pnpm type-check",
     "pre-commit-check": "pnpm type-check && pnpm test",
-    "prepare": "husky"
+    "prepare": "husky",
+    "gen:liquidium-sdk": "openapi -i liquidium-openapi/liquidium-instant-loan-api.yaml -o src/sdk/liquidium --client fetch --useOptions --useUnionTypes --exportSchemas true --name LiquidiumApi"
   },
   "engines": {
     "node": ">=18.0.0",
@@ -61,6 +62,7 @@
     "jest": "^29.7.0",
     "jsdom": "^26.1.0",
     "lint-staged": "^15.5.1",
+    "openapi-typescript-codegen": "^0.29.0",
     "prettier": "^3.5.3",
     "stylelint": "^16.19.1",
     "stylelint-config-standard": "^38.0.0",

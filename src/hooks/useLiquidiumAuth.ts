@@ -36,7 +36,8 @@ export function useLiquidiumAuth({
         setLoans([]);
         return;
       }
-      setLoans(data.data || []);
+      const apiLoans = (data.data?.loans as LiquidiumLoanOffer[]) ?? [];
+      setLoans(apiLoans);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setLiquidiumError(err.message || 'Unknown error');
@@ -119,7 +120,8 @@ export function useLiquidiumAuth({
         if (res.status === 200) {
           setLiquidiumAuthenticated(true);
           const data = await res.json();
-          setLoans(data.data || []);
+          const apiLoans = (data.data?.loans as LiquidiumLoanOffer[]) ?? [];
+          setLoans(apiLoans);
         } else if (res.status === 401) {
           setLiquidiumAuthenticated(false);
           setLoans([]);

@@ -6,7 +6,7 @@ import {
   handleApiError,
   validateRequest,
 } from '@/lib/apiUtils';
-import { callLiquidiumApi } from '@/lib/liquidiumServer';
+import { createLiquidiumClient } from '@/lib/liquidiumSdk';
 import { supabase } from '@/lib/supabase';
 import { safeArrayFirst } from '@/utils/typeGuards';
 
@@ -132,24 +132,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 2. Call Liquidium API
-    const result = await callLiquidiumApi(
-      `/api/v1/borrower/collateral/runes/${encodeURIComponent(
+    // 2. Call Liquidium API via generated SDK
+    try {
+      const client = createLiquidiumClient(userJwt);
+      const data = await client.borrower.getApiV1BorrowerCollateralRunesOffers({
         runeId,
-      )}/offers?rune_amount=${runeAmount}`,
-      { method: 'GET', userJwt },
-      'Liquidium borrow quotes',
-    );
+        runeAmount,
+      });
 
-    if (!result.ok) {
-      return createErrorResponse(
-        result.message ?? 'Error',
-        result.details,
-        result.status,
-      );
+      return createSuccessResponse(data);
+    } catch (sdkError) {
+      const message =
+        sdkError instanceof Error ? sdkError.message : 'Unknown error';
+      return createErrorResponse('Liquidium borrow quotes error', message, 500);
     }
-
-    return createSuccessResponse(result.data); // Forward Liquidium's response structure
   } catch (error) {
     const errorInfo = handleApiError(error, 'Failed to fetch borrow quotes');
     return createErrorResponse(

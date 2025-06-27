@@ -6,6 +6,7 @@ import {
   handleApiError,
   validateRequest,
 } from '@/lib/apiUtils';
+import { createLiquidiumClient } from '@/lib/liquidiumSdk';
 import { supabase } from '@/lib/supabase';
 import { safeArrayAccess, safeArrayFirst } from '@/utils/typeGuards';
 
@@ -146,65 +147,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Prepare request to Liquidium
-    // Get API credentials
-    const apiUrl = process.env.LIQUIDIUM_API_URL;
-    if (!apiUrl) {
-      return createErrorResponse(
-        'Server configuration error',
-        'Missing API URL configuration',
-        500,
-      );
-    }
-
-    const apiKey = process.env.LIQUIDIUM_API_KEY;
-    if (!apiKey) {
-      return createErrorResponse(
-        'Server configuration error',
-        'Missing API key configuration',
-        500,
-      );
-    }
-
     // We'll use a dummy amount of 1 to get the valid ranges
     const dummyAmount = '1';
 
-    // Construct the correct URL according to the OpenAPI spec
-    const fullUrl = `${apiUrl}/api/v1/borrower/collateral/runes/${encodeURIComponent(runeId)}/offers?rune_amount=${dummyAmount}`;
-
-    // Call Liquidium API
-    const headers = {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-      'x-user-token': userJwt, // Include user JWT
-    };
-
-    const liquidiumResponse = await fetch(fullUrl, {
-      method: 'GET',
-      headers: headers,
-    });
-
-    const liquidiumData = await liquidiumResponse.json();
-
-    if (!liquidiumResponse.ok) {
-      // Try to provide a more helpful error message
-      let errorMessage =
-        liquidiumData?.errorMessage || JSON.stringify(liquidiumData);
-      const errorCode = liquidiumData?.error || liquidiumResponse.statusText;
-
-      if (
-        errorCode === 'NOT_FOUND' &&
-        errorMessage.includes('Rune not found')
-      ) {
-        errorMessage = `Rune ID "${runeId}" not found or not supported by Liquidium. Please check if this rune is supported for borrowing.`;
-      }
-
-      return createErrorResponse(
-        `Liquidium API error: ${errorCode}`,
-        errorMessage,
-        liquidiumResponse.status,
-      );
+    let liquidiumData;
+    try {
+      const client = createLiquidiumClient(userJwt);
+      liquidiumData =
+        await client.borrower.getApiV1BorrowerCollateralRunesOffers({
+          runeId,
+          runeAmount: dummyAmount,
+        });
+    } catch (sdkError) {
+      const message =
+        sdkError instanceof Error ? sdkError.message : 'Unknown error';
+      return createErrorResponse('Liquidium API error', message, 500);
     }
 
     // Helper function to process ranges and extract min/max values
@@ -251,31 +208,23 @@ export async function GET(request: NextRequest) {
     let loanTermDays: number[] = [];
 
     try {
-      let ranges: RangeData[] | undefined;
-      let loanTermDaysSource: number[] | undefined;
+      /* eslint-disable @typescript-eslint/no-explicit-any */
+      const responseObj = liquidiumData as unknown as Record<string, unknown>;
+      const validRanges =
+        (responseObj as any).valid_ranges ??
+        (responseObj as any).runeDetails?.valid_ranges;
+      /* eslint-enable @typescript-eslint/no-explicit-any */
 
-      // Check primary response path
-      if (liquidiumData?.valid_ranges?.rune_amount?.ranges?.length > 0) {
-        ranges = liquidiumData.valid_ranges.rune_amount.ranges;
-        loanTermDaysSource = liquidiumData.valid_ranges.loan_term_days;
-      }
-      // Check alternative response path
-      else if (
-        liquidiumData?.runeDetails?.valid_ranges?.rune_amount?.ranges?.length >
-        0
-      ) {
-        ranges = liquidiumData.runeDetails.valid_ranges.rune_amount.ranges;
-        loanTermDaysSource =
-          liquidiumData.runeDetails.valid_ranges.loan_term_days;
-      }
-
-      if (!ranges) {
+      if (!validRanges?.rune_amount?.ranges?.length) {
         return createErrorResponse(
-          'No valid ranges found',
-          'Could not find valid borrow ranges for this rune',
-          404,
+          'Liquidium API error',
+          'Could not determine valid borrow ranges',
+          500,
         );
       }
+
+      const ranges = validRanges.rune_amount.ranges;
+      const loanTermDaysSource = validRanges.loan_term_days;
 
       const processedRanges = processRanges(ranges);
       minAmount = processedRanges.min;

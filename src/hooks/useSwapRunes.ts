@@ -9,6 +9,7 @@ interface UseSwapRunesArgs {
   isPopularRunesLoading?: boolean;
   popularRunesError?: Error | null;
   preSelectedRune?: string | null;
+  preSelectedAsset?: Asset | null;
   assetOut: Asset | null;
   setAssetIn: React.Dispatch<React.SetStateAction<Asset>>;
   setAssetOut: React.Dispatch<React.SetStateAction<Asset | null>>;
@@ -19,6 +20,7 @@ export function useSwapRunes({
   isPopularRunesLoading = false,
   popularRunesError = null,
   preSelectedRune = null,
+  preSelectedAsset = null,
   assetOut,
   setAssetIn,
   setAssetOut,
@@ -35,6 +37,19 @@ export function useSwapRunes({
   const [hasLoadedPreselectedRune, setHasLoadedPreselectedRune] =
     useState(false);
   const hasLoadedPopularRunes = useRef(false);
+
+  useEffect(() => {
+    if (preSelectedAsset && !hasLoadedPreselectedRune) {
+      setAssetIn(BTC_ASSET);
+      setAssetOut(preSelectedAsset);
+      setIsPreselectedRuneLoading(false);
+      setHasLoadedPreselectedRune(true);
+      setPopularRunes((prev) => {
+        const exists = prev.some((r) => r.id === preSelectedAsset.id);
+        return exists ? prev : [preSelectedAsset, ...prev];
+      });
+    }
+  }, [preSelectedAsset]);
 
   useEffect(() => {
     const fetchPopular = async () => {
@@ -71,9 +86,17 @@ export function useSwapRunes({
                 normalizeRuneName(liquidiumToken.name),
           );
 
-        const mappedRunes = preSelectedRune
+        let mappedRunes = preSelectedRune
           ? fetchedRunes
           : [liquidiumToken, ...fetchedRunes];
+
+        if (preSelectedAsset) {
+          const exists = mappedRunes.some((r) => r.id === preSelectedAsset.id);
+          if (!exists) {
+            mappedRunes = [preSelectedAsset, ...mappedRunes];
+          }
+        }
+
         setPopularRunes(mappedRunes);
 
         if (!preSelectedRune && !assetOut && mappedRunes.length > 0) {
@@ -128,6 +151,13 @@ export function useSwapRunes({
           mappedRunes = [liquidiumToken, ...fetchedRunes];
         }
 
+        if (preSelectedAsset) {
+          const exists = mappedRunes.some((r) => r.id === preSelectedAsset.id);
+          if (!exists) {
+            mappedRunes = [preSelectedAsset, ...mappedRunes];
+          }
+        }
+
         setPopularRunes(mappedRunes);
         if (!preSelectedRune && !assetOut && mappedRunes.length > 0) {
           const firstRune = safeArrayFirst(mappedRunes);
@@ -147,7 +177,14 @@ export function useSwapRunes({
           imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
           isBTC: false,
         };
-        setPopularRunes(preSelectedRune ? [] : [fallback]);
+        let fallbackList = preSelectedRune ? [] : [fallback];
+        if (
+          preSelectedAsset &&
+          !fallbackList.find((r) => r.id === preSelectedAsset.id)
+        ) {
+          fallbackList = [preSelectedAsset, ...fallbackList];
+        }
+        setPopularRunes(fallbackList);
         if (!preSelectedRune && !assetOut) {
           setAssetOut(fallback);
         }
@@ -164,9 +201,21 @@ export function useSwapRunes({
       if (preSelectedRune && !hasLoadedPreselectedRune) {
         setIsPreselectedRuneLoading(true);
         const normalized = normalizeRuneName(preSelectedRune);
-        const rune = popularRunes.find(
+        let rune = popularRunes.find(
           (r) => normalizeRuneName(r.name) === normalized,
         );
+
+        if (!rune) {
+          const provisionalAsset: Asset = {
+            id: normalized.toLowerCase(),
+            name: preSelectedRune,
+            imageURI: `https://icon.unisat.io/icon/runes/${encodeURIComponent(preSelectedRune)}`,
+            isBTC: false,
+          };
+          setAssetIn(BTC_ASSET);
+          setAssetOut(provisionalAsset);
+          rune = provisionalAsset;
+        }
 
         if (rune) {
           setAssetIn(BTC_ASSET);
@@ -198,8 +247,18 @@ export function useSwapRunes({
               }
             }
           } catch {
-            // ignore
-          } finally {
+            // If still not selected, fall back to creating a basic Asset so the UI switches pairs.
+            if (!assetOut) {
+              const fallbackAsset: Asset = {
+                id: normalized.toLowerCase(),
+                name: preSelectedRune,
+                imageURI: `https://icon.unisat.io/icon/runes/${encodeURIComponent(preSelectedRune)}`,
+                isBTC: false,
+              };
+              setAssetIn(BTC_ASSET);
+              setAssetOut(fallbackAsset);
+            }
+
             setIsPreselectedRuneLoading(false);
             setHasLoadedPreselectedRune(true);
             if (typeof window !== 'undefined') {

@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import React from 'react';
+import type { Asset } from '@/types/common';
 import Button from './Button';
 import { FormattedRuneAmount } from './FormattedRuneAmount';
 import styles from './PortfolioTab.module.css';
@@ -21,7 +22,7 @@ interface RunesPortfolioTableProps {
   sortField: 'name' | 'balance' | 'value';
   sortDirection: 'asc' | 'desc';
   onSort: (field: 'name' | 'balance' | 'value') => void;
-  onSwap: (name: string) => void;
+  onSwap: (asset: Asset) => void;
 }
 
 const RunesPortfolioTable: React.FC<RunesPortfolioTableProps> = ({
@@ -140,7 +141,18 @@ const RunesPortfolioTable: React.FC<RunesPortfolioTableProps> = ({
               />
             </div>
             <div className={styles.runeValue}>${usdValue}</div>
-            <Button onClick={() => onSwap(rune.name)}>Swap</Button>
+            <Button
+              onClick={() =>
+                onSwap({
+                  id: rune.name.toLowerCase(),
+                  name: rune.formattedName,
+                  imageURI: rune.imageURI ?? '',
+                  isBTC: false,
+                })
+              }
+            >
+              Swap
+            </Button>
           </div>
         );
       })}

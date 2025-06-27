@@ -1,0 +1,2865 @@
+openapi: 3.1.0
+info:
+  title: Liquidium Instant Loan API
+  version: 0.0.1
+  description: API documentation for integrating with Liquidium Instant Loans
+security:
+  - bearerAuth: []
+tags:
+  - name: Authentication
+    description: Authentication and authorization endpoints
+  - name: Borrower
+    description: Endpoints for borrower-related operations
+  - name: Portfolio
+    description: User portfolio endpoints for lending and borrowing positions
+  - name: Start Loan
+    description: Starting a loan flow
+  - name: Repay Loan
+    description: Repaying a loan flow
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: API Key Authentication
+    x-user-token:
+      type: apiKey
+      in: header
+      name: x-user-token
+      description: User JWT Token Authentication
+  schemas: {}
+  parameters: {}
+paths:
+  /api/v1/auth/prepare:
+    post:
+      tags:
+        - Authentication
+      summary: Prepare authentication
+      description: Initiates authentication process and returns a challenge for signing.
+      requestBody:
+        description: Authentication preparation parameters
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                payment_address:
+                  type: string
+                  description: Payment address for the wallet (can be same as ordinals address)
+                  example: bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
+                ordinals_address:
+                  type: string
+                  description: Ordinals address for the wallet
+                  example: bc1pxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
+                wallet:
+                  type: string
+                  description: Wallet used for login
+                  example: xverse
+              required:
+                - payment_address
+                - ordinals_address
+                - wallet
+      responses:
+        "200":
+          description: Successful response with authentication challenge
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payment:
+                    type: object
+                    description: Signing information for the payment address (if different from
+                      ordinals)
+                  ordinals:
+                    type: object
+                    description: Signing information for the ordinals address
+                required:
+                  - ordinals
+        "400":
+          description: Bad Request - The request was malformed or contained invalid
+            parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: BAD_REQUEST
+                    errorMessage: Invalid request
+        "401":
+          description: Unauthorized - Authentication is required or the provided
+            credentials are invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: UNAUTHORIZED
+                    errorMessage: Authentication token is missing or invalid
+        "403":
+          description: Forbidden - The authenticated user doesn't have permission to
+            access this resource
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: FORBIDDEN
+                    errorMessage: User does not have permission to access this resource
+        "404":
+          description: Not Found - The requested resource does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: NOT_FOUND
+                    errorMessage: The requested resource was not found
+        "405":
+          description: Not Found - The requested resource does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: NOT_ALLOWED
+                    errorMessage: The requested HTTP method is not allowed for this resource
+        "409":
+          description: Conflict - The request conflicts with the current state of the server
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: STATE_CONFLICT
+                    errorMessage: The request conflicts with the current state
+        "422":
+          description: Unprocessable Entity - The request was well-formed but contains
+            semantic errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: UNPROCESSABLE
+                    errorMessage: The request was well-formed but contains semantic errors
+        "429":
+          description: Too Many Requests - Rate limit exceeded, please try again later
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: TOO_MANY_REQUESTS
+                    errorMessage: Rate limit exceeded, please try again later
+        "500":
+          description: Internal Server Error - An unexpected error occurred on the server
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: INTERNAL_SERVER_ERROR
+                    errorMessage: An unexpected error occurred on the server
+  /api/v1/auth/submit:
+    post:
+      tags:
+        - Authentication
+      summary: Submit authentication
+      description: Completes authentication process by submitting signed challenge.
+      requestBody:
+        description: Authentication submission parameters
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                payment:
+                  type: object
+                  description: Signature validation information for the payment address. Only
+                    required if using a separate payment address for
+                    transactions. If omitted, the ordinals address will be used
+                    for all transactions.
+                  properties:
+                    address:
+                      type: string
+                      description: Bitcoin address that signed the authentication message
+                      example: bc1qc7slrfxkknqcq2jevvvkdgvrt8080852dfjewde450xdlk4ugp7szw5tk9
+                    signature:
+                      type: string
+                      description: Cryptographic signature produced by the wallet when signing the
+                        message
+                      example: IBDgVH2XhEzLd7c7wDIQTWrcnTGQqUZ9t5UT6J41K5zQXcRVH5ZcXRp8Y51M0Vr3oxDNdnLXxy/RVZJsGdxZH0w=
+                    nonce:
+                      type: string
+                      description: One-time cryptographic nonce that was included in the signed
+                        message
+                      example: 8f7d56a1e9b54c3d
+                ordinals:
+                  type: object
+                  description: Signature validation information for the ordinals (taproot)
+                    address. This is always required.
+                  properties:
+                    address:
+                      type: string
+                      description: Bitcoin ordinals address that signed the authentication message
+                      example: bc1p3hj4ev5ld2qjcjvhwyngyjn64qk6zs2lyw4chapva05gt5yqknasn6gvqe
+                    signature:
+                      type: string
+                      description: Cryptographic signature produced by the wallet when signing the
+                        message
+                      example: KCRwD7s3Qy3reJPH4tu/YcTLrHax33mEQNM5KV8/Gj4oe/Yo56cLnzELNC0K2FCVYbx9XF5A7ATWpAYol1GDSX8=
+                    nonce:
+                      type: string
+                      description: One-time cryptographic nonce that was included in the signed
+                        message
+                      example: a1b2c3d4e5f6g7h8
+              required:
+                - ordinals
+      responses:
+        "200":
+          description: Successful response with authentication token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_jwt:
+                    type: string
+                    description: JSON Web Token (JWT) for authenticating subsequent API requests
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwib3JkaW5hbHNfYWRkcmVzcyI6ImJjMXAzaGo0ZXY1bGQycWpjanZod3luZ3lqbjY0cWs2enMybHl3NGNoYXB2YTA1Z3Q1eXFrbmFzbjZndnFlIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+                  is_first_login:
+                    type: boolean
+                    description: Flag indicating whether this is the first time the user has logged
+                      in with address pair
+                    example: true
+                  vault_address:
+                    type: string
+                    description: Bitcoin address of the user's instant loan vault (only required for
+                      lenders, used for creating loan offers)
+                    example: bc1qt6hm2q3uaht0qjk2ea9j4ws0r4pkpli2jl228xvhs0nygwkqfges3td0vd
+                required:
+                  - user_jwt
+                  - is_first_login
+        "400":
+          description: Bad Request - The request was malformed or contained invalid
+            parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: BAD_REQUEST
+                    errorMessage: Invalid request
+        "401":
+          description: Unauthorized - Authentication is required or the provided
+            credentials are invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: UNAUTHORIZED
+                    errorMessage: Authentication token is missing or invalid
+        "403":
+          description: Forbidden - The authenticated user doesn't have permission to
+            access this resource
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: FORBIDDEN
+                    errorMessage: User does not have permission to access this resource
+        "404":
+          description: Not Found - The requested resource does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: NOT_FOUND
+                    errorMessage: The requested resource was not found
+        "405":
+          description: Not Found - The requested resource does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: NOT_ALLOWED
+                    errorMessage: The requested HTTP method is not allowed for this resource
+        "409":
+          description: Conflict - The request conflicts with the current state of the server
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: STATE_CONFLICT
+                    errorMessage: The request conflicts with the current state
+        "422":
+          description: Unprocessable Entity - The request was well-formed but contains
+            semantic errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: UNPROCESSABLE
+                    errorMessage: The request was well-formed but contains semantic errors
+        "429":
+          description: Too Many Requests - Rate limit exceeded, please try again later
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: TOO_MANY_REQUESTS
+                    errorMessage: Rate limit exceeded, please try again later
+        "500":
+          description: Internal Server Error - An unexpected error occurred on the server
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: INTERNAL_SERVER_ERROR
+                    errorMessage: An unexpected error occurred on the server
+  /api/v1/borrower/loans/start/prepare:
+    post:
+      tags:
+        - Start Loan
+      summary: Prepare loan start
+      description: Accepts parameters for starting a loan and returns a PSBT and a
+        request UUID.
+      security:
+        - bearerAuth: []
+          x-user-token: []
+      requestBody:
+        description: Payload for preparing loan start transaction
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                instant_offer_id:
+                  type: string
+                  description: UUID of the instant loan offer to be activated
+                  example: 123e4567-e89b-12d3-a456-426614174000
+                fee_rate:
+                  type: number
+                  description: Transaction fee rate in satoshis per virtual byte (sat/vB)
+                  example: 5
+                token_amount:
+                  type: string
+                  description: Amount of tokens/runes to use as collateral, expressed as a string
+                    representation of the raw value before decimal adjustment.
+                    For example, for a rune with 2 decimal places, a user amount
+                    of 800 would be entered as '80000' (800 * 10^2)
+                  example: "80000"
+                borrower_payment_address:
+                  type: string
+                  description: Bitcoin payment address of the borrower for receiving loan funds
+                  example: bc1qc7slrfxkknqcq2jevvvkdgvrt8080852dfjewde450xdlk4ugp7szw5tk9
+                borrower_payment_pubkey:
+                  type: string
+                  description: Public key corresponding to the borrower's payment address
+                  example: 02e7ab1a2a2876386601a8b9f4cb9b87c25d5c543f013a0b8bec463e8cad6d1ef6
+                borrower_ordinal_address:
+                  type: string
+                  description: Taproot address of the borrower for handling ordinals and
+                    inscriptions
+                  example: bc1p3hj4ev5ld2qjcjvhwyngyjn64qk6zs2lyw4chapva05gt5yqknasn6gvqe
+                borrower_ordinal_pubkey:
+                  type: string
+                  description: Public key corresponding to the borrower's taproot address
+                  example: 0330a5a9a4dfbd13844f13f39d173427bf30e40f9eced207af3dfd2398d5def3e9
+                borrower_wallet:
+                  type: string
+                  description: Type of wallet used for login
+                  example: xverse
+                  enum:
+                    - xverse
+                    - orange
+              required:
+                - instant_offer_id
+                - fee_rate
+                - token_amount
+                - borrower_payment_address
+                - borrower_payment_pubkey
+                - borrower_ordinal_address
+                - borrower_ordinal_pubkey
+                - borrower_wallet
+      responses:
+        "200":
+          description: Successful response with loan start transaction details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  prepare_offer_id:
+                    type: string
+                    description: ID of the prepared loan activation transaction
+                    example: 123e4567-e89b-12d3-a456-426614174000
+                  base64_psbt:
+                    type: string
+                    description: Base64-encoded Partially Signed Bitcoin Transaction (PSBT) that
+                      requires borrower signature
+                    example: cHNidP8BAHECAAAAAXgUQB7r1lj3gHBFCKGJqQiPJLs11R7LUiC5qhRKgn3wAAAAAAD/////AhAnAAAAAAAAFgAUaBQ/RZaZ7D4wagulC2/+kqocLO4A4fUFAAAAABepFNi369DMyAJmqX7Jn36qxQfKQF7khwAAAAAAAQEfGAwCAAAAACJRIP+z1e98NywcJQBMjsOfMW6BY7oPrkFT3P/iJw1ZteLnAQ==
+                  sides:
+                    type: array
+                    description: List of all inputs in the transaction that require signatures, with
+                      their signing parameters
+                    items:
+                      type: object
+                      properties:
+                        index:
+                          type: number
+                          description: Zero-based index of this input in the PSBT transaction
+                          example: 0
+                        address:
+                          type: string
+                          nullable: true
+                          description: Bitcoin address associated with this input, or null if not
+                            available
+                          example: bc1qc7slrfxkknqcq2jevvvkdgvrt8080852dfjewde450xdlk4ugp7szw5tk9
+                        sighash:
+                          type: number
+                          nullable: true
+                          description: Signature hash type for this input (1=ALL, 2=NONE, 3=SINGLE, etc.),
+                            or null if not applicable
+                          example: 1
+                        disable_tweak_signer:
+                          type: boolean
+                          description: Should tweaking be disabled
+                          example: false
+                      required:
+                        - index
+                        - address
+                        - sighash
+                        - disable_tweak_signer
+                required:
+                  - prepare_offer_id
+                  - base64_psbt
+                  - sides
+        "400":
+          description: Bad Request - The request was malformed or contained invalid
+            parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: BAD_REQUEST
+                    errorMessage: Invalid request
+        "401":
+          description: Unauthorized - Authentication is required or the provided
+            credentials are invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: UNAUTHORIZED
+                    errorMessage: Authentication token is missing or invalid
+        "403":
+          description: Forbidden - The authenticated user doesn't have permission to
+            access this resource
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: FORBIDDEN
+                    errorMessage: User does not have permission to access this resource
+        "404":
+          description: Not Found - The requested resource does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: NOT_FOUND
+                    errorMessage: The requested resource was not found
+        "405":
+          description: Not Found - The requested resource does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: NOT_ALLOWED
+                    errorMessage: The requested HTTP method is not allowed for this resource
+        "409":
+          description: Conflict - The request conflicts with the current state of the server
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: STATE_CONFLICT
+                    errorMessage: The request conflicts with the current state
+        "422":
+          description: Unprocessable Entity - The request was well-formed but contains
+            semantic errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: UNPROCESSABLE
+                    errorMessage: The request was well-formed but contains semantic errors
+        "429":
+          description: Too Many Requests - Rate limit exceeded, please try again later
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: TOO_MANY_REQUESTS
+                    errorMessage: Rate limit exceeded, please try again later
+        "500":
+          description: Internal Server Error - An unexpected error occurred on the server
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: INTERNAL_SERVER_ERROR
+                    errorMessage: An unexpected error occurred on the server
+  /api/v1/borrower/loans/start/submit:
+    post:
+      tags:
+        - Start Loan
+      summary: Submit loan start
+      description: Submits the signed loan transaction to complete loan origination.
+      security:
+        - bearerAuth: []
+          x-user-token: []
+      requestBody:
+        description: Payload for submitting loan start transaction
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                signed_psbt_base_64:
+                  type: string
+                  description: Base64-encoded signed PSBT transaction with borrower's signature to
+                    activate the loan
+                  example: cHNidP8BAHECAAAAAXgUQB7r1lj3gHBFCKGJqQiPJLs11R7LUiC5qhRKgn3wAAAAAAD/////AhAnAAAAAAAAFgAUaBQ/RZaZ7D4wagulC2/+kqocLO4A4fUFAAAAABepFNi369DMyAJmqX7Jn36qxQfKQF7khwAAAAAAAQEfGAwCAAAAACJRIP+z1e98NywcJQBMjsOfMW6BY7oPrkFT3P/iJw1ZteLnIgICTQlQXgRUYFS/ev0C3AmE81sD2P0l6aQlUe9UtKcsMFtIMEUCIQCT8rIcLnxU+X8D9n6YR28Gd+64+3NLvNA5I9BAMVXQawIgUeIzSJG5QaF/iiQC5VAY2oZ3R5HFarewijL1QV4Z5/0=
+                prepare_offer_id:
+                  type: string
+                  description: ID of the prepared loan activation transaction received from the
+                    prepare-start endpoint
+                  example: 123e4567-e89b-12d3-a456-426614174000
+              required:
+                - signed_psbt_base_64
+                - prepare_offer_id
+      responses:
+        "200":
+          description: Successful response confirming loan origination
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  loan_transaction_id:
+                    type: string
+                    description: Bitcoin transaction ID (txid) of the successfully broadcasted loan
+                      activation transaction
+                    example: 2720d34be775bbfb15862d28f8bc0ac2c56d657af27bf3e280845ae7849d8343
+                required:
+                  - loan_transaction_id
+        "400":
+          description: Bad Request - The request was malformed or contained invalid
+            parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: BAD_REQUEST
+                    errorMessage: Invalid request
+        "401":
+          description: Unauthorized - Authentication is required or the provided
+            credentials are invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: UNAUTHORIZED
+                    errorMessage: Authentication token is missing or invalid
+        "403":
+          description: Forbidden - The authenticated user doesn't have permission to
+            access this resource
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: FORBIDDEN
+                    errorMessage: User does not have permission to access this resource
+        "404":
+          description: Not Found - The requested resource does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: NOT_FOUND
+                    errorMessage: The requested resource was not found
+        "405":
+          description: Not Found - The requested resource does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: NOT_ALLOWED
+                    errorMessage: The requested HTTP method is not allowed for this resource
+        "409":
+          description: Conflict - The request conflicts with the current state of the server
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: STATE_CONFLICT
+                    errorMessage: The request conflicts with the current state
+        "422":
+          description: Unprocessable Entity - The request was well-formed but contains
+            semantic errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: UNPROCESSABLE
+                    errorMessage: The request was well-formed but contains semantic errors
+        "429":
+          description: Too Many Requests - Rate limit exceeded, please try again later
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: TOO_MANY_REQUESTS
+                    errorMessage: Rate limit exceeded, please try again later
+        "500":
+          description: Internal Server Error - An unexpected error occurred on the server
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: INTERNAL_SERVER_ERROR
+                    errorMessage: An unexpected error occurred on the server
+  /api/v1/borrower/loans/repay/prepare:
+    post:
+      tags:
+        - Repay Loan
+      summary: Prepare loan repayment
+      description: Accepts parameters for loan repayment and returns a PSBT and a
+        request UUID.
+      security:
+        - bearerAuth: []
+          x-user-token: []
+      requestBody:
+        description: Payload for preparing loan repayment
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                offer_id:
+                  type: string
+                  description: ID of the active loan offer to be repaid
+                  example: 123e4567-e89b-12d3-a456-426614174000
+                fee_rate:
+                  type: number
+                  description: Transaction fee rate in satoshis per virtual byte (sat/vB)
+                  example: 5
+              required:
+                - offer_id
+                - fee_rate
+      responses:
+        "200":
+          description: Successful response with repayment transaction details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  offer_id:
+                    type: string
+                    description: UUID of the loan offer being repaid (echoed from request)
+                    example: 123e4567-e89b-12d3-a456-426614174000
+                  base64_psbt:
+                    type: string
+                    description: Base64-encoded Partially Signed Bitcoin Transaction (PSBT) that
+                      requires borrower signature
+                    example: cHNidP8BAHECAAAAAXgUQB7r1lj3gHBFCKGJqQiPJLs11R7LUiC5qhRKgn3wAAAAAAD/////AhAnAAAAAAAAFgAUaBQ/RZaZ7D4wagulC2/+kqocLO4A4fUFAAAAABepFNi369DMyAJmqX7Jn36qxQfKQF7khwAAAAAAAQEfGAwCAAAAACJRIP+z1e98NywcJQBMjsOfMW6BY7oPrkFT3P/iJw1ZteLnAQ==
+                  sides:
+                    type: array
+                    description: List of all inputs in the transaction that require signatures, with
+                      their signing parameters
+                    items:
+                      type: object
+                      properties:
+                        index:
+                          type: number
+                          description: Zero-based index of this input in the PSBT transaction
+                          example: 0
+                        address:
+                          type: string
+                          nullable: true
+                          description: Bitcoin address associated with this input, or null if not
+                            available
+                          example: bc1qc7slrfxkknqcq2jevvvkdgvrt8080852dfjewde450xdlk4ugp7szw5tk9
+                        sighash:
+                          type: number
+                          nullable: true
+                          description: Signature hash type for this input (1=ALL, 2=NONE, 3=SINGLE, etc.),
+                            or null if not applicable
+                          example: 1
+                        disable_tweak_signer:
+                          type: boolean
+                          description: Should tweaking be disabled
+                          example: false
+                      required:
+                        - index
+                        - address
+                        - sighash
+                        - disable_tweak_signer
+                  utxo_content:
+                    type: object
+                    properties:
+                      contains_runes:
+                        type: boolean
+                        description: Warning flag indicating that selected UTXOs contain runes that will
+                          be spent in this transaction. A utxo containing runes
+                          is only chosen as a last resort
+                        example: false
+                      contains_inscriptions:
+                        type: boolean
+                        description: Warning flag indicating that selected UTXOs contain inscriptions
+                          that will be spent in this transaction. A utxo
+                          containing runes is only chosen as a last resort
+                        example: false
+                    required:
+                      - contains_runes
+                      - contains_inscriptions
+                required:
+                  - offer_id
+                  - base64_psbt
+                  - sides
+                  - utxo_content
+        "400":
+          description: Bad Request - The request was malformed or contained invalid
+            parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: BAD_REQUEST
+                    errorMessage: Invalid request
+        "401":
+          description: Unauthorized - Authentication is required or the provided
+            credentials are invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: UNAUTHORIZED
+                    errorMessage: Authentication token is missing or invalid
+        "403":
+          description: Forbidden - The authenticated user doesn't have permission to
+            access this resource
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: FORBIDDEN
+                    errorMessage: User does not have permission to access this resource
+        "404":
+          description: Not Found - The requested resource does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: NOT_FOUND
+                    errorMessage: The requested resource was not found
+        "405":
+          description: Not Found - The requested resource does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: NOT_ALLOWED
+                    errorMessage: The requested HTTP method is not allowed for this resource
+        "409":
+          description: Conflict - The request conflicts with the current state of the server
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: STATE_CONFLICT
+                    errorMessage: The request conflicts with the current state
+        "422":
+          description: Unprocessable Entity - The request was well-formed but contains
+            semantic errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: UNPROCESSABLE
+                    errorMessage: The request was well-formed but contains semantic errors
+        "429":
+          description: Too Many Requests - Rate limit exceeded, please try again later
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: TOO_MANY_REQUESTS
+                    errorMessage: Rate limit exceeded, please try again later
+        "500":
+          description: Internal Server Error - An unexpected error occurred on the server
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: INTERNAL_SERVER_ERROR
+                    errorMessage: An unexpected error occurred on the server
+  /api/v1/borrower/loans/repay/submit:
+    post:
+      tags:
+        - Repay Loan
+      summary: Submit loan repayment
+      description: Submits the signed repayment transaction to complete loan repayment.
+      security:
+        - bearerAuth: []
+          x-user-token: []
+      requestBody:
+        description: Payload for submitting loan repayment transaction
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                offer_id:
+                  type: string
+                  description: ID of the loan offer being repaid
+                  example: 123e4567-e89b-12d3-a456-426614174000
+                signed_psbt_base_64:
+                  type: string
+                  description: Base64-encoded signed PSBT transaction with borrower's signature
+                  example: cHNidP8BAHECAAAAAXgUQB7r1lj3gHBFCKGJqQiPJLs11R7LUiC5qhRKgn3wAAAAAAD/////AhAnAAAAAAAAFgAUaBQ/RZaZ7D4wagulC2/+kqocLO4A4fUFAAAAABepFNi369DMyAJmqX7Jn36qxQfKQF7khwAAAAAAAQEfGAwCAAAAACJRIP+z1e98NywcJQBMjsOfMW6BY7oPrkFT3P/iJw1ZteLnIgICTQlQXgRUYFS/ev0C3AmE81sD2P0l6aQlUe9UtKcsMFtIMEUCIQCT8rIcLnxU+X8D9n6YR28Gd+64+3NLvNA5I9BAMVXQawIgUeIzSJG5QaF/iiQC5VAY2oZ3R5HFarewijL1QV4Z5/0=
+              required:
+                - offer_id
+                - signed_psbt_base_64
+      responses:
+        "200":
+          description: Successful response confirming repayment completion
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  repayment_transaction_id:
+                    type: string
+                    description: Bitcoin transaction ID (txid) of the successfully broadcasted loan
+                      repayment transaction
+                    example: 2720d34be775bbfb15862d28f8bc0ac2c56d657af27bf3e280845ae7849d8343
+                required:
+                  - repayment_transaction_id
+        "400":
+          description: Bad Request - The request was malformed or contained invalid
+            parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: BAD_REQUEST
+                    errorMessage: Invalid request
+        "401":
+          description: Unauthorized - Authentication is required or the provided
+            credentials are invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: UNAUTHORIZED
+                    errorMessage: Authentication token is missing or invalid
+        "403":
+          description: Forbidden - The authenticated user doesn't have permission to
+            access this resource
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: FORBIDDEN
+                    errorMessage: User does not have permission to access this resource
+        "404":
+          description: Not Found - The requested resource does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: NOT_FOUND
+                    errorMessage: The requested resource was not found
+        "405":
+          description: Not Found - The requested resource does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: NOT_ALLOWED
+                    errorMessage: The requested HTTP method is not allowed for this resource
+        "409":
+          description: Conflict - The request conflicts with the current state of the server
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: STATE_CONFLICT
+                    errorMessage: The request conflicts with the current state
+        "422":
+          description: Unprocessable Entity - The request was well-formed but contains
+            semantic errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: UNPROCESSABLE
+                    errorMessage: The request was well-formed but contains semantic errors
+        "429":
+          description: Too Many Requests - Rate limit exceeded, please try again later
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: TOO_MANY_REQUESTS
+                    errorMessage: Rate limit exceeded, please try again later
+        "500":
+          description: Internal Server Error - An unexpected error occurred on the server
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: INTERNAL_SERVER_ERROR
+                    errorMessage: An unexpected error occurred on the server
+  /api/v1/portfolio:
+    get:
+      tags:
+        - Portfolio
+      summary: Get user portfolio
+      description: Retrieves complete portfolio including both lending and borrowing
+        offers for a user based on authentication.
+      security:
+        - bearerAuth: []
+          x-user-token: []
+      responses:
+        "200":
+          description: Successful response with portfolio details including lending and
+            borrowing positions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  lender:
+                    type: object
+                    properties:
+                      runes:
+                        type: object
+                        properties:
+                          offers:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                  description: ID of the instant offer
+                                  example: 123e4567-e89b-12d3-a456-426614174000
+                                instant_offer_details:
+                                  type: object
+                                  properties:
+                                    state:
+                                      type: string
+                                      description: Current state of the instant offer
+                                      example: ACTIVE
+                                    vault_address:
+                                      type: string
+                                      description: Address of the vault holding the collateral
+                                      example: bc1qvaultaddressxyz...
+                                    vault_pubkey:
+                                      type: string
+                                      description: Public key of the vault
+                                      example: 02abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890
+                                    loan_term_days:
+                                      type: number
+                                      description: Duration of the loan term in days
+                                      example: 30
+                                    interest_rate_percentage:
+                                      type: number
+                                      description: Interest rate percentage for the loan term
+                                      example: 5.5
+                                    principal_amount_sats:
+                                      type: number
+                                      description: Original loan principal amount in satoshis
+                                      example: 50000000
+                                    auto_principal_amount_used_sats:
+                                      type: number
+                                      description: Auto-used principal amount in satoshis
+                                      example: 25000000
+                                    ltv_max:
+                                      type: number
+                                      description: Maximum loan-to-value ratio for the offer
+                                      example: 70
+                                  required:
+                                    - state
+                                    - vault_address
+                                    - vault_pubkey
+                                    - loan_term_days
+                                    - interest_rate_percentage
+                                    - principal_amount_sats
+                                    - auto_principal_amount_used_sats
+                                    - ltv_max
+                                collateral_details:
+                                  type: object
+                                  properties:
+                                    rune_id:
+                                      type: string
+                                      description: Unique identifier for the rune token used as collateral
+                                      example: 840010:907
+                                    collateral_type:
+                                      type: string
+                                      description: Type of asset used as collateral (Rune, Brc20, Inscription)
+                                      example: Rune
+                                      enum:
+                                        - Rune
+                                        - Brc20
+                                        - Inscription
+                                    rune_divisibility:
+                                      type: number
+                                      description: Number of decimal places for the rune token (0-32)
+                                      example: 8
+                                    rune_amount:
+                                      type: number
+                                      description: Amount of rune tokens used as collateral (in user-friendly display
+                                        format)
+                                      example: 10000
+                                  required:
+                                    - rune_id
+                                    - collateral_type
+                                    - rune_divisibility
+                                    - rune_amount
+                              required:
+                                - id
+                                - instant_offer_details
+                                - collateral_details
+                          loans:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                  description: ID of the loan offer in the system
+                                  example: 123e4567-e89b-12d3-a456-426614174000
+                                loan_details:
+                                  type: object
+                                  properties:
+                                    state:
+                                      type: string
+                                      description: Current state of the loan offer (OFFERED, ACCEPTED, ACTIVE, REPAID,
+                                        etc.)
+                                      example: ACTIVE
+                                      enum:
+                                        - OFFERED
+                                        - ACCEPTED
+                                        - ACTIVATING
+                                        - ACTIVE
+                                        - REPAYING
+                                        - REPAID
+                                        - DEFAULTED
+                                        - CLAIMING
+                                        - CLAIMED
+                                        - LIQUIDATING
+                                        - LIQUIDATED
+                                        - CANCELLED
+                                        - FAILED
+                                    total_repayment_sats:
+                                      type: number
+                                      description: Total amount required for repayment taking the borrowers discount
+                                        and interest amount into consideration
+                                      example: 50000000
+                                    principal_amount_sats:
+                                      type: number
+                                      description: Original loan principal amount in satoshis
+                                      example: 50000000
+                                    loan_term_days:
+                                      type: number
+                                      description: Duration of the loan term in days
+                                      example: 30
+                                    loan_term_end_date:
+                                      type: string
+                                      description: Deadline for loan repayment in ISO 8601 format. Should not be null
+                                        unless there is an internal error.
+                                      example: 2025-03-27T14:30:00Z
+                                    start_date:
+                                      type: string
+                                      description: Date when the loan was activated in ISO 8601 format. Should not be
+                                        null unless there is an internal error.
+                                      example: 2025-02-25T14:30:00Z
+                                    escrow_address:
+                                      type: string
+                                      description: Bitcoin address holding the collateral during the loan term
+                                      example: bc1qc7slrfxkknqcq2jevvvkdgvrt8080852dfjewde450xdlk4ugp7szw5tk9
+                                    discount:
+                                      type: object
+                                      properties:
+                                        discount_rate:
+                                          type: number
+                                          description: Discount percentage on liquidium fee due to holding liquidium token
+                                          example: 0.15
+                                        discount_sats:
+                                          type: number
+                                          description: Discount sats on liquidium fee due to holding liquidium token
+                                          example: 2000
+                                      required:
+                                        - discount_rate
+                                        - discount_sats
+                                  required:
+                                    - state
+                                    - total_repayment_sats
+                                    - principal_amount_sats
+                                    - loan_term_days
+                                    - loan_term_end_date
+                                    - start_date
+                                    - escrow_address
+                                    - discount
+                                collateral_details:
+                                  type: object
+                                  properties:
+                                    rune_id:
+                                      type: string
+                                      description: Unique identifier for the rune token used as collateral
+                                      example: 840010:907
+                                    collateral_type:
+                                      type: string
+                                      description: Type of asset used as collateral (Rune, Brc20, Inscription)
+                                      example: Rune
+                                      enum:
+                                        - Rune
+                                        - Brc20
+                                        - Inscription
+                                    rune_divisibility:
+                                      type: number
+                                      description: Number of decimal places for the rune token (0-32)
+                                      example: 8
+                                    rune_amount:
+                                      type: number
+                                      description: Amount of rune tokens used as collateral (in user-friendly display
+                                        format)
+                                      example: 10000
+                                  required:
+                                    - rune_id
+                                    - collateral_type
+                                    - rune_divisibility
+                                    - rune_amount
+                              required:
+                                - id
+                                - loan_details
+                                - collateral_details
+                        required:
+                          - offers
+                          - loans
+                    required:
+                      - runes
+                  borrower:
+                    type: object
+                    properties:
+                      runes:
+                        type: object
+                        properties:
+                          loans:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                  description: ID of the loan offer in the system
+                                  example: 123e4567-e89b-12d3-a456-426614174000
+                                loan_details:
+                                  type: object
+                                  properties:
+                                    state:
+                                      type: string
+                                      description: Current state of the loan offer (OFFERED, ACCEPTED, ACTIVE, REPAID,
+                                        etc.)
+                                      example: ACTIVE
+                                      enum:
+                                        - OFFERED
+                                        - ACCEPTED
+                                        - ACTIVATING
+                                        - ACTIVE
+                                        - REPAYING
+                                        - REPAID
+                                        - DEFAULTED
+                                        - CLAIMING
+                                        - CLAIMED
+                                        - LIQUIDATING
+                                        - LIQUIDATED
+                                        - CANCELLED
+                                        - FAILED
+                                    total_repayment_sats:
+                                      type: number
+                                      description: Total amount required for repayment taking the borrowers discount
+                                        and interest amount into consideration
+                                      example: 50000000
+                                    principal_amount_sats:
+                                      type: number
+                                      description: Original loan principal amount in satoshis
+                                      example: 50000000
+                                    loan_term_days:
+                                      type: number
+                                      description: Duration of the loan term in days
+                                      example: 30
+                                    loan_term_end_date:
+                                      type: string
+                                      description: Deadline for loan repayment in ISO 8601 format. Should not be null
+                                        unless there is an internal error.
+                                      example: 2025-03-27T14:30:00Z
+                                    start_date:
+                                      type: string
+                                      description: Date when the loan was activated in ISO 8601 format. Should not be
+                                        null unless there is an internal error.
+                                      example: 2025-02-25T14:30:00Z
+                                    escrow_address:
+                                      type: string
+                                      description: Bitcoin address holding the collateral during the loan term
+                                      example: bc1qc7slrfxkknqcq2jevvvkdgvrt8080852dfjewde450xdlk4ugp7szw5tk9
+                                    discount:
+                                      type: object
+                                      properties:
+                                        discount_rate:
+                                          type: number
+                                          description: Discount percentage on liquidium fee due to holding liquidium token
+                                          example: 0.15
+                                        discount_sats:
+                                          type: number
+                                          description: Discount sats on liquidium fee due to holding liquidium token
+                                          example: 2000
+                                      required:
+                                        - discount_rate
+                                        - discount_sats
+                                  required:
+                                    - state
+                                    - total_repayment_sats
+                                    - principal_amount_sats
+                                    - loan_term_days
+                                    - loan_term_end_date
+                                    - start_date
+                                    - escrow_address
+                                    - discount
+                                collateral_details:
+                                  type: object
+                                  properties:
+                                    rune_id:
+                                      type: string
+                                      description: Unique identifier for the rune token used as collateral
+                                      example: 840010:907
+                                    collateral_type:
+                                      type: string
+                                      description: Type of asset used as collateral (Rune, Brc20, Inscription)
+                                      example: Rune
+                                      enum:
+                                        - Rune
+                                        - Brc20
+                                        - Inscription
+                                    rune_divisibility:
+                                      type: number
+                                      description: Number of decimal places for the rune token (0-32)
+                                      example: 8
+                                    rune_amount:
+                                      type: number
+                                      description: Amount of rune tokens used as collateral (in user-friendly display
+                                        format)
+                                      example: 10000
+                                  required:
+                                    - rune_id
+                                    - collateral_type
+                                    - rune_divisibility
+                                    - rune_amount
+                              required:
+                                - id
+                                - loan_details
+                                - collateral_details
+                        required:
+                          - loans
+                    required:
+                      - runes
+                required:
+                  - lender
+                  - borrower
+        "400":
+          description: Bad Request - The request was malformed or contained invalid
+            parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: BAD_REQUEST
+                    errorMessage: Invalid request
+        "401":
+          description: Unauthorized - Authentication is required or the provided
+            credentials are invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: UNAUTHORIZED
+                    errorMessage: Authentication token is missing or invalid
+        "403":
+          description: Forbidden - The authenticated user doesn't have permission to
+            access this resource
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: FORBIDDEN
+                    errorMessage: User does not have permission to access this resource
+        "404":
+          description: Not Found - The requested resource does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: NOT_FOUND
+                    errorMessage: The requested resource was not found
+        "405":
+          description: Not Found - The requested resource does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: NOT_ALLOWED
+                    errorMessage: The requested HTTP method is not allowed for this resource
+        "409":
+          description: Conflict - The request conflicts with the current state of the server
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: STATE_CONFLICT
+                    errorMessage: The request conflicts with the current state
+        "422":
+          description: Unprocessable Entity - The request was well-formed but contains
+            semantic errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: UNPROCESSABLE
+                    errorMessage: The request was well-formed but contains semantic errors
+        "429":
+          description: Too Many Requests - Rate limit exceeded, please try again later
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: TOO_MANY_REQUESTS
+                    errorMessage: Rate limit exceeded, please try again later
+        "500":
+          description: Internal Server Error - An unexpected error occurred on the server
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: INTERNAL_SERVER_ERROR
+                    errorMessage: An unexpected error occurred on the server
+  /api/v1/borrower/collateral/runes:
+    get:
+      tags:
+        - Borrower
+      summary: Get all collateral details
+      description: Retrieves a list of all supported collateral runes along with their
+        minimal details. Optionally includes counts for total offers and active
+        offers, and can filter offers based on provided LTV parameters.
+      parameters:
+        - schema:
+            type: boolean
+            description: Optional flag to include the count of offers available for each
+              rune
+            example: true
+          required: false
+          name: include_offers_count
+          in: query
+        - schema:
+            type: boolean
+            description: Optional flag to include the count of active offers for each rune
+            example: false
+          required: false
+          name: include_active_count
+          in: query
+      responses:
+        "200":
+          description: Successful response with collateral details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  runes:
+                    type: array
+                    description: List of supported collateral runes with details
+                    items:
+                      type: object
+                      properties:
+                        rune_id:
+                          type: string
+                          description: Collateral rune identifier
+                          example: rune-1
+                        slug:
+                          type: string
+                          description: A friendly URL slug for the collateral
+                          example: rune-one
+                        price_sats:
+                          type: number
+                          description: Floor price in satoshis
+                          example: 100
+                        available_offers_count:
+                          type: number
+                          description: Optional count of total offers available for this rune
+                          example: 5
+                        active_offers_count:
+                          type: number
+                          description: Optional count of active offers for this rune
+                          example: 3
+                      required:
+                        - rune_id
+                        - slug
+                        - price_sats
+                required:
+                  - runes
+                example:
+                  runes:
+                    - rune_id: 840010:907
+                      slug: LIQUIDIUMTOKEN
+                      price_sats: 1000
+                      available_offers_count: 5
+                      active_offers_count: 3
+                    - rune_id: 840010:907
+                      slug: LIQUIDIUMTOKEN
+                      price_sats: 1500
+                      available_offers_count: 2
+                      active_offers_count: 1
+        "400":
+          description: Bad Request - The request was malformed or contained invalid
+            parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: BAD_REQUEST
+                    errorMessage: Invalid request
+        "401":
+          description: Unauthorized - Authentication is required or the provided
+            credentials are invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: UNAUTHORIZED
+                    errorMessage: Authentication token is missing or invalid
+        "403":
+          description: Forbidden - The authenticated user doesn't have permission to
+            access this resource
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: FORBIDDEN
+                    errorMessage: User does not have permission to access this resource
+        "404":
+          description: Not Found - The requested resource does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: NOT_FOUND
+                    errorMessage: The requested resource was not found
+        "405":
+          description: Not Found - The requested resource does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: NOT_ALLOWED
+                    errorMessage: The requested HTTP method is not allowed for this resource
+        "409":
+          description: Conflict - The request conflicts with the current state of the server
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: STATE_CONFLICT
+                    errorMessage: The request conflicts with the current state
+        "422":
+          description: Unprocessable Entity - The request was well-formed but contains
+            semantic errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: UNPROCESSABLE
+                    errorMessage: The request was well-formed but contains semantic errors
+        "429":
+          description: Too Many Requests - Rate limit exceeded, please try again later
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: TOO_MANY_REQUESTS
+                    errorMessage: Rate limit exceeded, please try again later
+        "500":
+          description: Internal Server Error - An unexpected error occurred on the server
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: INTERNAL_SERVER_ERROR
+                    errorMessage: An unexpected error occurred on the server
+  /api/v1/borrower/collateral/runes/{runeId}:
+    get:
+      tags:
+        - Borrower
+      summary: Get individual collateral rune details
+      description: Retrieves details for a specific collateral rune, optionally
+        including counts for total offers and active offers.
+      security:
+        - bearerAuth: []
+          x-user-token: []
+      parameters:
+        - schema:
+            type: string
+            description: Id of rune
+            example: 840010:907
+          required: true
+          name: runeId
+          in: path
+        - schema:
+            type: boolean
+            description: Optional flag to include the count of offers available for the rune
+            example: true
+          required: false
+          name: include_offers_count
+          in: query
+        - schema:
+            type: boolean
+            description: Optional flag to include the count of active offers for the rune
+            example: false
+          required: false
+          name: include_active_count
+          in: query
+      responses:
+        "200":
+          description: Successful response with collateral details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rune_id:
+                    type: string
+                    description: Collateral rune identifier
+                    example: 840010:907
+                  slug:
+                    type: string
+                    description: Rune slug
+                    example: LIQUIDIUMTOKEN
+                  floor_price_sats:
+                    type: number
+                    description: Floor price in satoshis
+                    example: 174.88
+                  available_offers_count:
+                    type: number
+                    description: Optional count of total offers available for this rune
+                    example: 1
+                  active_offers_count:
+                    type: number
+                    description: Optional count of active offers for this rune
+                    example: 0
+                  valid_ranges:
+                    type: object
+                    properties:
+                      rune_amount:
+                        type: object
+                        properties:
+                          ranges:
+                            type: array
+                            description: Explicit valid ranges for rune amounts
+                            items:
+                              type: object
+                              properties:
+                                min:
+                                  type: string
+                                  description: Minimum amount in this range (as string for precision)
+                                  example: "62277"
+                                max:
+                                  type: string
+                                  description: Maximum amount in this range (as string for precision)
+                                  example: "62900"
+                              required:
+                                - min
+                                - max
+                            examples:
+                              - - min: "62277"
+                                  max: "62900"
+                                - min: "70000"
+                                  max: "350000"
+                        required:
+                          - ranges
+                      loan_term_days:
+                        type: array
+                        description: Valid loan term days
+                        items:
+                          type: number
+                          example: 1
+                        examples:
+                          - - 1
+                            - 2
+                    required:
+                      - rune_amount
+                      - loan_term_days
+                required:
+                  - rune_id
+                  - slug
+                  - floor_price_sats
+                  - valid_ranges
+        "400":
+          description: Bad Request - The request was malformed or contained invalid
+            parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: BAD_REQUEST
+                    errorMessage: Invalid request
+        "401":
+          description: Unauthorized - Authentication is required or the provided
+            credentials are invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: UNAUTHORIZED
+                    errorMessage: Authentication token is missing or invalid
+        "403":
+          description: Forbidden - The authenticated user doesn't have permission to
+            access this resource
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: FORBIDDEN
+                    errorMessage: User does not have permission to access this resource
+        "404":
+          description: Not Found - The requested resource does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: NOT_FOUND
+                    errorMessage: The requested resource was not found
+        "405":
+          description: Not Found - The requested resource does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: NOT_ALLOWED
+                    errorMessage: The requested HTTP method is not allowed for this resource
+        "409":
+          description: Conflict - The request conflicts with the current state of the server
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: STATE_CONFLICT
+                    errorMessage: The request conflicts with the current state
+        "422":
+          description: Unprocessable Entity - The request was well-formed but contains
+            semantic errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: UNPROCESSABLE
+                    errorMessage: The request was well-formed but contains semantic errors
+        "429":
+          description: Too Many Requests - Rate limit exceeded, please try again later
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: TOO_MANY_REQUESTS
+                    errorMessage: Rate limit exceeded, please try again later
+        "500":
+          description: Internal Server Error - An unexpected error occurred on the server
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: INTERNAL_SERVER_ERROR
+                    errorMessage: An unexpected error occurred on the server
+  /api/v1/borrower/collateral/runes/{runeId}/offers:
+    get:
+      tags:
+        - Borrower
+      summary: Get collateral rune offers
+      description: Retrieves available offers for a specific collateral rune
+      security:
+        - bearerAuth: []
+          x-user-token: []
+      parameters:
+        - schema:
+            type: string
+            description: The unique identifier for the rune
+            example: 840010:907
+          required: true
+          name: runeId
+          in: path
+        - schema:
+            type: string
+            description: The amount of runes to query for (as a string to preserve
+              precision)
+            example: "60000"
+          required: true
+          name: rune_amount
+          in: query
+      responses:
+        "200":
+          description: Successful response with collateral offers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  runeDetails:
+                    type: object
+                    properties:
+                      rune_id:
+                        type: string
+                        description: Collateral rune identifier
+                        example: 840010:907
+                      slug:
+                        type: string
+                        description: A friendly URL slug for the collateral
+                        example: LIQUIDIUMTOKEN
+                      floor_price_sats:
+                        type: number
+                        description: Floor price in satoshis
+                        example: 170
+                      floor_price_last_updated_at:
+                        type: string
+                        description: Timestamp of the last floor update for the collection
+                        format: date-time
+                        example: 2025-02-11T09:40:04.192Z
+                      common_offer_data:
+                        type: object
+                        properties:
+                          interest_rate:
+                            type: number
+                            description: Common interest rate percentage for all offers
+                            example: 0.02
+                          rune_divisibility:
+                            type: number
+                            description: Common number of rune divisibility for all offers
+                            example: 2
+                        required:
+                          - interest_rate
+                          - rune_divisibility
+                      valid_ranges:
+                        type: object
+                        properties:
+                          rune_amount:
+                            type: object
+                            properties:
+                              ranges:
+                                type: array
+                                description: Explicit valid ranges for rune amounts
+                                items:
+                                  type: object
+                                  properties:
+                                    min:
+                                      type: string
+                                      description: Minimum amount in this range (as string for precision)
+                                      example: "62277"
+                                    max:
+                                      type: string
+                                      description: Maximum amount in this range (as string for precision)
+                                      example: "62900"
+                                  required:
+                                    - min
+                                    - max
+                                examples:
+                                  - - min: "62277"
+                                      max: "62900"
+                                    - min: "70000"
+                                      max: "350000"
+                            required:
+                              - ranges
+                          loan_term_days:
+                            type: array
+                            description: Valid loan term days
+                            items:
+                              type: number
+                              example: 1
+                            examples:
+                              - - 1
+                                - 2
+                        required:
+                          - rune_amount
+                          - loan_term_days
+                      offers:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            offer_id:
+                              type: string
+                              description: Internal ID of the instant offer
+                              example: 82d3cd59-7fb6-457b-b6df-887cbee9e39a
+                            fungible_amount:
+                              type: number
+                              description: Fungible amount
+                              example: 200000
+                            loan_term_days:
+                              type:
+                                - integer
+                                - "null"
+                              exclusiveMinimum: 0
+                            ltv_rate:
+                              type: number
+                              description: LTV percentage
+                              example: 80
+                            loan_breakdown:
+                              type: object
+                              properties:
+                                total_repayment_sats:
+                                  type: number
+                                  description: Total amount required for repayment taking the borrowers discount
+                                    and interest amount into consideration
+                                  example: 81600
+                                principal_sats:
+                                  type: number
+                                  description: Principal loan amount in sats
+                                  example: 80000
+                                interest_sats:
+                                  type: number
+                                  description: Interest amount in sats
+                                  example: 1600
+                                loan_due_by_date:
+                                  type: string
+                                  description: Due date for the loan repayment
+                                  format: date-time
+                                  example: 2025-03-11T09:40:04.192Z
+                                activation_fee_sats:
+                                  type: number
+                                  description: Platform fee in satoshis taken to start the loan, added as an
+                                    output on the start loan transaction
+                                  example: 1000
+                                discount:
+                                  type: object
+                                  properties:
+                                    discount_rate:
+                                      type: number
+                                      description: Discount percentage on liquidium fee due to holding liquidium token
+                                      example: 0.15
+                                    discount_sats:
+                                      type: number
+                                      description: Discount sats on liquidium fee due to holding liquidium token
+                                      example: 2000
+                                  required:
+                                    - discount_rate
+                                    - discount_sats
+                              required:
+                                - total_repayment_sats
+                                - principal_sats
+                                - interest_sats
+                                - loan_due_by_date
+                                - activation_fee_sats
+                                - discount
+                              description: Breakdown of loan repayment details
+                          required:
+                            - offer_id
+                            - fungible_amount
+                            - ltv_rate
+                            - loan_breakdown
+                        description: List of unique offer details
+                    required:
+                      - rune_id
+                      - slug
+                      - floor_price_sats
+                      - floor_price_last_updated_at
+                      - common_offer_data
+                      - valid_ranges
+                      - offers
+                required:
+                  - runeDetails
+        "400":
+          description: Bad Request - The request was malformed or contained invalid
+            parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: BAD_REQUEST
+                    errorMessage: Invalid request
+        "401":
+          description: Unauthorized - Authentication is required or the provided
+            credentials are invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: UNAUTHORIZED
+                    errorMessage: Authentication token is missing or invalid
+        "403":
+          description: Forbidden - The authenticated user doesn't have permission to
+            access this resource
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: FORBIDDEN
+                    errorMessage: User does not have permission to access this resource
+        "404":
+          description: Not Found - The requested resource does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: NOT_FOUND
+                    errorMessage: The requested resource was not found
+        "405":
+          description: Not Found - The requested resource does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: NOT_ALLOWED
+                    errorMessage: The requested HTTP method is not allowed for this resource
+        "409":
+          description: Conflict - The request conflicts with the current state of the server
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: STATE_CONFLICT
+                    errorMessage: The request conflicts with the current state
+        "422":
+          description: Unprocessable Entity - The request was well-formed but contains
+            semantic errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: UNPROCESSABLE
+                    errorMessage: The request was well-formed but contains semantic errors
+        "429":
+          description: Too Many Requests - Rate limit exceeded, please try again later
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: TOO_MANY_REQUESTS
+                    errorMessage: Rate limit exceeded, please try again later
+        "500":
+          description: Internal Server Error - An unexpected error occurred on the server
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errorMessage:
+                    type: string
+                required:
+                  - error
+              examples:
+                error:
+                  value:
+                    error: INTERNAL_SERVER_ERROR
+                    errorMessage: An unexpected error occurred on the server
+webhooks: {}

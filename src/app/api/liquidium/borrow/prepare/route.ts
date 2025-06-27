@@ -3,11 +3,11 @@ import { z } from 'zod';
 import {
   createErrorResponse,
   createSuccessResponse,
-  handleApiError,
   validateRequest,
 } from '@/lib/apiUtils';
-import { callLiquidiumApi } from '@/lib/liquidiumServer';
+import { createLiquidiumClient } from '@/lib/liquidiumSdk';
 import { supabase } from '@/lib/supabase';
+import type { StartLoanService } from '@/sdk/liquidium/services/StartLoanService';
 import { safeArrayFirst } from '@/utils/typeGuards';
 
 // Schema for request body
@@ -25,6 +25,10 @@ const prepareBodySchema = z.object({
   collateral_asset_id: z.string().optional(), // Optional field for rune ID
   address: z.string().min(1), // User's address to find JWT
 });
+
+type StartLoanPrepareRequest = Parameters<
+  StartLoanService['postApiV1BorrowerLoansStartPrepare']
+>[0]['requestBody'];
 
 export async function POST(request: NextRequest) {
   // Validate request body
@@ -62,35 +66,28 @@ export async function POST(request: NextRequest) {
 
     const userJwt = firstToken.jwt;
 
-    // 2. Call Liquidium API
-    const result = await callLiquidiumApi(
-      '/api/v1/borrower/loans/start/prepare',
-      {
-        method: 'POST',
-        userJwt,
-        body: JSON.stringify(liquidiumPayload),
-      },
-      'Liquidium prepare borrow',
-    );
+    // Include required wallet field
+    const sdkPayload: StartLoanPrepareRequest = {
+      instant_offer_id: liquidiumPayload.instant_offer_id,
+      fee_rate: liquidiumPayload.fee_rate,
+      token_amount: liquidiumPayload.token_amount,
+      borrower_payment_address: liquidiumPayload.borrower_payment_address,
+      borrower_payment_pubkey: liquidiumPayload.borrower_payment_pubkey,
+      borrower_ordinal_address: liquidiumPayload.borrower_ordinal_address,
+      borrower_ordinal_pubkey: liquidiumPayload.borrower_ordinal_pubkey,
+      borrower_wallet: 'xverse',
+    };
 
-    if (!result.ok) {
-      return createErrorResponse(
-        result.message ?? 'Error',
-        result.details,
-        result.status,
-      );
-    }
+    // 2. Call Liquidium API via SDK
+    const client = createLiquidiumClient(userJwt);
+    const response = await client.startLoan.postApiV1BorrowerLoansStartPrepare({
+      requestBody: sdkPayload,
+    });
 
-    return createSuccessResponse(result.data); // Forward Liquidium's response
-  } catch (error) {
-    const errorInfo = handleApiError(
-      error,
-      'Failed to prepare borrow transaction',
-    );
-    return createErrorResponse(
-      errorInfo.message,
-      errorInfo.details,
-      errorInfo.status,
-    );
+    return createSuccessResponse(response);
+  } catch (sdkError) {
+    const message =
+      sdkError instanceof Error ? sdkError.message : 'Unknown error';
+    return createErrorResponse('Liquidium prepare borrow error', message, 500);
   }
 }

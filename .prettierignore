@@ -90,3 +90,10 @@ migrations
 
 # Ignore Next.js specific files
 next.config.ts
+
+# Ignore generated SDK
+src/sdk/liquidium/**
+src/sdk/temp/**
+
+# Ignore Claude settings file
+.claude/settings.local.json

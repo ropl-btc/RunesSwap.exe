@@ -1,8 +1,10 @@
+'use client';
 import { useRouter } from 'next/navigation';
 import { useSharedLaserEyes } from '@/context/LaserEyesContext';
 import { useLiquidiumAuth } from '@/hooks/useLiquidiumAuth';
 import { usePortfolioData } from '@/hooks/usePortfolioData';
 import { useRepayModal } from '@/hooks/useRepayModal';
+import type { Asset } from '@/types/common';
 import LiquidiumLoansSection from './LiquidiumLoansSection';
 import styles from './PortfolioTab.module.css';
 import RepayModal from './RepayModal';
@@ -45,13 +47,16 @@ export default function PortfolioTab() {
     handleRepayModalConfirm,
   } = useRepayModal({ address, signPsbt });
 
-  const handleSwap = (runeName: string) => {
-    router.push(`/?tab=swap&rune=${encodeURIComponent(runeName)}`, {
-      scroll: false,
-    });
-    window.dispatchEvent(
-      new CustomEvent('tabChange', { detail: { tab: 'swap', rune: runeName } }),
-    );
+  const handleSwap = (asset: Asset) => {
+    // Inform TabNavigation/AppInterface with full asset info
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('tabChange', {
+          detail: { tab: 'swap', asset },
+        }),
+      );
+    }
+    router.push('/?tab=swap', { scroll: false });
   };
 
   if (!address) {

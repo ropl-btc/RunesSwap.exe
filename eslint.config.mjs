@@ -99,6 +99,9 @@ const ignores = [
   "**/*.woff2",
   "**/*.eot",
   "**/public/**",
+  // Generated SDK
+  "src/sdk/liquidium/**",
+  "src/sdk/temp/**",
 ];
 
 const eslintConfig = [
