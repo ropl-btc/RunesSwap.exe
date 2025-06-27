@@ -184,11 +184,13 @@ export function useBorrowQuotes({
         // for high precision decimal conversions
         if (decimals > 8) {
           // For high decimals, use string-based conversion to avoid precision loss
-          const amountStr = collateralAmount;
+          // Trim whitespace to ensure consistency with parseFloat validation
+          const amountStr = collateralAmount.trim();
           const [integerPart = '0', decimalPart = ''] = amountStr.split('.');
 
-          // Pad decimal part to required length
-          const paddedDecimal = decimalPart.padEnd(decimals, '0');
+          // Truncate decimal part to supported precision, then pad to required length
+          const truncatedDecimal = decimalPart.slice(0, decimals);
+          const paddedDecimal = truncatedDecimal.padEnd(decimals, '0');
 
           // Combine integer and decimal parts
           const fullAmountStr = integerPart + paddedDecimal;
