@@ -1,5 +1,6 @@
 import React from 'react';
 import { LiquidiumBorrowQuoteOffer } from '@/lib/api';
+import { safeNumber } from '@/utils/safeNumber';
 import styles from './BorrowTab.module.css';
 
 interface BorrowQuotesListProps {
@@ -50,7 +51,7 @@ const BorrowQuotesList: React.FC<BorrowQuotesListProps> = ({
             <div className={styles.quoteField}>
               <span className={styles.quoteLabel}>LTV</span>
               <span className={styles.quoteValue}>
-                {(Number(quote.ltv_rate) * 100).toFixed(2)}%
+                {(safeNumber(quote.ltv_rate, 0) * 100).toFixed(2)}%
               </span>
             </div>
             <div className={styles.quoteField}>

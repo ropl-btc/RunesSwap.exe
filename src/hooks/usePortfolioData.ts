@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { QUERY_KEYS, fetchPortfolioDataFromApi } from '@/lib/api';
 import { safeArrayAccess } from '@/utils/typeGuards';
+import { safeNumber } from '@/utils/safeNumber';
 
 export type SortField = 'name' | 'balance' | 'value';
 export type SortDirection = 'asc' | 'desc';
@@ -86,7 +87,8 @@ export function usePortfolioData(address: string | null) {
         const marketInfo = portfolioData.marketData?.[rune.name];
         const runeInfo = portfolioData.runeInfos?.[rune.name];
         const decimals = runeInfo?.decimals || 0;
-        const actualBalance = Number(rune.balance) / Math.pow(10, decimals);
+        const actualBalance =
+          safeNumber(rune.balance, 0) / Math.pow(10, decimals);
         const btcValue = marketInfo?.price_in_sats
           ? (actualBalance * marketInfo.price_in_sats) / 1e8
           : 0;

@@ -10,6 +10,7 @@ import type { RuneData } from '@/lib/runesData';
 import { Asset } from '@/types/common';
 import { normalizeRuneName } from '@/utils/runeUtils';
 import { safeArrayAccess, safeArrayFirst } from '@/utils/typeGuards';
+import { safeNumber } from '@/utils/safeNumber';
 
 interface UseBorrowQuotesArgs {
   collateralAsset: Asset | null;
@@ -151,10 +152,12 @@ export function useBorrowQuotes({
       const rawAmountBigInt = BigInt(rawAmount);
       const divisorBigInt = BigInt(10 ** decimals);
       const scaledAmount = (rawAmountBigInt * BigInt(100)) / divisorBigInt;
-      const scaledNumber = Number(scaledAmount) / 100;
+      const scaledNumber = safeNumber(scaledAmount.toString(), 0) / 100;
       return scaledNumber.toFixed(decimals > 0 ? 2 : 0);
     } catch {
-      return (Number(rawAmount) / 10 ** decimals).toFixed(decimals > 0 ? 2 : 0);
+      return (
+        safeNumber(rawAmount, 0) / 10 ** decimals
+      ).toFixed(decimals > 0 ? 2 : 0);
     }
   };
 
