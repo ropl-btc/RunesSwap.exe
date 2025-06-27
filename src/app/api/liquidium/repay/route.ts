@@ -7,7 +7,12 @@ import { safeArrayFirst } from '@/utils/typeGuards';
 // POST /api/liquidium/repay
 export async function POST(request: NextRequest) {
   try {
-    const { loanId, address, signedPsbt } = await request.json();
+    const {
+      loanId,
+      address,
+      signedPsbt,
+      feeRate: feeRateInput,
+    } = await request.json();
     if (!loanId || !address) {
       return createErrorResponse(
         'Missing parameters',
@@ -51,8 +56,13 @@ export async function POST(request: NextRequest) {
       return createSuccessResponse(response);
     }
 
-    // prepare
-    const feeRate = 5;
+    // prepare path – allow client to specify feeRate, default to 5
+    const DEFAULT_FEE_RATE = 5;
+    const feeRate =
+      typeof feeRateInput === 'number' && feeRateInput > 0
+        ? feeRateInput
+        : DEFAULT_FEE_RATE;
+
     const resp = await client.repayLoan.postApiV1BorrowerLoansRepayPrepare({
       requestBody: {
         offer_id: loanId,

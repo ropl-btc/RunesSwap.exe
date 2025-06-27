@@ -15,12 +15,15 @@ export async function GET(request: NextRequest) {
         400,
       );
     }
+    // Allow caller to specify wallet type; fall back to 'xverse' for backwards compatibility
+    const walletParam = searchParams.get('wallet') || 'xverse';
+
     const client = createLiquidiumClient();
     const challenge = await client.authentication.postApiV1AuthPrepare({
       requestBody: {
         payment_address: paymentAddress,
         ordinals_address: ordinalsAddress,
-        wallet: 'xverse', // default wallet field; adjust if needed
+        wallet: walletParam,
       },
     });
     return createSuccessResponse(challenge);
