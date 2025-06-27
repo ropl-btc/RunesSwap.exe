@@ -49,6 +49,14 @@ export interface BitcoinFeeRates {
   minimumFee: number;
 }
 
+export const DEFAULT_FEE_RATES: BitcoinFeeRates = {
+  fastestFee: 25,
+  halfHourFee: 20,
+  hourFee: 15,
+  economyFee: 10,
+  minimumFee: 5,
+};
+
 export const fetchRecommendedFeeRates = async (): Promise<BitcoinFeeRates> => {
   try {
     const response = await fetch(
@@ -59,25 +67,13 @@ export const fetchRecommendedFeeRates = async (): Promise<BitcoinFeeRates> => {
       console.warn(
         `Failed to fetch fee rates: ${response.status} ${response.statusText}`,
       );
-      return {
-        fastestFee: 25,
-        halfHourFee: 20,
-        hourFee: 15,
-        economyFee: 10,
-        minimumFee: 5,
-      };
+      return DEFAULT_FEE_RATES;
     }
 
     const data = await response.json();
     return data as BitcoinFeeRates;
   } catch (error) {
     console.warn('Error fetching recommended fee rates:', error);
-    return {
-      fastestFee: 25,
-      halfHourFee: 20,
-      hourFee: 15,
-      economyFee: 10,
-      minimumFee: 5,
-    };
+    return DEFAULT_FEE_RATES;
   }
 };
