@@ -7,7 +7,7 @@ import { LiquidiumApi } from '@/sdk/liquidium';
  */
 export const createLiquidiumClient = (userJwt?: string): LiquidiumApi => {
   const baseUrlRaw =
-    process.env.LIQUIDIUM_API_URL || 'https://alpha.liquidium.wtf';
+    process.env.LIQUIDIUM_API_URL || 'https://alpha.liquidium.fi';
   // Remove any trailing slashes so generated SDK paths like "/api/v1/..." concatenate correctly
   const sanitizedBaseUrl = baseUrlRaw.replace(/\/+$/, '');
   const apiKey = process.env.LIQUIDIUM_API_KEY;
