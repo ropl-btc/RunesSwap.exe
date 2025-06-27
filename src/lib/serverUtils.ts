@@ -35,7 +35,6 @@ export function getOrdiscanClient(): Ordiscan {
  */
 export function getSatsTerminalClient(): SatsTerminal {
   const apiKey = process.env.SATS_TERMINAL_API_KEY;
-  const baseUrl = process.env.TBA_API_URL;
 
   if (!apiKey) {
     console.error(
@@ -45,7 +44,5 @@ export function getSatsTerminalClient(): SatsTerminal {
   }
 
   // Note: The SatsTerminal constructor expects an options object.
-  return baseUrl
-    ? new SatsTerminal({ apiKey, baseUrl })
-    : new SatsTerminal({ apiKey });
+  return new SatsTerminal({ apiKey });
 }
