@@ -65,6 +65,9 @@ export function BorrowTab({
   paymentPublicKey,
   signPsbt,
   signMessage,
+  cachedPopularRunes = [],
+  isPopularRunesLoading = false,
+  popularRunesError = null,
 }: BorrowTabProps) {
   const router = useRouter();
   const [collateralAsset, setCollateralAsset] = useState<Asset | null>(null);
@@ -123,6 +126,9 @@ export function BorrowTab({
     collateralAmount,
     address,
     collateralRuneInfo: collateralRuneInfo ?? null,
+    cachedPopularRunes,
+    isPopularRunesLoading,
+    popularRunesError,
   });
 
   const {

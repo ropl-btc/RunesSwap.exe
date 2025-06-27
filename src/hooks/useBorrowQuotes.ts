@@ -16,6 +16,9 @@ interface UseBorrowQuotesArgs {
   collateralAmount: string;
   address: string | null;
   collateralRuneInfo: RuneData | null;
+  cachedPopularRunes?: Record<string, unknown>[];
+  isPopularRunesLoading?: boolean;
+  popularRunesError?: Error | null;
 }
 
 export function useBorrowQuotes({
@@ -23,6 +26,9 @@ export function useBorrowQuotes({
   collateralAmount,
   address,
   collateralRuneInfo,
+  cachedPopularRunes = [],
+  isPopularRunesLoading = false,
+  popularRunesError = null,
 }: UseBorrowQuotesArgs) {
   const [popularRunes, setPopularRunes] = useState<Asset[]>([]);
   const [isPopularLoading, setIsPopularLoading] = useState(false);
@@ -35,9 +41,52 @@ export function useBorrowQuotes({
   const [minMaxRange, setMinMaxRange] = useState<string | null>(null);
   const [borrowRangeError, setBorrowRangeError] = useState<string | null>(null);
 
-  // Fetch popular runes on mount
+  // Fetch popular runes on mount or when cached data updates
   useEffect(() => {
     const fetchPopular = async () => {
+      if (isPopularRunesLoading) {
+        setIsPopularLoading(true);
+        return;
+      }
+
+      if (popularRunesError) {
+        setPopularError(popularRunesError.message);
+        setIsPopularLoading(false);
+        return;
+      }
+
+      if (cachedPopularRunes && cachedPopularRunes.length > 0) {
+        const liquidiumToken: Asset = {
+          id: 'liquidiumtoken',
+          name: 'LIQUIDIUM•TOKEN',
+          imageURI: 'https://icon.unisat.io/icon/runes/LIQUIDIUM%E2%80%A2TOKEN',
+          isBTC: false,
+        };
+        const fetchedRunes: Asset[] = cachedPopularRunes
+          .map((collection: Record<string, unknown>) => ({
+            id: (collection?.rune_id as string) || `unknown_${Math.random()}`,
+            name: (
+              (collection?.slug as string) ||
+              (collection?.rune as string) ||
+              'Unknown'
+            ).replace(/-/g, '•'),
+            imageURI:
+              (collection?.icon_content_url_data as string) ||
+              (collection?.imageURI as string),
+            isBTC: false,
+          }))
+          .filter(
+            (rune) =>
+              rune.id !== liquidiumToken.id &&
+              normalizeRuneName(rune.name) !==
+                normalizeRuneName(liquidiumToken.name),
+          );
+        setPopularRunes([liquidiumToken, ...fetchedRunes]);
+        setPopularError(null);
+        setIsPopularLoading(false);
+        return;
+      }
+
       setIsPopularLoading(true);
       setPopularError(null);
       setPopularRunes([]);
@@ -93,7 +142,7 @@ export function useBorrowQuotes({
       }
     };
     fetchPopular();
-  }, []);
+  }, [cachedPopularRunes, isPopularRunesLoading, popularRunesError]);
 
   // Fetch min-max borrow range when collateral asset changes
   useEffect(() => {
