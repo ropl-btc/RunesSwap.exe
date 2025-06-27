@@ -41,7 +41,6 @@ API routes under `src/app/api` act as a thin backend to proxy and cache requests
 A `.env.example` file shows all environment variables needed for development. Important variables include:
 
 * `SATS_TERMINAL_API_KEY`
-* `TBA_API_URL`
 * `ORDISCAN_API_KEY`
 * `RUNES_FLOOR_API_KEY`
 * `LIQUIDIUM_API_KEY` (server-side only)
@@ -131,3 +130,7 @@ When implementing complex features, prefer extracting related hooks and componen
 * The `useWalletConnection` hook manages wallet connection state and provider detection, powering the `ConnectWalletButton` component.
 * `usePortfolioData`, `useLiquidiumAuth` and `useRepayModal` keep `PortfolioTab` lightweight by handling portfolio queries, Liquidium authentication and repayment flows.
 * `useAssetSearch` powers `AssetSelectorDropdown` for debounced search and popular-rune loading, keeping `AssetSelector` minimal.
+
+```
+
+```
