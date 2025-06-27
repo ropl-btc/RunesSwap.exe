@@ -54,6 +54,7 @@ interface SwapTabProps {
   onShowPriceChart?: (assetName?: string, shouldToggle?: boolean) => void;
   showPriceChart?: boolean;
   preSelectedRune?: string | null;
+  preSelectedAsset?: Asset | null;
 }
 
 export function SwapTab({
@@ -72,6 +73,7 @@ export function SwapTab({
   onShowPriceChart,
   showPriceChart = false,
   preSelectedRune = null,
+  preSelectedAsset = null,
 }: SwapTabProps) {
   // State for input/output amounts
   const [inputAmount, setInputAmount] = useState('');
@@ -92,6 +94,7 @@ export function SwapTab({
     isPopularRunesLoading,
     popularRunesError,
     preSelectedRune,
+    preSelectedAsset,
     assetOut,
     setAssetIn,
     setAssetOut,

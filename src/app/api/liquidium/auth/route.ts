@@ -6,9 +6,8 @@ import {
   handleApiError,
   validateRequest,
 } from '@/lib/apiUtils';
-import { getLiquidiumClient } from '@/lib/serverUtils';
+import { createLiquidiumClient } from '@/lib/liquidiumSdk';
 import { supabase } from '@/lib/supabase';
-import type { LiquidiumAuthSubmitSuccessResponse } from '@/types/liquidium';
 import { safeParseJWT } from '@/utils/typeGuards';
 
 const AuthSchema = z.object({
@@ -33,24 +32,28 @@ export async function POST(request: NextRequest) {
   } = validation.data;
 
   try {
-    const liquidium = getLiquidiumClient();
-    // Step 1: Submit signatures to Liquidium
-    const submitData: Record<string, unknown> = {
+    const client = createLiquidiumClient();
+
+    const submitData = {
       ordinals: {
         address: ordinalsAddress,
         signature: ordinalsSignature,
         nonce: ordinalsNonce,
       },
+      ...(paymentSignature && paymentNonce
+        ? {
+            payment: {
+              address: paymentAddress,
+              signature: paymentSignature,
+              nonce: paymentNonce,
+            },
+          }
+        : {}),
     };
-    if (paymentSignature && paymentNonce) {
-      submitData.payment = {
-        address: paymentAddress,
-        signature: paymentSignature,
-        nonce: paymentNonce,
-      };
-    }
-    const authSubmitResponse: LiquidiumAuthSubmitSuccessResponse =
-      await liquidium.authSubmit(submitData);
+
+    const authSubmitResponse = await client.authentication.postApiV1AuthSubmit({
+      requestBody: submitData,
+    });
 
     // Decode JWT to get expiry using safe parsing
     let expiresAt: Date | null = null;

@@ -306,9 +306,14 @@ export function BorrowTab({
 
       <BorrowSuccessMessage
         loanTxId={loanTxId}
-        onViewPortfolio={() =>
-          router.push('/?tab=portfolio', { scroll: false })
-        }
+        onViewPortfolio={() => {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent('tabChange', { detail: { tab: 'portfolio' } }),
+            );
+          }
+          router.push('/?tab=portfolio', { scroll: false });
+        }}
         onStartAnother={() => {
           resetLoanProcess();
           setSelectedQuoteId(null);

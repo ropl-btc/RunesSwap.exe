@@ -1,22 +1,22 @@
 # RunesSwap.app
 
-A Uniswap‑style swap interface for Bitcoin Runes, built with Next.js, TypeScript, and the SatsTerminal SDK, styled in a classic Windows 98 UI theme.
+A Uniswap‑style swap interface for Bitcoin Runes, built with Next.js, TypeScript, and the SatsTerminal SDK, styled in a classic Windows 98 UI theme.
 
 ## Features
 - Seamless on‑chain swapping of Bitcoin Runes via SatsTerminal SDK.
 - Wallet connection and transaction signing with Laser Eyes (non‑custodial).
 - UTXO and Rune balance data fetched securely via Ordiscan.
 - Responsive design with dynamic imports, caching, and optimized bundle splitting.
-- Windows 98–style UI using CSS Modules and global CSS variables.
+- Windows 98–style UI using CSS Modules and global CSS variables.
 - Strict TypeScript safety, ESLint/Prettier formatting, and Git hooks for code quality.
 
 ## Tech Stack
 - Next.js (App Router)
 - TypeScript (strict mode)
-- CSS Modules & global CSS variables (Windows 98 theme)
+- CSS Modules & global CSS variables (Windows 98 theme)
 - SatsTerminal SDK (`satsterminal-sdk`)
 - Laser Eyes wallet connector (`@omnisat/lasereyes`)
-- React Query (TanStack Query) & Zustand for data/state
+- React Query (TanStack Query) & Zustand for data/state
 - Supabase (public & session management)
 - Ordiscan SDK for on‑chain data
 - ESLint, Prettier, Husky + lint‑staged for linting & formatting
@@ -75,13 +75,13 @@ Deploy on Vercel or any Node.js‑capable host and configure the same environmen
 3. **Review Swap Details**  
    Confirm rates, fees, and expected output. Adjust slippage tolerance if needed.
 4. **Confirm & Approve**  
-   Submit the transaction and approve it in your wallet. The swap executes on Bitcoin’s blockchain using inscriptions.
+   Submit the transaction and approve it in your wallet. The swap executes on Bitcoin's blockchain using inscriptions.
 5. **Track Your Transactions**  
    View your swap history under **Your TXs**, including pending and completed transactions.
 
 ## FAQ
 **What are Bitcoin Runes?**  
-Bitcoin Runes is a token standard on Bitcoin enabling transfer of fungible assets via inscriptions. Runes maximize efficiency while leveraging Bitcoin’s security and decentralization.
+Bitcoin Runes is a token standard on Bitcoin enabling transfer of fungible assets via inscriptions. Runes maximize efficiency while leveraging Bitcoin's security and decentralization.
 
 **How are Runes different from Ordinals?**  
 Ordinals inscribe arbitrary data onto sats, whereas Runes specifically encode fungible token transfers, reducing on‑chain data bloat.
@@ -92,6 +92,15 @@ Swaps depend on Bitcoin network confirmations (typically 10 minutes–1 hour). Y
 **What fees apply?**  
 RunesSwap.app charges no additional fees beyond SatsTerminal network fees and standard Bitcoin miner fees. You receive near‑optimal rates directly on‑chain.
 
+## Liquidium SDK Generation
+
+When Liquidium publishes a new OpenAPI spec, regenerate the typed client:
+
+```bash
+pnpm gen:liquidium-sdk
+```
+
+This reads `liquidium-openapi/liquidium-instant-loan-api.yaml` and outputs the SDK to `src/sdk/liquidium`. ESLint and Jest ignore this folder, so no manual changes are required after regeneration.
 
 ## Contributing
 

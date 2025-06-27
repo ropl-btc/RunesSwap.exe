@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createErrorResponse, createSuccessResponse } from '@/lib/apiUtils';
-import { getLiquidiumClient } from '@/lib/serverUtils';
+import { createLiquidiumClient } from '@/lib/liquidiumSdk';
 import { supabase } from '@/lib/supabase';
 import { safeArrayFirst } from '@/utils/typeGuards';
 
@@ -40,13 +40,23 @@ export async function GET(request: NextRequest) {
       );
     }
     const userJwt = firstToken.jwt;
-    const liquidium = getLiquidiumClient();
-    const portfolio = await liquidium.getPortfolio(userJwt);
-    if (!portfolio || !portfolio.offers) {
-      console.warn('[Liquidium] No offers found in portfolio response');
-      return createSuccessResponse([]); // Return empty array if no offers
-    }
-    return createSuccessResponse(portfolio.offers);
+    const client = createLiquidiumClient(userJwt);
+    const portfolio = await client.portfolio.getApiV1Portfolio();
+
+    /*
+     * For UI compatibility we return borrower rune loans array directly.
+     * The full portfolio object is still included under `rawPortfolio`
+     * so callers can migrate later without breaking existing code.
+     */
+    const loans =
+      portfolio?.borrower?.runes?.loans ??
+      portfolio?.lender?.runes?.loans ??
+      [];
+
+    return createSuccessResponse({
+      loans,
+      rawPortfolio: portfolio,
+    });
   } catch (error) {
     console.error('[Liquidium] Portfolio route error:', error);
     return createErrorResponse(

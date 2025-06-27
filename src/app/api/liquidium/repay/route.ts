@@ -1,12 +1,18 @@
 import { NextRequest } from 'next/server';
 import { createErrorResponse, createSuccessResponse } from '@/lib/apiUtils';
+import { createLiquidiumClient } from '@/lib/liquidiumSdk';
 import { supabase } from '@/lib/supabase';
 import { safeArrayFirst } from '@/utils/typeGuards';
 
 // POST /api/liquidium/repay
 export async function POST(request: NextRequest) {
   try {
-    const { loanId, address, signedPsbt } = await request.json();
+    const {
+      loanId,
+      address,
+      signedPsbt,
+      feeRate: feeRateInput,
+    } = await request.json();
     if (!loanId || !address) {
       return createErrorResponse(
         'Missing parameters',
@@ -36,67 +42,34 @@ export async function POST(request: NextRequest) {
       );
     }
     const userJwt = firstToken.jwt;
-    const apiKey = process.env.LIQUIDIUM_API_KEY;
-    if (!apiKey) {
-      return createErrorResponse(
-        'Server configuration error',
-        'LIQUIDIUM_API_KEY is not set',
-        500,
-      );
-    }
-    const apiUrl =
-      process.env.LIQUIDIUM_API_URL || 'https://alpha.liquidium.fi';
+    const client = createLiquidiumClient(userJwt);
+
     if (signedPsbt) {
-      // Step 2: Submit signed PSBT to Liquidium
-      const submitRes = await fetch(
-        `${apiUrl}/api/v1/borrower/loans/repay/submit`,
+      const response = await client.repayLoan.postApiV1BorrowerLoansRepaySubmit(
         {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
-            'x-user-token': userJwt,
-          },
-          body: JSON.stringify({
+          requestBody: {
             offer_id: loanId,
             signed_psbt_base_64: signedPsbt,
-          }),
-        },
-      );
-      const submitData = await submitRes.json();
-      if (!submitRes.ok) {
-        return createErrorResponse(
-          'Liquidium API error',
-          submitData?.error || 'Failed to submit repayment',
-          500,
-        );
-      }
-      return createSuccessResponse(submitData);
-    } else {
-      // Step 1: Prepare repayment PSBT
-      const feeRate = 5; // default fee rate in sat/vB
-      const liquidiumRes = await fetch(
-        `${apiUrl}/api/v1/borrower/loans/repay/prepare`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
-            'x-user-token': userJwt,
           },
-          body: JSON.stringify({ offer_id: loanId, fee_rate: feeRate }),
         },
       );
-      const repayData = await liquidiumRes.json();
-      if (!liquidiumRes.ok) {
-        return createErrorResponse(
-          'Liquidium API error',
-          repayData?.error || 'Failed to prepare repayment',
-          500,
-        );
-      }
-      return createSuccessResponse(repayData);
+      return createSuccessResponse(response);
     }
+
+    // prepare path – allow client to specify feeRate, default to 5
+    const DEFAULT_FEE_RATE = 5;
+    const feeRate =
+      typeof feeRateInput === 'number' && feeRateInput > 0
+        ? feeRateInput
+        : DEFAULT_FEE_RATE;
+
+    const resp = await client.repayLoan.postApiV1BorrowerLoansRepayPrepare({
+      requestBody: {
+        offer_id: loanId,
+        fee_rate: feeRate,
+      },
+    });
+    return createSuccessResponse(resp);
   } catch (error) {
     return createErrorResponse(
       'Failed to process repayment',

@@ -6,6 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { useSharedLaserEyes } from '@/context/LaserEyesContext';
 import useBtcPrice from '@/hooks/useBtcPrice';
 import { QUERY_KEYS, fetchPopularFromApi } from '@/lib/api';
+import type { Asset } from '@/types/common';
 import styles from './AppInterface.module.css';
 
 // Import the tab components
@@ -36,6 +37,8 @@ export function AppInterface({ activeTab }: AppInterfaceProps) {
   );
   const [runesInfoTabSelectedAsset, setRunesInfoTabSelectedAsset] =
     useState('LIQUIDIUM•TOKEN');
+
+  const [preSelectedAsset, setPreSelectedAsset] = useState<Asset | null>(null);
 
   useEffect(() => {
     if (preSelectedRune) {
@@ -87,11 +90,21 @@ export function AppInterface({ activeTab }: AppInterfaceProps) {
 
   useEffect(() => {
     const handleTabChangeEvent = (event: CustomEvent) => {
-      const { tab, rune } = event.detail;
+      const { tab, rune, asset } = event.detail as {
+        tab: string;
+        rune?: string;
+        asset?: Asset;
+      };
       if (tab === 'swap' && rune) {
         setSwapTabSelectedAsset(rune);
         if (showSwapTabPriceChart) {
           togglePriceChart(rune, false);
+        }
+      } else if (tab === 'swap' && asset) {
+        setPreSelectedAsset(asset);
+        setSwapTabSelectedAsset(asset.name);
+        if (showSwapTabPriceChart) {
+          togglePriceChart(asset.name, false);
         }
       }
       // Handle other tab changes if needed
@@ -134,6 +147,7 @@ export function AppInterface({ activeTab }: AppInterfaceProps) {
             onShowPriceChart={togglePriceChart}
             showPriceChart={showSwapTabPriceChart}
             preSelectedRune={preSelectedRune}
+            preSelectedAsset={preSelectedAsset}
           />
         );
       // --- Add Borrow Tab Case ---
@@ -189,6 +203,7 @@ export function AppInterface({ activeTab }: AppInterfaceProps) {
             onShowPriceChart={togglePriceChart}
             showPriceChart={showSwapTabPriceChart}
             preSelectedRune={preSelectedRune}
+            preSelectedAsset={preSelectedAsset}
           />
         );
     }

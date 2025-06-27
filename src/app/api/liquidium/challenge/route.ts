@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createErrorResponse, createSuccessResponse } from '@/lib/apiUtils';
-import { getLiquidiumClient } from '@/lib/serverUtils';
+import { createLiquidiumClient } from '@/lib/liquidiumSdk';
 
 // GET /api/liquidium/challenge?ordinalsAddress=...&paymentAddress=...
 export async function GET(request: NextRequest) {
@@ -15,12 +15,17 @@ export async function GET(request: NextRequest) {
         400,
       );
     }
-    const liquidium = getLiquidiumClient();
-    // Call Liquidium API to get challenge messages
-    const challenge = await liquidium.authPrepare(
-      paymentAddress,
-      ordinalsAddress,
-    );
+    // Allow caller to specify wallet type; fall back to 'xverse' for backwards compatibility
+    const walletParam = searchParams.get('wallet') || 'xverse';
+
+    const client = createLiquidiumClient();
+    const challenge = await client.authentication.postApiV1AuthPrepare({
+      requestBody: {
+        payment_address: paymentAddress,
+        ordinals_address: ordinalsAddress,
+        wallet: walletParam,
+      },
+    });
     return createSuccessResponse(challenge);
   } catch (error) {
     return createErrorResponse(
