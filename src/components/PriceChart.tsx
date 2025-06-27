@@ -13,7 +13,9 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import hourglassIcon from '/public/icons/windows_hourglass.png';
+
+// Use static path; avoids TypeScript resolution issues with absolute import
+const hourglassIconPath = '/icons/windows_hourglass.png';
 
 interface PriceChartProps {
   assetName: string;
@@ -67,7 +69,7 @@ const PriceChart: React.FC<PriceChartProps> = ({
         }}
       >
         <Image
-          src={hourglassIcon.src || '/icons/windows_hourglass.png'}
+          src={hourglassIconPath}
           alt="Loading..."
           width={48}
           height={48}

@@ -101,13 +101,16 @@ export async function GET(request: NextRequest) {
       .limit(1);
 
     if (!cachedRangesError && cachedRanges && cachedRanges.length > 0) {
-      return createSuccessResponse({
-        runeId,
-        minAmount: cachedRanges[0].min_amount,
-        maxAmount: cachedRanges[0].max_amount,
-        cached: true,
-        updatedAt: cachedRanges[0].updated_at,
-      });
+      const cached = safeArrayFirst(cachedRanges);
+      if (cached) {
+        return createSuccessResponse({
+          runeId,
+          minAmount: cached.min_amount,
+          maxAmount: cached.max_amount,
+          cached: true,
+          updatedAt: cached.updated_at,
+        });
+      }
     }
 
     // 1. Get User JWT from Supabase

@@ -55,7 +55,33 @@ export function safeParseJWT(jwt: string): Record<string, unknown> | null {
       return null;
     }
 
-    return JSON.parse(Buffer.from(payload, 'base64').toString('utf8'));
+    // Decode base64 payload safely in both Node and browser
+    const decodeBase64 = (str: string): string => {
+      // Node.js environment
+      if (typeof Buffer !== 'undefined') {
+        try {
+          return Buffer.from(str, 'base64').toString('utf8');
+        } catch {
+          return '';
+        }
+      }
+      // Browser environment (atob)
+      if (typeof atob === 'function') {
+        try {
+          return atob(str);
+        } catch {
+          return '';
+        }
+      }
+      return '';
+    };
+
+    const decoded = decodeBase64(payload);
+    if (!decoded) {
+      return null;
+    }
+
+    return JSON.parse(decoded);
   } catch {
     return null;
   }

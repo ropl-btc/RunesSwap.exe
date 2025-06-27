@@ -4,6 +4,7 @@ import {
   RunicInput,
   RunicOutput,
 } from '@/types/ordiscan';
+import { safeArrayFirst } from '@/utils/typeGuards';
 
 /**
  * Result of interpreting a Rune transaction
@@ -107,7 +108,7 @@ export function interpretRuneTransaction(
           action = 'Internal Transfer';
 
           // Try to find the relevant rune from the runestone message
-          const relevantRune = tx.runestone_messages[0]?.rune;
+          const relevantRune = safeArrayFirst(tx.runestone_messages)?.rune;
           const userOutput = tx.outputs.find(
             (o: RunicOutput) =>
               o.address === userAddress && o.rune === relevantRune,
@@ -147,7 +148,7 @@ export function interpretRuneTransaction(
 
         // Try to find any rune involved in the transaction
         runeName =
-          tx.runestone_messages[0]?.rune ||
+          safeArrayFirst(tx.runestone_messages)?.rune ||
           tx.inputs.find((i: RunicInput) => i.rune)?.rune ||
           tx.outputs.find((o: RunicOutput) => o.rune)?.rune ||
           'N/A';

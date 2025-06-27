@@ -86,7 +86,10 @@ export function usePortfolioData(address: string | null) {
         const marketInfo = portfolioData.marketData?.[rune.name];
         const runeInfo = portfolioData.runeInfos?.[rune.name];
         const decimals = runeInfo?.decimals || 0;
-        const actualBalance = Number(rune.balance) / Math.pow(10, decimals);
+        const balanceNum = Number(rune.balance);
+        const actualBalance = !Number.isNaN(balanceNum)
+          ? balanceNum / Math.pow(10, decimals)
+          : 0;
         const btcValue = marketInfo?.price_in_sats
           ? (actualBalance * marketInfo.price_in_sats) / 1e8
           : 0;
