@@ -51,7 +51,7 @@ interface SwapTabProps {
   isPopularRunesLoading?: boolean;
   popularRunesError?: Error | null;
   // New props for price chart
-  onShowPriceChart?: (assetName?: string, shouldToggle?: boolean) => void;
+  onShowPriceChart?: ((assetName?: string, shouldToggle?: boolean) => void) | undefined;
   showPriceChart?: boolean;
   preSelectedRune?: string | null;
 }

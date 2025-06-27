@@ -12,7 +12,7 @@ export type ActiveTab =
   | 'borrow';
 
 interface TabNavigationProps {
-  onTabChange?: (tab: ActiveTab) => void;
+  onTabChange?: ((tab: ActiveTab) => void) | undefined;
 }
 
 export default function TabNavigation({ onTabChange }: TabNavigationProps) {

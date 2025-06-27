@@ -28,7 +28,7 @@ interface ILaserEyesContext {
     | undefined
   >;
   // Add signMessage function for Liquidium API authentication
-  signMessage?: (message: string, address?: string) => Promise<string>;
+  signMessage?: ((message: string, address?: string) => Promise<string>) | undefined;
   // Wallet availability properties
   hasUnisat?: boolean;
   // Add other properties/methods from LaserEyesData if needed later

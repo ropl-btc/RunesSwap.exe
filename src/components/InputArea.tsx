@@ -9,7 +9,7 @@ interface InputAreaProps {
   label: string;
   inputId: string;
   inputValue: string;
-  onInputChange?: (value: string) => void;
+  onInputChange?: ((value: string) => void) | undefined;
   placeholder?: string;
   readOnly?: boolean;
   disabled?: boolean;
@@ -18,7 +18,7 @@ interface InputAreaProps {
 
   assetSelectorEnabled?: boolean;
   selectedAsset?: Asset | null;
-  onAssetChange?: (asset: Asset) => void;
+  onAssetChange?: ((asset: Asset) => void) | undefined;
   availableAssets?: Asset[];
   showBtcInSelector?: boolean;
   isAssetsLoading?: boolean;

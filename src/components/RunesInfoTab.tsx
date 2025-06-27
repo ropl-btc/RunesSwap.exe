@@ -18,7 +18,7 @@ interface RunesInfoTabProps {
   cachedPopularRunes?: Record<string, unknown>[];
   isPopularRunesLoading?: boolean;
   popularRunesError?: Error | null;
-  onShowPriceChart?: (assetName?: string, shouldToggle?: boolean) => void;
+  onShowPriceChart?: ((assetName?: string, shouldToggle?: boolean) => void) | undefined;
   showPriceChart?: boolean;
 }
 
