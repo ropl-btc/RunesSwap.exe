@@ -6,7 +6,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { SatsTerminalSDK } from 'satsterminal-sdk';
+import { SatsTerminal } from 'satsterminal-sdk';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -31,10 +31,8 @@ async function updatePopularRunes() {
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
-  const terminal = new SatsTerminalSDK({
-    apiKey: satsTerminalApiKey,
-    baseUrl: process.env.TBA_API_URL || 'https://api.sats.terminal',
-  });
+  // Initialize SatsTerminal client with API key only
+  const terminal = new SatsTerminal({ apiKey: satsTerminalApiKey });
 
   try {
     // Fetch popular tokens from SatsTerminal

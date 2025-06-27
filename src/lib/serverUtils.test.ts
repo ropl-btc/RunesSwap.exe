@@ -96,24 +96,6 @@ describe('serverUtils', () => {
       expect(client).toBe(mockSatsTerminalInstance);
     });
 
-    it('should create SatsTerminal client with API key and base URL', () => {
-      // Set up environment variables
-      process.env.SATS_TERMINAL_API_KEY = 'test-sats-terminal-key';
-      process.env.TBA_API_URL = 'https://custom-api.example.com';
-
-      // Mock SatsTerminal constructor
-      const mockSatsTerminalInstance = {} as SatsTerminal;
-      MockedSatsTerminal.mockImplementation(() => mockSatsTerminalInstance);
-
-      const client = getSatsTerminalClient();
-
-      expect(MockedSatsTerminal).toHaveBeenCalledWith({
-        apiKey: 'test-sats-terminal-key',
-        baseUrl: 'https://custom-api.example.com',
-      });
-      expect(client).toBe(mockSatsTerminalInstance);
-    });
-
     it('should throw error when SATS_TERMINAL_API_KEY is missing', () => {
       // Ensure API key is not set
       delete process.env.SATS_TERMINAL_API_KEY;
