@@ -1,4 +1,7 @@
-import { safeArrayAccess, safeArrayFirst } from './typeGuards';
+// Number formatting helpers
+
+// Reuse a single NumberFormat instance for consistent formatting
+const numberFormatter = new Intl.NumberFormat('en-US');
 
 // Function to truncate TXIDs for display
 export const truncateTxid = (txid: string, length: number = 8): string => {
@@ -17,20 +20,16 @@ export function formatNumberString(
   }
 
   try {
-    // Remove any existing commas and validate the string contains only digits
-    // and an optional decimal part. This avoids precision issues with
-    // `parseFloat` on very large numbers.
     const cleaned = String(numStr).replace(/,/g, '');
     const isNegative = cleaned.startsWith('-');
     const numericPart = isNegative ? cleaned.slice(1) : cleaned;
-    if (!/^\d+(\.\d+)?$/.test(numericPart)) return defaultDisplay;
+    const match = /^(\d+)(?:\.(\d+))?$/.exec(numericPart);
+    if (!match) return defaultDisplay;
 
-    const parts = numericPart.split('.');
-    const intPart = safeArrayFirst(parts);
-    if (!intPart) return defaultDisplay;
-    const withCommas = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    const decPart = safeArrayAccess(parts, 1);
-    const result = decPart ? `${withCommas}.${decPart}` : withCommas;
+    const intPart = match[1];
+    const decPart = match[2];
+    const formattedInt = numberFormatter.format(BigInt(intPart));
+    const result = decPart ? `${formattedInt}.${decPart}` : formattedInt;
     return isNegative ? `-${result}` : result;
   } catch {
     return defaultDisplay;
@@ -38,13 +37,5 @@ export function formatNumberString(
 }
 
 export function formatNumber(value: number): string {
-  if (value === 0) return '0';
-  const str = value.toString();
-  const parts = str.split('.');
-  const intPart = safeArrayFirst(parts);
-  if (!intPart) return '0';
-
-  const withCommas = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  const decPart = safeArrayAccess(parts, 1);
-  return decPart ? `${withCommas}.${decPart}` : withCommas;
+  return numberFormatter.format(value);
 }
