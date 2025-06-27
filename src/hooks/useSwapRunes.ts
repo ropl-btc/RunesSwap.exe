@@ -49,7 +49,7 @@ export function useSwapRunes({
         return exists ? prev : [preSelectedAsset, ...prev];
       });
     }
-  }, [preSelectedAsset]);
+  }, [preSelectedAsset, setAssetIn, setAssetOut, hasLoadedPreselectedRune]);
 
   useEffect(() => {
     const fetchPopular = async () => {
@@ -194,7 +194,13 @@ export function useSwapRunes({
       }
     };
     fetchPopular();
-  }, [cachedPopularRunes, preSelectedRune, preSelectedAsset, assetOut]);
+  }, [
+    cachedPopularRunes,
+    preSelectedRune,
+    preSelectedAsset,
+    assetOut,
+    setAssetOut,
+  ]);
 
   useEffect(() => {
     const findAndSelectRune = async () => {
@@ -275,7 +281,14 @@ export function useSwapRunes({
     };
 
     findAndSelectRune();
-  }, [preSelectedRune, popularRunes, hasLoadedPreselectedRune]);
+  }, [
+    preSelectedRune,
+    popularRunes,
+    hasLoadedPreselectedRune,
+    setAssetIn,
+    setAssetOut,
+    assetOut,
+  ]);
 
   return {
     popularRunes,

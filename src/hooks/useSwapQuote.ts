@@ -220,6 +220,7 @@ export function useSwapQuote({
     setQuote,
     setExchangeRate,
     setOutputAmount,
+    setQuoteTimestamp,
   ]);
 
   useEffect(() => {
@@ -311,6 +312,9 @@ export function useSwapQuote({
     quote,
     outputAmount,
     exchangeRate,
+    setQuote,
+    setOutputAmount,
+    setExchangeRate,
   ]);
 
   useEffect(() => {
