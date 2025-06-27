@@ -194,7 +194,7 @@ export function useSwapRunes({
       }
     };
     fetchPopular();
-  }, [cachedPopularRunes, preSelectedRune]);
+  }, [cachedPopularRunes, preSelectedRune, preSelectedAsset, assetOut]);
 
   useEffect(() => {
     const findAndSelectRune = async () => {
