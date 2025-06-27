@@ -20,13 +20,8 @@ import { getSatsTerminalClient } from '@/lib/serverUtils';
 export async function GET() {
   try {
     // Get cached data with detailed metadata
-    const {
-      cachedData,
-      isExpired,
-      shouldAttemptRefresh,
-      isStale,
-      lastRefreshAttempt,
-    } = await getCachedPopularRunesWithMetadata();
+    const { cachedData, shouldAttemptRefresh, isStale, lastRefreshAttempt } =
+      await getCachedPopularRunesWithMetadata();
 
     // CRITICAL: We ALWAYS return cached data immediately when available
     // Even if it's expired, we use the stale-while-revalidate pattern
@@ -47,7 +42,7 @@ export async function GET() {
       // Return the cached data with a flag indicating if it's stale
       return createSuccessResponse({
         data: cachedData,
-        isStale: isExpired,
+        isStale,
         cacheAge: lastRefreshAttempt
           ? new Date(lastRefreshAttempt).toISOString()
           : null,

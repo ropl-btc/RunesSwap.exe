@@ -115,7 +115,7 @@ describe('/api/cached-popular-runes', () => {
         success: true,
         data: {
           data: mockCachedData,
-          isStale: true, // isExpired maps to isStale in response
+          isStale: false,
           cacheAge: new Date(lastRefreshTime).toISOString(),
         },
       });
@@ -196,7 +196,7 @@ describe('/api/cached-popular-runes', () => {
       const data = await response.json();
 
       expect(data.success).toBe(true);
-      expect(data.data.isStale).toBe(true);
+      expect(data.data.isStale).toBe(false);
       expect(data.data.error).toBe('Failed to fetch fresh data');
 
       expect(mockCachePopularRunes).not.toHaveBeenCalled();
@@ -219,7 +219,7 @@ describe('/api/cached-popular-runes', () => {
       const data = await response.json();
 
       expect(data.success).toBe(true);
-      expect(data.data.isStale).toBe(true);
+      expect(data.data.isStale).toBe(false);
       expect(data.data.error).toBe('Failed to fetch fresh data');
 
       expect(mockCachePopularRunes).not.toHaveBeenCalled();
@@ -263,7 +263,7 @@ describe('/api/cached-popular-runes', () => {
 
       expect(data.success).toBe(true);
       expect(data.data.data).toEqual(fallbackData);
-      expect(data.data.isStale).toBe(true);
+      expect(data.data.isStale).toBe(false);
       expect(data.data.error).toBe('Failed to fetch fresh data');
     });
   });
@@ -389,7 +389,7 @@ describe('/api/cached-popular-runes', () => {
       expect(response.status).toBe(200);
       const data = await response.json();
 
-      expect(data.data.isStale).toBe(true); // isExpired should map to isStale: true
+      expect(data.data.isStale).toBe(false);
     });
 
     it('should handle null lastRefreshAttempt', async () => {
