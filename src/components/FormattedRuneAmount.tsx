@@ -73,7 +73,7 @@ export function FormattedRuneAmount({
   try {
     // Use BigInt for precision with large numbers before converting to Number for division
     const rawAmountBigInt = BigInt(rawAmount);
-    const divisor = BigInt(10 ** decimals);
+    const divisor = BigInt(10) ** BigInt(decimals);
 
     // Perform division carefully to handle potential floating point issues
     // For display, Number should be sufficient after scaling down

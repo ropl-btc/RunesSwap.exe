@@ -149,12 +149,13 @@ export function useBorrowQuotes({
   const formatRuneAmount = (rawAmount: string, decimals: number): string => {
     try {
       const rawAmountBigInt = BigInt(rawAmount);
-      const divisorBigInt = BigInt(10 ** decimals);
+      const divisorBigInt = BigInt(10) ** BigInt(decimals);
       const scaledAmount = (rawAmountBigInt * BigInt(100)) / divisorBigInt;
       const scaledNumber = Number(scaledAmount) / 100;
       return scaledNumber.toFixed(decimals > 0 ? 2 : 0);
     } catch {
-      return (Number(rawAmount) / 10 ** decimals).toFixed(decimals > 0 ? 2 : 0);
+      const divisor = Number(BigInt(10) ** BigInt(decimals));
+      return (Number(rawAmount) / divisor).toFixed(decimals > 0 ? 2 : 0);
     }
   };
 
@@ -204,7 +205,7 @@ export function useBorrowQuotes({
           const amountInteger = Math.floor(
             amountFloat * 10 ** Math.min(8, decimals),
           );
-          const multiplier = BigInt(10 ** Math.max(0, decimals - 8));
+          const multiplier = BigInt(10) ** BigInt(Math.max(0, decimals - 8));
           const amountBigInt = BigInt(amountInteger) * multiplier;
           rawAmount = amountBigInt.toString();
         }
